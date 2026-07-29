@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2진수와 데이터 표현 — 변환 · 용량 · 암호화</title>
+<style>
+  /* ===== 전자칠판에서도 잘 보이도록 기본 글씨를 크게 잡는다 ===== */
+  :root {
+    --bg: #f4f6fb;
+    --card: #ffffff;
+    --line: #d3d9e6;
+    --ink: #1b2130;
+    --dim: #5b6478;
+    --main: #2563eb;      /* 파랑: 강조 */
+    --main-dark: #1d4ed8;
+    --ok: #15803d;        /* 초록: 정답 */
+    --no: #c2410c;        /* 주황: 오답 */
+    --hi: #fff3c4;        /* 노랑: 나머지 강조 */
+    --key: #ede9fe;       /* 보라: 암호 키 */
+    --key-ink: #6d28d9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 20px 16px 64px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "맑은 고딕", "Malgun Gothic", sans-serif;
+    font-size: 20px;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+
+  h1 { font-size: 42px; margin: 0 0 6px; text-align: center; }
+  .sub { text-align: center; color: var(--dim); font-size: 19px; margin: 0 0 22px; }
+
+  /* ===== 탭 ===== */
+  .tabs {
+    display: flex;
+    gap: 10px;
+    border-bottom: 4px solid var(--main);
+    margin-bottom: 24px;
+  }
+  .tab {
+    flex: 1;
+    font-family: inherit;
+    font-size: 23px;
+    font-weight: bold;
+    padding: 16px 12px;
+    border: 3px solid var(--line);
+    border-bottom: none;
+    border-radius: 14px 14px 0 0;
+    background: #e7ebf5;
+    color: var(--dim);
+    cursor: pointer;
+  }
+  .tab:hover { background: #dde3f0; }
+  .tab[aria-selected="true"] {
+    background: var(--main);
+    border-color: var(--main);
+    color: #fff;
+  }
+  .tab:focus-visible { outline: 4px solid #f59e0b; outline-offset: 2px; }
+
+  section {
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-radius: 16px;
+    padding: 22px 26px 26px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    font-size: 28px;
+    margin: 0 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid var(--main);
+  }
+
+  /* ===== 입력 ===== */
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  label { font-size: 22px; font-weight: bold; }
+  input[type="number"], input[type="text"] {
+    font-family: inherit;
+    font-size: 28px;
+    padding: 10px 16px;
+    border: 3px solid var(--line);
+    border-radius: 10px;
+    width: 220px;
+  }
+  input.wide { width: 100%; max-width: 560px; }
+  input:focus { outline: none; border-color: var(--main); }
+
+  button {
+    font-family: inherit;
+    font-size: 21px;
+    font-weight: bold;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    background: var(--main);
+    color: #fff;
+    cursor: pointer;
+  }
+  button:hover { background: var(--main-dark); }
+  button.ghost { background: #fff; color: var(--main); border: 3px solid var(--main); }
+  button.ghost:hover { background: #eef3ff; }
+  button:disabled { background: #b9c0d0; cursor: default; }
+
+  .msg { font-size: 19px; color: var(--no); font-weight: bold; min-height: 1.6em; }
+  .note { font-size: 18px; color: var(--dim); }
+
+  /* ===== 표 ===== */
+  .tablebox { overflow-x: auto; margin-top: 18px; }
+  table { width: 100%; border-collapse: collapse; font-size: 22px; }
+  th, td { border: 2px solid var(--line); padding: 10px 8px; text-align: center; }
+  th { background: #eef2fb; font-size: 20px; }
+  td.expr { font-size: 25px; letter-spacing: 1px; }
+  td.rest { background: var(--hi); font-weight: bold; font-size: 26px; }
+  td.bin { font-family: Consolas, "D2Coding", monospace; letter-spacing: 2px; font-size: 21px; }
+  td.ch  { font-size: 28px; font-weight: bold; }
+  td.keybin { background: var(--key); color: var(--key-ink); font-family: Consolas, monospace; letter-spacing: 2px; }
+  tr.step-new { animation: pop .35s ease; }
+  @keyframes pop {
+    from { background: #dbeafe; transform: scale(.98); }
+    to   { background: transparent; transform: scale(1); }
+  }
+
+  /* ===== 결과 박스 ===== */
+  .result {
+    margin-top: 20px;
+    padding: 18px 22px;
+    border: 3px dashed var(--main);
+    border-radius: 14px;
+    background: #f7faff;
+  }
+  .bits {
+    font-size: 48px;
+    font-weight: bold;
+    letter-spacing: 6px;
+    color: var(--main-dark);
+    text-align: center;
+    margin: 8px 0;
+    word-break: break-all;
+    font-family: Consolas, "D2Coding", monospace;
+  }
+  .check { font-size: 21px; margin-top: 8px; }
+
+  /* 용량 막대 */
+  .bar { height: 34px; border-radius: 8px; background: var(--main); min-width: 4px; }
+  .bar.plain { background: #94a3b8; }
+  .barrow { display: flex; align-items: center; gap: 12px; margin: 8px 0; font-size: 20px; }
+  .barrow .cap { width: 190px; flex: none; font-weight: bold; }
+  .barwrap { flex: 1; }
+
+  /* ===== 탭 0: 자리값 스위치 카드 ===== */
+  /* 카드 8장은 반드시 한 줄로 둔다. 줄이 바뀌면 128·64·…·1 이라는
+     자리 순서가 화면에서 무너져 탭0의 학습 목표 자체가 깨진다.
+     그래서 wrap 을 막고, 좁은 화면에서는 카드가 줄어들게 한다. */
+  .bitrow {
+    display: flex; gap: clamp(4px, 0.9vw, 10px); justify-content: center;
+    flex-wrap: nowrap; margin: 20px 0 10px;
+  }
+  .bitcard {
+    flex: 1 1 0; min-width: 0; max-width: 104px;   /* min-width:0 이라야 버튼이 줄어든다 */
+    padding: 10px 2px;
+    border: 4px solid var(--line); border-radius: 16px;
+    background: #fff; cursor: pointer;
+    font-family: inherit; text-align: center;
+  }
+  .bitcard .w {
+    display: block; font-size: clamp(11px, 1.9vw, 20px);
+    font-weight: bold; color: var(--dim);
+  }
+  .bitcard .b {
+    display: block; font-size: clamp(22px, 5vw, 48px); font-weight: bold; line-height: 1.1;
+    color: #9aa4b8; font-family: Consolas, "D2Coding", monospace;
+  }
+  .bitcard[aria-pressed="true"] { border-color: var(--main); background: #e8f0ff; }
+  .bitcard[aria-pressed="true"] .b { color: var(--main-dark); }
+  .bitcard[aria-pressed="true"] .w { color: var(--main-dark); }
+  .bitcard:hover { border-color: var(--main); }
+  .bitcard:focus-visible { outline: 4px solid #f59e0b; outline-offset: 3px; }
+
+  .sumline { font-size: 26px; text-align: center; margin: 6px 0; word-break: break-all; }
+  .goalbox {
+    margin-top: 18px; padding: 16px 20px; border-radius: 14px;
+    border: 3px solid var(--line); background: #fbfcff;
+  }
+  .goalnum { font-size: 40px; font-weight: bold; color: var(--main-dark); }
+  .steplog {
+    margin-top: 14px; font-size: 20px;
+    font-family: Consolas, "D2Coding", monospace;
+    background: #f1f5fb; border-radius: 10px; padding: 12px 16px;
+    min-height: 1em;
+  }
+  .steplog div { padding: 3px 0; }
+
+  /* ===== 연습문제 ===== */
+  .quiz {
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    background: #fbfcff;
+  }
+  .quiz .q { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+  .quiz .fb { font-size: 21px; font-weight: bold; margin-top: 8px; min-height: 1.6em; }
+  .fb.ok { color: var(--ok); }
+  .fb.no { color: var(--no); }
+  .hidden { display: none; }
+  code { background: #eef2fb; padding: 2px 8px; border-radius: 6px; font-size: .95em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>2진수와 데이터 표현</h1>
+  <p class="sub" id="sub"></p>
+
+  <!-- ================= 탭 버튼 ================= -->
+  <div class="tabs" role="tablist" aria-label="학습 단계 선택">
+    <button class="tab" id="tab0" role="tab" aria-controls="panel0" aria-selected="true">
+      ⓪ 쉬운 방법 · 자리값 스위치
+    </button>
+    <button class="tab" id="tab1" role="tab" aria-controls="panel1" aria-selected="false" tabindex="-1">
+      ① 고전적인 방법 · 2로 나누기
+    </button>
+    <button class="tab" id="tab2" role="tab" aria-controls="panel2" aria-selected="false" tabindex="-1">
+      ② 시뮬레이션 · 비트와 용량, 암호화
+    </button>
+  </div>
+
+  <!-- ============================================================
+       탭 0 — 자리값 스위치로 2진수를 직접 만들어 보는 쉬운 방법 (중학교 수준)
+       ============================================================ -->
+  <div id="panel0" role="tabpanel" aria-labelledby="tab0">
+
+    <section>
+      <h2>자리값을 켜고 끄며 2진수를 만들어 보자</h2>
+      <p class="note">
+        2진수의 각 자리는 <b>128 · 64 · 32 · 16 · 8 · 4 · 2 · 1</b> 이라는 <b>자리값</b>을 가집니다.
+        필요한 자리값만 <b>1로 켜서</b> 더하면 원하는 10진수가 됩니다. 나눗셈을 하지 않아도 됩니다.
+        <br>카드를 눌러 켜고 꺼 보세요. (키보드로는 Tab 으로 이동, Space 로 누름)
+      </p>
+
+      <div class="bitrow" id="bitRow"></div>
+
+      <p class="sumline" id="sumLine"></p>
+      <div class="bits" id="bitStr"></div>
+
+      <div class="goalbox">
+        <p style="margin:0 0 6px">
+          🎯 미션 — 목표 숫자 <span class="goalnum" id="goalNum">0</span> 을 만들어 보세요.
+        </p>
+        <p class="fb" id="goalFb" style="font-size:23px;font-weight:bold;min-height:1.6em;margin:4px 0"></p>
+        <div class="row">
+          <button id="btnNewGoal">새 목표</button>
+          <button id="btnClearBits" class="ghost">모두 끄기</button>
+          <button id="btnHint0" class="ghost">힌트</button>
+          <button id="btnSolve" class="ghost">천천히 정답 보기</button>
+        </div>
+        <div class="steplog" id="stepLog"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ============================================================
+       탭 1 — 손으로 푸는 고전적인 변환 방법
+       ============================================================ -->
+  <div id="panel1" role="tabpanel" aria-labelledby="tab1" hidden>
+
+    <section>
+      <h2>1. 나누는 과정을 한 단계씩 보기</h2>
+
+      <div class="row">
+        <label for="dec">10진수</label>
+        <input type="number" id="dec" min="0" max="65535" value="13" placeholder="0 ~ 65535">
+        <button id="btnRun">변환하기</button>
+        <button id="btnReset" class="ghost">지우기</button>
+      </div>
+      <p class="msg" id="msg"></p>
+
+      <div id="stepArea" class="hidden">
+        <div class="tablebox">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:14%">단계</th>
+                <th>2로 나누기</th>
+                <th style="width:18%">몫</th>
+                <th style="width:18%">나머지</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="row" style="margin-top:16px">
+          <button id="btnNext">다음 단계 ▶</button>
+          <button id="btnAll" class="ghost">한 번에 모두 보기</button>
+        </div>
+
+        <div id="result" class="result hidden">
+          <p class="note">나머지를 <b>아래에서 위로</b> 읽으면 2진수가 됩니다.</p>
+          <div class="bits" id="bits"></div>
+          <p class="check" id="hexline"></p>
+          <p class="check" id="place"></p>
+          <p class="check" id="verify"></p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>2. 연습문제 3개</h2>
+      <div id="quizArea"></div>
+      <button id="btnNewQuiz" class="ghost">새 문제 만들기</button>
+    </section>
+
+  </div>
+
+  <!-- ============================================================
+       탭 2 — 데이터가 비트로 저장되고 암호화되는 과정 시뮬레이션
+       ============================================================ -->
+  <div id="panel2" role="tabpanel" aria-labelledby="tab2" hidden>
+
+    <section>
+      <h2>1단계. 데이터를 입력한다</h2>
+      <p class="note">
+        컴퓨터는 글자를 그대로 저장하지 못합니다. 글자마다 정해진 <b>번호(유니코드)</b>를 붙이고,
+        그 번호를 <b>UTF-8 규칙</b>으로 바이트에 나눠 담은 뒤, 결국 <b>0과 1</b>로 저장합니다.
+      </p>
+      <div class="row" style="margin-top:14px">
+        <input type="text" id="srcText" class="wide" maxlength="40" value="정보 Info!" placeholder="글자를 입력하세요 (최대 40자)">
+        <button id="btnEncode">비트로 바꾸기</button>
+      </div>
+      <p class="msg" id="msg2"></p>
+    </section>
+
+    <section id="secBits" class="hidden">
+      <h2>2단계. 글자 → 유니코드 → 2진수</h2>
+      <div class="tablebox">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:12%">글자</th>
+              <th style="width:18%">유니코드</th>
+              <th style="width:12%">바이트</th>
+              <th>UTF-8 2진수</th>
+            </tr>
+          </thead>
+          <tbody id="charBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="secSize" class="hidden">
+      <h2>3단계. 용량은 얼마인가</h2>
+      <div class="result" style="border-style:solid">
+        <p class="check" id="sizeMain"></p>
+        <p class="check" id="sizeBreak"></p>
+        <div id="sizeBars" style="margin-top:14px"></div>
+        <p class="note" id="sizeNote" style="margin-top:12px"></p>
+      </div>
+    </section>
+
+    <section id="secCipher" class="hidden">
+      <h2>4단계. XOR로 암호화해 본다</h2>
+      <p class="note">
+        <b>XOR(배타적 논리합)</b>은 두 비트가 <b>다르면 1</b>, 같으면 0이 되는 연산입니다.
+        (<code>0⊕0=0</code> <code>0⊕1=1</code> <code>1⊕0=1</code> <code>1⊕1=0</code>)
+        각 바이트를 키와 XOR 하면 암호문이 되고, <b>같은 키로 한 번 더</b> XOR 하면 원래대로 돌아옵니다.
+      </p>
+      <div class="row" style="margin-top:14px">
+        <label for="keyNum">암호 키 (0~255)</label>
+        <input type="number" id="keyNum" min="0" max="255" value="85">
+        <span class="note" id="keyBin"></span>
+        <button id="btnCipher">암호화하기</button>
+        <button id="btnDecipher" class="ghost">이 키로 복호화</button>
+      </div>
+      <p class="msg" id="msg3"></p>
+
+      <div id="cipherArea" class="hidden">
+        <div class="tablebox">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:10%">번호</th>
+                <th style="width:12%">글자</th>
+                <th>원문 바이트</th>
+                <th>암호 키</th>
+                <th>암호문 바이트</th>
+                <th style="width:12%">10진수</th>
+              </tr>
+            </thead>
+            <tbody id="cipherBody"></tbody>
+          </table>
+        </div>
+        <p class="note" id="cipherMore"></p>
+        <div class="result">
+          <p class="check" id="obsSize"></p>
+          <p class="check" id="obsKey"></p>
+          <p class="check" id="obsBack"></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="secQuiz2" class="hidden">
+      <h2>5단계. 확인 문제</h2>
+      <div id="quizArea2"></div>
+    </section>
+
+  </div>
+
+</div>
+
+<script>
+/* =========================================================
+   탭 전환
+   패널을 hidden 속성으로 감추고, 선택된 탭만 aria-selected="true".
+   탭마다 연결된 성취기준이 다르므로 부제도 함께 바꿔 준다.
+   ========================================================= */
+var tabs = [
+  document.getElementById('tab0'),
+  document.getElementById('tab1'),
+  document.getElementById('tab2')
+];
+var panels = [
+  document.getElementById('panel0'),
+  document.getElementById('panel1'),
+  document.getElementById('panel2')
+];
+var SUBTITLES = [
+  '중학교 정보 · 자료의 디지털 표현 · [9정02-01] 다양한 데이터를 디지털 형태로 표현한다',
+  '진법 변환의 고전적 방법 · 중학교 [9정02-01] ~ 고등학교 도입 자료',
+  '고등학교 정보 · (2) 데이터 · [12정02-02] 암호화의 개념을 이해하고, 암호화를 활용하여 데이터를 안전하게 관리하는 사례를 비교⋅분석한다'
+];
+var subEl = document.getElementById('sub');
+
+function selectTab(idx) {
+  tabs.forEach(function (t, i) {
+    var on = (i === idx);
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+    t.tabIndex = on ? 0 : -1;          // 키보드 Tab 키는 선택된 탭만 지나간다
+    panels[i].hidden = !on;
+  });
+  subEl.textContent = SUBTITLES[idx];
+}
+tabs.forEach(function (t, i) {
+  t.addEventListener('click', function () { selectTab(i); });
+  t.addEventListener('keydown', function (e) {   // ← → 키로 탭 이동
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    var next = (e.key === 'ArrowRight') ? (i + 1) % tabs.length
+                                        : (i - 1 + tabs.length) % tabs.length;
+    selectTab(next);
+    tabs[next].focus();
+  });
+});
+
+/* =========================================================
+   [탭 0] 핵심 로직: 자리값 스위치 (쉬운 방법)
+   2진수 8자리의 자리값은 왼쪽부터 128 64 32 16 8 4 2 1 이다.
+   켜진(1) 자리값만 모두 더하면 그 2진수가 나타내는 10진수가 된다.
+   ========================================================= */
+var BIT_WEIGHTS = [128, 64, 32, 16, 8, 4, 2, 1];
+var bitOn = [0, 0, 0, 0, 0, 0, 0, 0];   // 각 자리의 0/1 상태
+var goal = 0;                            // 미션 목표 숫자
+var solveTimer = null;                   // '천천히 정답 보기' 진행용 타이머
+
+var bitRow    = document.getElementById('bitRow');
+var sumLine   = document.getElementById('sumLine');
+var bitStrEl  = document.getElementById('bitStr');
+var goalNumEl = document.getElementById('goalNum');
+var goalFbEl  = document.getElementById('goalFb');
+var stepLog   = document.getElementById('stepLog');
+var btnSolve  = document.getElementById('btnSolve');
+
+/* 카드 8장을 만든다. 버튼으로 만들어야 키보드로도 누를 수 있다 */
+function buildBitCards() {
+  bitRow.innerHTML = '';
+  BIT_WEIGHTS.forEach(function (w, i) {
+    var card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'bitcard';
+    card.setAttribute('aria-pressed', 'false');
+    card.setAttribute('aria-label', '자리값 ' + w + ', 현재 0');
+    card.innerHTML = '<span class="w">' + w + '</span><span class="b">0</span>';
+    card.addEventListener('click', function () {
+      stopSolving();            // 사람이 직접 누르면 자동 재생을 멈춘다
+      bitOn[i] = bitOn[i] ? 0 : 1;
+      renderBits();
+    });
+    bitRow.appendChild(card);
+  });
+}
+
+/* 지금 켜진 자리값의 합 */
+function bitSum() {
+  return BIT_WEIGHTS.reduce(function (acc, w, i) { return acc + w * bitOn[i]; }, 0);
+}
+
+function renderBits() {
+  var cards = bitRow.children;
+  for (var i = 0; i < BIT_WEIGHTS.length; i++) {
+    cards[i].setAttribute('aria-pressed', bitOn[i] ? 'true' : 'false');
+    cards[i].setAttribute('aria-label', '자리값 ' + BIT_WEIGHTS[i] + ', 현재 ' + bitOn[i]);
+    cards[i].querySelector('.b').textContent = bitOn[i];
+  }
+
+  // 켜진 자리값만 덧셈식으로 보여 준다
+  var terms = BIT_WEIGHTS.filter(function (w, i) { return bitOn[i]; });
+  var sum = bitSum();
+  sumLine.innerHTML = terms.length
+    ? terms.join(' + ') + ' = <b style="color:#1d4ed8">' + sum + '</b>'
+    : '<span class="note">켜진 자리가 없으므로 합은 0 입니다.</span>';
+  bitStrEl.textContent = bitOn.join('');
+
+  checkGoal(sum);
+}
+
+/* 목표와 비교해 학습 피드백을 준다 */
+function checkGoal(sum) {
+  if (sum === goal) {
+    goalFbEl.className = 'fb ok';
+    goalFbEl.textContent = '✅ 성공! ' + goal + ' = ' + bitOn.join('') + '(2)';
+  } else if (sum < goal) {
+    goalFbEl.className = 'fb no';
+    goalFbEl.textContent = '지금 합은 ' + sum + ' — 목표보다 ' + (goal - sum) + ' 작습니다.';
+  } else {
+    goalFbEl.className = 'fb no';
+    goalFbEl.textContent = '지금 합은 ' + sum + ' — 목표보다 ' + (sum - goal) + ' 큽니다.';
+  }
+}
+
+function newGoal() {
+  stopSolving();
+  goal = Math.floor(Math.random() * 246) + 10;   // 10 ~ 255
+  goalNumEl.textContent = goal;
+  bitOn = [0, 0, 0, 0, 0, 0, 0, 0];
+  stepLog.innerHTML = '';
+  renderBits();
+}
+
+function clearBits() {
+  stopSolving();
+  bitOn = [0, 0, 0, 0, 0, 0, 0, 0];
+  stepLog.innerHTML = '';
+  renderBits();
+}
+
+function hint0() {
+  var sum = bitSum();
+  if (sum === goal) { goalFbEl.textContent = '이미 목표를 만들었습니다!'; return; }
+  stepLog.innerHTML = '';
+  if (sum > goal) {
+    logStep('목표보다 ' + (sum - goal) + ' 큽니다. 켜진 자리값 중 하나를 꺼 보세요.');
+    return;
+  }
+  var need = goal - sum;
+  // 남은 값보다 작거나 같은 가장 큰 자리값을 찾아 알려 준다
+  for (var i = 0; i < BIT_WEIGHTS.length; i++) {
+    if (!bitOn[i] && BIT_WEIGHTS[i] <= need) {
+      logStep(need + ' 만큼 더 필요합니다 → ' + need + ' 보다 작거나 같은 가장 큰 자리값은 ' +
+              BIT_WEIGHTS[i] + ' 입니다. 그 카드를 켜 보세요.');
+      return;
+    }
+  }
+  logStep(need + ' 만큼 더 필요하지만 켤 수 있는 자리값이 없습니다. 모두 끄고 다시 시작해 보세요.');
+}
+
+function logStep(text) {
+  var line = document.createElement('div');
+  line.textContent = text;
+  stepLog.appendChild(line);
+}
+
+/* '천천히 정답 보기' — 큰 자리값부터 넣어 보고 빼 나가는 방법(감산법)
+   자리값이 남은 값보다 작거나 같으면 1로 켜고, 그만큼 뺀다. */
+function solveSlowly() {
+  stopSolving();
+  bitOn = [0, 0, 0, 0, 0, 0, 0, 0];
+  stepLog.innerHTML = '';
+  renderBits();
+
+  var rest = goal;
+  var i = 0;
+  btnSolve.disabled = true;
+
+  solveTimer = setInterval(function () {
+    if (i >= BIT_WEIGHTS.length) {
+      stopSolving();
+      logStep('→ 완성: ' + goal + ' = ' + bitOn.join('') + '(2)');
+      return;
+    }
+    var w = BIT_WEIGHTS[i];
+    if (w <= rest) {
+      bitOn[i] = 1;
+      logStep(w + ' ≤ ' + rest + ' → 1 로 켠다. 남은 값 ' + rest + ' − ' + w + ' = ' + (rest - w));
+      rest -= w;
+    } else {
+      logStep(w + ' > ' + rest + ' → 0 으로 둔다. 남은 값은 그대로 ' + rest);
+    }
+    renderBits();
+    i++;
+  }, 900);
+}
+
+function stopSolving() {
+  if (solveTimer !== null) { clearInterval(solveTimer); solveTimer = null; }
+  btnSolve.disabled = false;
+}
+
+document.getElementById('btnNewGoal').addEventListener('click', newGoal);
+document.getElementById('btnClearBits').addEventListener('click', clearBits);
+document.getElementById('btnHint0').addEventListener('click', hint0);
+btnSolve.addEventListener('click', solveSlowly);
+
+/* =========================================================
+   [탭 1] 핵심 로직 ①
+   10진수를 2로 계속 나누면서 나머지를 모은다.
+   나눗셈을 한 번 할 때마다 (몫, 나머지)를 기록해 두고,
+   마지막에 나머지를 거꾸로(아래→위) 이어 붙이면 2진수가 된다.
+   ========================================================= */
+function makeSteps(n) {
+  var steps = [];
+  if (n === 0) {
+    // 0은 나눌 것이 없으므로 한 줄만 보여 주고 결과는 0
+    steps.push({ from: 0, quotient: 0, remainder: 0 });
+    return steps;
+  }
+  var cur = n;
+  while (cur > 0) {
+    steps.push({
+      from: cur,                     // 나누기 전의 수
+      quotient: Math.floor(cur / 2), // 몫
+      remainder: cur % 2             // 나머지 (0 또는 1)
+    });
+    cur = Math.floor(cur / 2);       // 몫을 다음 단계로 넘긴다
+  }
+  return steps;
+}
+
+/* 나머지를 뒤에서부터 이어 붙여 2진수 문자열을 만든다 */
+function stepsToBinary(steps) {
+  var bits = '';
+  for (var i = steps.length - 1; i >= 0; i--) bits += steps[i].remainder;
+  return bits;
+}
+
+var decInput  = document.getElementById('dec');
+var msgEl     = document.getElementById('msg');
+var stepArea  = document.getElementById('stepArea');
+var tbody     = document.getElementById('tbody');
+var resultBox = document.getElementById('result');
+var bitsEl    = document.getElementById('bits');
+var hexEl     = document.getElementById('hexline');
+var placeEl   = document.getElementById('place');
+var verifyEl  = document.getElementById('verify');
+var btnNext   = document.getElementById('btnNext');
+var btnAll    = document.getElementById('btnAll');
+
+var steps = [];   // 현재 문제의 전체 단계
+var shown = 0;    // 지금까지 화면에 보여 준 단계 수
+var target = 0;   // 변환 중인 10진수
+
+function startConvert() {
+  var raw = decInput.value.trim();
+  var n = Number(raw);
+
+  // 입력값 검사: 빈칸 / 숫자 아님 / 소수 / 범위 밖
+  // 잘못된 입력이면 앞서 만든 표를 지워서, 옛 결과를 새 답으로 오해하지 않게 한다
+  if (raw === '' || !isFinite(n) || !Number.isInteger(n)) {
+    clearSteps();
+    showMsg('0 이상 65535 이하의 정수를 입력하세요.');
+    return;
+  }
+  if (n < 0 || n > 65535) {
+    clearSteps();
+    showMsg('0 부터 65535 까지만 변환할 수 있어요.');
+    return;
+  }
+
+  showMsg('');
+  target = n;
+  steps = makeSteps(n);
+  shown = 0;
+  tbody.innerHTML = '';
+  resultBox.classList.add('hidden');
+  stepArea.classList.remove('hidden');
+  btnNext.disabled = false;
+  btnAll.disabled = false;
+  showNextStep();   // 첫 단계는 바로 보여 준다
+}
+
+function showNextStep() {
+  if (shown >= steps.length) return;
+  var s = steps[shown];
+  var tr = document.createElement('tr');
+  tr.className = 'step-new';
+  tr.innerHTML =
+    '<td>' + (shown + 1) + '</td>' +
+    '<td class="expr">' + s.from + ' ÷ 2</td>' +
+    '<td>' + s.quotient + '</td>' +
+    '<td class="rest">' + s.remainder + '</td>';
+  tbody.appendChild(tr);
+  shown++;
+
+  if (shown >= steps.length) {   // 몫이 0이 되면 끝
+    btnNext.disabled = true;
+    btnAll.disabled = true;
+    showResult();
+  }
+}
+
+function showAllSteps() { while (shown < steps.length) showNextStep(); }
+
+function showResult() {
+  var bits = stepsToBinary(steps);
+  bitsEl.textContent = bits;
+
+  // 16진수도 함께 보여 준다 (2진수 4자리 = 16진수 1자리)
+  hexEl.innerHTML = '<b>다른 진법으로</b> : ' + target + '(10) = ' + bits + '(2) = ' +
+                    target.toString(16).toUpperCase() + '(16)';
+
+  // 검산: 각 자리의 자리값(1, 2, 4, 8 …)을 곱해서 더해 본다
+  var terms = [], sum = 0;
+  for (var i = 0; i < bits.length; i++) {
+    var digit = Number(bits[i]);
+    var weight = Math.pow(2, bits.length - 1 - i);  // 왼쪽이 가장 큰 자리
+    terms.push(weight + '×' + digit);
+    sum += weight * digit;
+  }
+  placeEl.innerHTML = '<b>자리값으로 검산</b> : ' + terms.join(' + ') + ' = ' + sum;
+  verifyEl.innerHTML = (sum === target)
+    ? '✅ 처음 넣은 수 <b>' + target + '</b> 과 같으므로 변환이 맞습니다.'
+    : '⚠️ 처음 넣은 수와 다릅니다.';
+  resultBox.classList.remove('hidden');
+}
+
+function showMsg(t) { msgEl.textContent = t; }
+
+/* 표와 결과를 화면에서 치운다 */
+function clearSteps() {
+  tbody.innerHTML = '';
+  stepArea.classList.add('hidden');
+  resultBox.classList.add('hidden');
+}
+
+document.getElementById('btnRun').addEventListener('click', startConvert);
+btnNext.addEventListener('click', showNextStep);
+btnAll.addEventListener('click', showAllSteps);
+decInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') startConvert(); });
+document.getElementById('btnReset').addEventListener('click', function () {
+  decInput.value = '';
+  showMsg('');
+  clearSteps();
+  decInput.focus();
+});
+
+/* =========================================================
+   [탭 1] 핵심 로직 ②: 연습문제 3개
+   20~255 사이에서 겹치지 않게 뽑는다. 개인정보는 저장하지 않는다.
+   ========================================================= */
+var quizArea = document.getElementById('quizArea');
+
+function pickNumbers(count, min, max) {
+  var picked = [];
+  while (picked.length < count) {
+    var n = Math.floor(Math.random() * (max - min + 1)) + min;
+    if (picked.indexOf(n) === -1) picked.push(n);
+  }
+  return picked;
+}
+
+/* 2진수 답 채점: 0/1 로만 이루어졌는지 보고, 앞의 0은 떼고 비교한다 */
+function judgeBinary(typed, answerBits) {
+  if (typed === '') return { state: 'empty' };
+  if (!/^[01]+$/.test(typed)) return { state: 'notbin' };
+  var normalized = typed.replace(/^0+(?=[01])/, '');
+  return { state: (normalized === answerBits) ? 'ok' : 'wrong' };
+}
+
+function buildQuiz() {
+  quizArea.innerHTML = '';
+  pickNumbers(3, 20, 255).forEach(function (n, idx) {
+    var answer = n.toString(2);   // 정답 2진수
+
+    var box = document.createElement('div');
+    box.className = 'quiz';
+    box.innerHTML =
+      '<p class="q">문제 ' + (idx + 1) + '. 10진수 <span style="color:#1d4ed8">' + n +
+        '</span> 을(를) 2진수로 나타내면?</p>' +
+      '<div class="row">' +
+        '<input type="text" class="ans" inputmode="numeric" placeholder="예: 1011">' +
+        '<button class="btn-check">정답 확인</button>' +
+        '<button class="btn-hint ghost">힌트</button>' +
+      '</div>' +
+      '<p class="fb"></p>';
+
+    var input = box.querySelector('.ans');
+    var fb    = box.querySelector('.fb');
+
+    box.querySelector('.btn-check').addEventListener('click', function () {
+      fb.style.color = '';   // 힌트를 눌러 회색이 된 경우를 되돌린다
+      var r = judgeBinary(input.value.replace(/\s/g, ''), answer);
+      if (r.state === 'empty')  { fb.className = 'fb no'; fb.textContent = '답을 먼저 입력하세요.'; return; }
+      if (r.state === 'notbin') { fb.className = 'fb no'; fb.textContent = '2진수는 0과 1로만 씁니다. 다시 확인해 보세요.'; return; }
+      if (r.state === 'ok') {
+        fb.className = 'fb ok';
+        fb.textContent = '✅ 정답입니다! ' + n + ' = ' + answer + '(2)';
+      } else {
+        fb.className = 'fb no';
+        fb.textContent = '❌ 다시 풀어 보세요. (자리 수: ' + answer.length + '자리)';
+      }
+    });
+
+    box.querySelector('.btn-hint').addEventListener('click', function () {
+      fb.className = 'fb';
+      fb.style.color = '#5b6478';
+      fb.textContent = '힌트: ' + n + ' ÷ 2 = ' + Math.floor(n / 2) +
+                       ' … 나머지 ' + (n % 2) + ' → 이 나머지가 2진수의 맨 뒤 자리입니다.';
+    });
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') box.querySelector('.btn-check').click();
+    });
+
+    quizArea.appendChild(box);
+  });
+}
+
+document.getElementById('btnNewQuiz').addEventListener('click', buildQuiz);
+
+/* =========================================================
+   [탭 2] 핵심 로직 ③: 글자 → UTF-8 바이트 → 2진수
+   TextEncoder 가 UTF-8 규칙대로 바이트로 나눠 준다.
+   영문·숫자는 1바이트, 한글은 3바이트를 쓴다는 점이 핵심이다.
+   ========================================================= */
+var encoder = new TextEncoder();
+var decoder = new TextDecoder();
+
+var srcInput   = document.getElementById('srcText');
+var msg2El     = document.getElementById('msg2');
+var charBody   = document.getElementById('charBody');
+var secBits    = document.getElementById('secBits');
+var secSize    = document.getElementById('secSize');
+var secCipher  = document.getElementById('secCipher');
+var secQuiz2   = document.getElementById('secQuiz2');
+var cipherArea = document.getElementById('cipherArea');
+
+var srcBytes = null;   // 현재 문장의 전체 바이트 (Uint8Array)
+var charList = [];     // 글자별 정보
+var encodedText = null;   // 지금 표에 그려져 있는 문장 (입력창과 달라졌는지 판단용)
+var cipherBytes = null;   // 암호화해서 만든 암호문 바이트 (복호화의 입력)
+var cipherKey   = null;   // 암호화에 실제로 쓴 키
+
+var MAX_CIPHER_ROWS = 16;   // 암호화 표는 앞 16바이트만 보여 준다
+
+/* 바이트 하나를 8자리 2진수 문자열로 (예: 5 → "00000101") */
+function toBin8(b) { return b.toString(2).padStart(8, '0'); }
+
+function encodeText() {
+  var text = srcInput.value;
+  if (text.trim() === '') {
+    msg2El.textContent = '글자를 먼저 입력하세요.';
+    secBits.classList.add('hidden');
+    secSize.classList.add('hidden');
+    secCipher.classList.add('hidden');
+    secQuiz2.classList.add('hidden');
+    return;
+  }
+  msg2El.textContent = '';
+
+  // 이모지처럼 2칸을 쓰는 글자도 하나로 세도록 전개 연산자로 나눈다
+  charList = Array.from(text).map(function (ch) {
+    var bytes = encoder.encode(ch);
+    return {
+      ch: ch,
+      code: ch.codePointAt(0),
+      bytes: bytes,
+      bin: Array.from(bytes).map(toBin8).join(' ')
+    };
+  });
+  srcBytes = encoder.encode(text);
+  encodedText = text;
+
+  renderCharTable();
+  renderSize();
+  secBits.classList.remove('hidden');
+  secSize.classList.remove('hidden');
+  secCipher.classList.remove('hidden');
+  cipherArea.classList.add('hidden');   // 암호문은 버튼을 눌러야 나온다
+  document.getElementById('msg3').textContent = '';
+  buildQuiz2();
+  secQuiz2.classList.remove('hidden');
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  });
+}
+
+function renderCharTable() {
+  charBody.innerHTML = '';
+  charList.forEach(function (c) {
+    var shownCh = (c.ch === ' ') ? '(공백)' : escapeHtml(c.ch);
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td class="ch">' + shownCh + '</td>' +
+      '<td>U+' + c.code.toString(16).toUpperCase().padStart(4, '0') + '</td>' +
+      '<td>' + c.bytes.length + '바이트</td>' +
+      '<td class="bin">' + c.bin + '</td>';
+    charBody.appendChild(tr);
+  });
+}
+
+function renderSize() {
+  var totalChars = charList.length;
+  var totalBytes = srcBytes.length;
+  var totalBits  = totalBytes * 8;
+
+  document.getElementById('sizeMain').innerHTML =
+    '<b>' + totalChars + '글자</b> → <b>' + totalBytes + '바이트</b> → ' +
+    '<b style="color:#1d4ed8">' + totalBits + '비트</b> ' +
+    '<span class="note">(1바이트 = 8비트)</span>';
+
+  // 바이트 수별로 몇 글자인지 센다
+  var bucket = {};
+  charList.forEach(function (c) { bucket[c.bytes.length] = (bucket[c.bytes.length] || 0) + 1; });
+  var parts = Object.keys(bucket).sort().map(function (k) {
+    return k + '바이트 글자 ' + bucket[k] + '개';
+  });
+  document.getElementById('sizeBreak').innerHTML = '<b>내역</b> : ' + parts.join(' · ');
+
+  // 같은 글자 수를 모두 영문(1바이트)으로 썼다면 몇 바이트인지 비교
+  var asciiOnly = totalChars;
+  var maxV = Math.max(totalBytes, asciiOnly);
+  document.getElementById('sizeBars').innerHTML =
+    barRow('지금 이 문장', totalBytes, maxV, false) +
+    barRow('모두 영문이라면', asciiOnly, maxV, true);
+
+  var ratio = (totalBytes / asciiOnly).toFixed(2);
+  document.getElementById('sizeNote').textContent =
+    '같은 글자 수라도 한글이 섞이면 용량이 약 ' + ratio + '배가 됩니다. ' +
+    '한글은 UTF-8에서 3바이트, 영문·숫자·기호는 1바이트를 쓰기 때문입니다.';
+}
+
+function barRow(caption, value, maxV, plain) {
+  var pct = maxV > 0 ? (value / maxV * 100) : 0;
+  return '<div class="barrow"><span class="cap">' + caption + '</span>' +
+         '<span class="barwrap"><span class="bar' + (plain ? ' plain' : '') +
+         '" style="display:block;width:' + pct + '%"></span></span>' +
+         '<b>' + value + '바이트</b></div>';
+}
+
+/* ---------------------------------------------------------
+   [탭 2] 핵심 로직 ④: XOR 암호화
+   바이트마다 키와 XOR(^) 한다. 같은 키로 다시 XOR 하면 원문이 된다.
+   비트 수는 하나도 늘지 않으므로 용량은 그대로다. (압축과 다른 점)
+   --------------------------------------------------------- */
+var keyInput   = document.getElementById('keyNum');
+var keyBinEl   = document.getElementById('keyBin');
+var msg3El     = document.getElementById('msg3');
+var cipherBody = document.getElementById('cipherBody');
+
+function readKey() {
+  var raw = keyInput.value.trim();
+  var k = Number(raw);
+  if (raw === '' || !Number.isInteger(k) || k < 0 || k > 255) return null;
+  return k;
+}
+
+function updateKeyBin() {
+  var k = readKey();
+  keyBinEl.textContent = (k === null) ? '' : '= ' + toBin8(k) + '(2)';
+}
+keyInput.addEventListener('input', updateKeyBin);
+updateKeyBin();
+
+/* 표가 옛 데이터로 남아 새 입력의 결과처럼 보이지 않도록 지운다.
+   보관해 둔 암호문도 함께 버려서, 옛 암호문을 복호화하는 일이 없게 한다. */
+function clearCipher(message) {
+  cipherArea.classList.add('hidden');
+  cipherBody.innerHTML = '';
+  cipherBytes = null;
+  cipherKey = null;
+  msg3El.textContent = message;
+}
+
+/* 암호화 전에 지금 화면의 데이터가 입력창과 일치하는지 확인한다 */
+function cipherDataReady() {
+  if (!srcBytes) { clearCipher('먼저 1단계에서 「비트로 바꾸기」를 누르세요.'); return false; }
+  if (srcInput.value !== encodedText) {
+    clearCipher('글자가 바뀌었습니다. 먼저 1단계에서 「비트로 바꾸기」를 다시 누르세요.');
+    return false;
+  }
+  return true;
+}
+
+function runCipher() {
+  if (!cipherDataReady()) return;
+  var key = readKey();
+  if (key === null) { clearCipher('암호 키는 0 부터 255 사이의 정수여야 합니다.'); return; }
+  msg3El.textContent = '';
+
+  // 암호문 '전체'를 만들어 보관한다. 표는 앞 16바이트만 그리므로,
+  // 표를 그리는 반복문 안에서 만들면 뒤쪽 바이트가 비어 복호화가 깨진다.
+  cipherBytes = new Uint8Array(srcBytes.length);
+  for (var j = 0; j < srcBytes.length; j++) cipherBytes[j] = srcBytes[j] ^ key;
+  cipherKey = key;
+
+  // 각 바이트가 어느 글자에서 나왔는지 표에 함께 적기 위한 대응표
+  var owner = [];
+  charList.forEach(function (c) {
+    for (var i = 0; i < c.bytes.length; i++) owner.push(c.ch);
+  });
+
+  cipherBody.innerHTML = '';
+  var rows = Math.min(srcBytes.length, MAX_CIPHER_ROWS);
+  for (var i = 0; i < rows; i++) {
+    var plain = srcBytes[i];
+    var enc = cipherBytes[i];         // ← 핵심: 바이트와 키를 XOR 한 결과
+    var chLabel = (owner[i] === ' ') ? '(공백)' : escapeHtml(owner[i] || '');
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>' + (i + 1) + '</td>' +
+      '<td class="ch">' + chLabel + '</td>' +
+      '<td class="bin">' + toBin8(plain) + '</td>' +
+      '<td class="keybin">' + toBin8(key) + '</td>' +
+      '<td class="bin"><b>' + toBin8(enc) + '</b></td>' +
+      '<td>' + enc + '</td>';
+    cipherBody.appendChild(tr);
+  }
+  document.getElementById('cipherMore').textContent =
+    (srcBytes.length > rows)
+      ? '표에는 앞 ' + rows + '바이트만 보여 줍니다. (전체 ' + srcBytes.length + '바이트)'
+      : '';
+
+  var totalBits = srcBytes.length * 8;
+  document.getElementById('obsSize').innerHTML =
+    '📏 <b>용량 변화 없음</b> : 원문 ' + totalBits + '비트 → 암호문 ' + totalBits +
+    '비트. XOR 암호는 비트를 뒤집기만 하므로 크기가 늘거나 줄지 않습니다.';
+  document.getElementById('obsKey').innerHTML = (key === 0)
+    ? '⚠️ <b>키가 0</b> 이면 <code>x⊕0 = x</code> 이므로 암호문이 원문과 똑같습니다. 다른 키를 넣어 보세요.'
+    : '🔑 <b>키 ' + key + ' = ' + toBin8(key) + '(2)</b> 의 1인 자리마다 원문 비트가 뒤집혔습니다.';
+  document.getElementById('obsBack').textContent = '';
+
+  cipherArea.classList.remove('hidden');
+  renderQuiz2Second(key);   // 확인 문제 2를 방금 표에 쓴 키로 다시 출제한다
+}
+
+function runDecipher() {
+  if (!cipherDataReady()) return;
+  if (!cipherBytes || cipherArea.classList.contains('hidden')) {
+    msg3El.textContent = '먼저 「암호화하기」를 누르세요.';
+    return;
+  }
+  var key = readKey();
+  if (key === null) { msg3El.textContent = '암호 키는 0 부터 255 사이의 정수여야 합니다.'; return; }
+  msg3El.textContent = '';
+
+  // 원문이 아니라 '암호문'에 키를 XOR 한다.
+  // 암호화에 쓴 키와 같을 때만 원문으로 돌아온다. 키가 다르면 엉뚱한 바이트가 된다.
+  var back = new Uint8Array(cipherBytes.length);
+  for (var i = 0; i < cipherBytes.length; i++) back[i] = cipherBytes[i] ^ key;
+
+  // 문자열이 아니라 바이트로 비교한다.
+  // 깨진 UTF-8은 디코딩하면 전부 U+FFFD 로 뭉개져 서로 구별할 수 없기 때문이다.
+  var same = (back.length === srcBytes.length);
+  for (var m = 0; same && m < back.length; m++) {
+    if (back[m] !== srcBytes[m]) same = false;
+  }
+
+  var backEl = document.getElementById('obsBack');
+  if (same) {
+    backEl.innerHTML = '🔓 <b>복호화 성공</b> : 암호문에 같은 키 <b>' + key +
+      '</b> 를 한 번 더 XOR 하니 「' + escapeHtml(decoder.decode(back)) +
+      '」 로 돌아왔습니다. <code>(x⊕k)⊕k = x</code>';
+  } else {
+    // 실패했을 때 암호화에 쓴 키를 알려 주면 안 된다. 키가 비밀이라는 것이 이 활동의 핵심이다.
+    var peek = [];
+    for (var n = 0; n < Math.min(6, back.length); n++) {
+      peek.push(toBin8(back[n]) + '(' + back[n] + ')');
+    }
+    backEl.innerHTML = '❌ <b>복호화 실패</b> : 키 <b>' + key +
+      '</b> 로는 원문이 나오지 않습니다. 앞 6바이트는 <code>' + peek.join(' ') +
+      '</code> 입니다. — <b>키를 모르면 되돌릴 수 없습니다.</b>';
+  }
+}
+
+document.getElementById('btnCipher').addEventListener('click', runCipher);
+document.getElementById('btnDecipher').addEventListener('click', runDecipher);
+srcInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') encodeText(); });
+document.getElementById('btnEncode').addEventListener('click', encodeText);
+
+/* =========================================================
+   [탭 2] 확인 문제 2개 — 지금 입력한 문장에서 바로 출제한다
+   ========================================================= */
+var quizArea2 = document.getElementById('quizArea2');
+var quiz2Box = null;   // 문제 2 박스. 키가 바뀌면 이 박스만 갈아 끼운다
+
+function makeQuizBox(question, checkFn, hintText) {
+  var box = document.createElement('div');
+  box.className = 'quiz';
+  box.innerHTML =
+    '<p class="q">' + question + '</p>' +
+    '<div class="row">' +
+      '<input type="text" class="ans">' +
+      '<button class="btn-check">정답 확인</button>' +
+      '<button class="btn-hint ghost">힌트</button>' +
+    '</div>' +
+    '<p class="fb"></p>';
+  var input = box.querySelector('.ans');
+  var fb    = box.querySelector('.fb');
+
+  box.querySelector('.btn-check').addEventListener('click', function () {
+    fb.style.color = '';
+    var r = checkFn(input.value.replace(/\s/g, ''));
+    fb.className = 'fb ' + (r.ok ? 'ok' : 'no');
+    fb.textContent = r.text;
+  });
+  box.querySelector('.btn-hint').addEventListener('click', function () {
+    fb.className = 'fb';
+    fb.style.color = '#5b6478';
+    fb.textContent = '힌트: ' + hintText;
+  });
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') box.querySelector('.btn-check').click();
+  });
+  return box;
+}
+
+function buildQuiz2() {
+  quizArea2.innerHTML = '';
+  var totalBytes = srcBytes.length;
+  var totalBits = totalBytes * 8;
+
+  // 문제 1 — 용량 계산
+  quizArea2.appendChild(makeQuizBox(
+    '문제 1. 지금 입력한 문장은 <b>' + totalBytes + '바이트</b>입니다. 모두 몇 <b>비트</b>일까요? (숫자만)',
+    function (typed) {
+      if (typed === '') return { ok: false, text: '답을 먼저 입력하세요.' };
+      if (!/^\d+$/.test(typed)) return { ok: false, text: '숫자만 입력하세요.' };
+      return (Number(typed) === totalBits)
+        ? { ok: true,  text: '✅ 정답입니다! ' + totalBytes + '바이트 × 8 = ' + totalBits + '비트' }
+        : { ok: false, text: '❌ 다시 계산해 보세요. 1바이트는 8비트입니다.' };
+    },
+    totalBytes + ' × 8 을 계산하면 됩니다.'
+  ));
+
+  quiz2Box = null;                 // 앞의 innerHTML 초기화로 옛 박스는 이미 사라졌다
+  renderQuiz2Second(readKey());    // 문제 2 — 첫 바이트를 키와 XOR 하기
+}
+
+/* 문제 2만 다시 만든다.
+   키를 바꿔 다시 암호화하면 4단계 표의 키가 달라지므로,
+   문제도 같은 키로 새로 내야 표와 정답이 어긋나지 않는다.
+   문제 1의 학생 입력은 건드리지 않는다. */
+function renderQuiz2Second(key) {
+  var k = (key === null) ? 85 : key;
+  var first = srcBytes[0];
+  var answerBits = toBin8(first ^ k);
+
+  var box = makeQuizBox(
+    '문제 2. 첫 바이트 <b>' + toBin8(first) + '</b>(2) 를 키 <b>' + toBin8(k) +
+      '</b>(2) 와 XOR 하면? (8자리 2진수)',
+    function (typed) {
+      if (typed === '') return { ok: false, text: '답을 먼저 입력하세요.' };
+      if (!/^[01]+$/.test(typed)) return { ok: false, text: '0과 1로만, 8자리로 써 주세요.' };
+      if (typed.padStart(8, '0') === answerBits) {
+        return { ok: true, text: '✅ 정답입니다! ' + toBin8(first) + ' ⊕ ' + toBin8(k) + ' = ' + answerBits };
+      }
+      return { ok: false, text: '❌ 자리마다 두 비트가 다르면 1, 같으면 0 입니다. 다시 해 보세요.' };
+    },
+    '맨 왼쪽 자리부터 하나씩 비교하세요. 다르면 1, 같으면 0.'
+  );
+
+  if (quiz2Box && quiz2Box.parentNode === quizArea2) quizArea2.replaceChild(box, quiz2Box);
+  else quizArea2.appendChild(box);
+  quiz2Box = box;
+}
+
+/* 처음 열었을 때 바로 쓸 수 있도록 준비 */
+selectTab(0);     // 부제까지 함께 맞춘다
+buildBitCards();
+newGoal();        // 탭0: 첫 미션 준비
+buildQuiz();
+startConvert();   // 탭1: 예시로 13을 변환해 둔다
+encodeText();     // 탭2: 예시 문장을 미리 비트로 바꿔 둔다
+</script>
+</body>
+</html>
