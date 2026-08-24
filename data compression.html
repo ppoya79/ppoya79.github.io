@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>데이터 압축 실습 - 런렝스 · 허프만 · 압축률</title>
+<style>
+:root{
+  --bg:#f4f6fa; --panel:#fff; --line:#dfe4ec; --ink:#14213d; --sub:#5c636b;
+  --navy:#14213d; --teal:#2a9d8f; --teal-soft:#e8f4f2;
+  --orange:#f4a261; --orange-soft:#fdf0e4; --orange-ink:#b55a1e;
+  --red:#c0392b; --red-soft:#fbebe9; --grey:#f2f4f6;
+  --code:#101a2e; --radius:14px;
+  --mono:'Consolas','D2Coding','Courier New',monospace;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0; background:var(--bg); color:var(--ink); line-height:1.6;
+  font-family:'Pretendard','Malgun Gothic','맑은 고딕',system-ui,sans-serif}
+.wrap{max-width:1100px; margin:0 auto; padding:0 16px 72px}
+header{background:var(--navy); color:#fff; padding:22px 0 18px}
+header .wrap{padding-bottom:0}
+.badge-unit{display:inline-block; background:rgba(255,255,255,.16); border-radius:999px;
+  padding:4px 13px; font-size:13px; font-weight:700}
+h1{margin:10px 0 4px; font-size:26px; font-weight:800; letter-spacing:-.02em}
+.subtitle{margin:0; color:#c5cdd8; font-size:14.5px}
+.progress{display:flex; gap:8px; flex-wrap:wrap; margin-top:16px}
+.pbadge{background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.28);
+  border-radius:999px; padding:7px 14px; font-size:13.5px; font-weight:700;
+  display:flex; align-items:center; gap:7px}
+.pbadge .dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.45)}
+.pbadge.done{background:#fff; color:var(--navy); border-color:#fff}
+.pbadge.done .dot{background:var(--teal)}
+nav.tabs{display:flex; gap:8px; flex-wrap:wrap; margin:20px 0}
+nav.tabs button{border:1px solid var(--line); background:#fff; color:var(--sub);
+  padding:12px 18px; border-radius:999px; font-size:15px; font-weight:700;
+  font-family:inherit; min-height:46px; cursor:pointer}
+nav.tabs button.active{background:var(--navy); border-color:var(--navy); color:#fff}
+section.tab{display:none} section.tab.active{display:block}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:20px; margin-bottom:16px}
+.card h2{margin:0 0 4px; font-size:20px; font-weight:800}
+.card h3{margin:20px 0 10px; font-size:16.5px; font-weight:800}
+.card .lead{margin:0 0 16px; color:var(--sub); font-size:14.5px}
+.note{background:var(--teal-soft); border-radius:10px; padding:13px 15px; font-size:14.5px; margin:14px 0}
+.note.warn{background:var(--orange-soft); color:#7a4a10}
+.note.bad{background:var(--red-soft); color:#8d2c22}
+.tag{display:inline-block; background:var(--grey); border-radius:6px; padding:2px 8px;
+  font-size:12.5px; color:var(--sub); font-weight:700}
+.btn{border:0; background:var(--teal); color:#fff; border-radius:10px; padding:13px 22px;
+  font-weight:800; font-size:16px; font-family:inherit; min-height:46px; cursor:pointer}
+.btn.navy{background:var(--navy)} .btn.ghost{background:#fff; color:var(--sub); border:1px solid var(--line)}
+.btnrow{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px}
+.presets{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 4px}
+.presets button{border:1px solid var(--line); background:#fff; border-radius:10px;
+  padding:10px 14px; font-family:var(--mono); font-size:15px; font-weight:700;
+  color:var(--navy); min-height:44px; cursor:pointer}
+.presets button:active{background:var(--teal-soft)}
+label.fl{display:block; font-size:14.5px; font-weight:700; margin:14px 0 6px}
+input[type=text],input[type=number]{width:100%; border:1px solid var(--line); border-radius:10px;
+  padding:13px 14px; font-family:var(--mono); font-size:16px; min-height:48px; outline:none; color:var(--ink)}
+input:focus{border-color:var(--teal)}
+.codebox{background:var(--code); color:#e6ecfa; border-radius:12px; padding:16px;
+  font-family:var(--mono); font-size:15px; white-space:pre-wrap; word-break:break-all; margin-top:12px}
+.codebox .k{color:#8ee0d6; font-weight:700}
+.codebox .o{color:#f4a261; font-weight:700}
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-top:14px}
+.stat{background:var(--grey); border-radius:12px; padding:13px 14px; text-align:center}
+.stat .l{font-size:12.5px; color:var(--sub); font-weight:700}
+.stat .v{font-size:22px; font-weight:800; font-family:var(--mono); color:var(--navy); margin-top:2px}
+.stat.good .v{color:var(--teal)} .stat.bad .v{color:var(--red)}
+table{width:100%; border-collapse:collapse; margin-top:12px; font-size:14.5px}
+th,td{border:1px solid var(--line); padding:9px 10px; text-align:center}
+th{background:var(--navy); color:#fff; font-weight:800; font-size:14px}
+td.mono{font-family:var(--mono); font-weight:700}
+tr:nth-child(even) td{background:#f8fafc}
+.steplog{margin-top:12px; font-size:14px}
+.steplog div{padding:8px 12px; border-left:3px solid var(--teal); background:#fff;
+  border-radius:0 8px 8px 0; margin-bottom:6px; font-family:var(--mono)}
+svg.tree{width:100%; height:auto; background:#fff; border:1px solid var(--line); border-radius:12px; margin-top:12px}
+.dotwrap{display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start; margin-top:14px}
+.dotgrid{display:grid; grid-template-columns:repeat(10, var(--dc)); background:#fff;
+  border:1px solid var(--line); border-radius:10px; overflow:hidden; --dc:clamp(27px,8.2vw,44px)}
+.dotgrid button{width:var(--dc); height:var(--dc); border:0; padding:0; background:#fff;
+  border-right:1px solid #e9edf3; border-bottom:1px solid #e9edf3; cursor:pointer}
+.dotgrid button.on{background:var(--navy)}
+.dotgrid button:nth-child(10n){border-right:0}
+.dotgrid button:nth-last-child(-n+10){border-bottom:0}
+.dotside{flex:1 1 260px; min-width:250px}
+.rlerows{font-family:var(--mono); font-size:14px; background:var(--code); color:#e6ecfa;
+  border-radius:12px; padding:14px 16px; margin-top:12px; line-height:1.75}
+.rlerows .rn{color:#8ea3c9} .rlerows .w{color:#f4a261} .rlerows .b{color:#8ee0d6}
+.q{border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-bottom:12px; background:#fff}
+.q .qt{font-weight:800; font-size:15.5px; margin-bottom:12px}
+.q .qt .num{display:inline-grid; place-items:center; width:26px; height:26px; border-radius:50%;
+  background:var(--navy); color:#fff; font-size:13px; margin-right:8px; vertical-align:2px}
+.opts{display:grid; gap:8px}
+.opt{border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:16px;
+  background:#fff; min-height:46px; display:flex; align-items:center; text-align:left;
+  font-family:inherit; color:var(--ink); cursor:pointer}
+.opt.right{border-color:var(--teal); background:var(--teal-soft); font-weight:800}
+.opt.wrong{border-color:#e8a9a2; background:var(--red-soft)}
+.exp{margin-top:10px; font-size:14px; color:var(--sub); background:var(--grey);
+  border-radius:9px; padding:11px 13px; display:none}
+.exp.show{display:block}
+.score{background:var(--navy); color:#fff; border-radius:12px; padding:16px 18px;
+  font-size:17px; font-weight:800; display:none; margin-top:4px}
+.score.show{display:block}
+footer{text-align:center; color:#93a0b5; font-size:13px; padding:26px 0 10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <span class="badge-unit">Ⅱ단원 · 데이터</span>
+    <h1>데이터 압축 실습</h1>
+    <p class="subtitle">런-렝스 압축기 · 허프만 압축기 · 압축률 계산기 · 도트 그림 압축기 · 확인 퀴즈</p>
+    <div class="progress" id="prog">
+      <div class="pbadge" data-k="rl"><span class="dot"></span>런-렝스</div>
+      <div class="pbadge" data-k="hf"><span class="dot"></span>허프만</div>
+      <div class="pbadge" data-k="rate"><span class="dot"></span>압축률</div>
+      <div class="pbadge" data-k="dot"><span class="dot"></span>도트 그림</div>
+      <div class="pbadge" data-k="quiz"><span class="dot"></span>퀴즈</div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="tabs" id="tabs">
+    <button class="active" data-t="rl">① 런-렝스 압축기</button>
+    <button data-t="hf">② 허프만 압축기</button>
+    <button data-t="rate">③ 압축률 계산기</button>
+    <button data-t="dot">④ 도트 그림 압축기</button>
+    <button data-t="quiz">⑤ 확인 퀴즈</button>
+  </nav>
+
+  <!-- ① 런렝스 -->
+  <section class="tab active" id="tab-rl">
+    <div class="card">
+      <h2>런-렝스(Run-length) 압축기</h2>
+      <p class="lead">반복되는 문자를 <b>문자 + 반복 횟수</b>로 바꿉니다. 한 문자는 8비트로 계산합니다.
+        <span class="tag">활동지 활동 4</span></p>
+      <div class="presets" id="rlPresets">
+        <button data-v="aaabbccccc">aaabbccccc</button>
+        <button data-v="wwwwwwwwww">wwwwwwwwww</button>
+        <button data-v="banana">banana</button>
+        <button data-v="aaaaaaaaaaaaaaaaaabbb">aaaaaa…bbb</button>
+      </div>
+      <label class="fl" for="rlIn">문자열 입력 (영문·숫자)</label>
+      <input type="text" id="rlIn" value="aaabbccccc" autocomplete="off" spellcheck="false">
+      <div class="btnrow">
+        <button class="btn" id="rlRun">압축하기</button>
+        <button class="btn ghost" id="rlClear">지우기</button>
+      </div>
+      <div id="rlOut"></div>
+      <div class="note" id="rlHint"><b>해 보기</b> · 같은 문자가 연속으로 나오지 않는 문자열(banana)을 넣으면 어떻게 될까요?</div>
+    </div>
+  </section>
+
+  <!-- ② 허프만 -->
+  <section class="tab" id="tab-hf">
+    <div class="card">
+      <h2>허프만(Huffman) 압축기</h2>
+      <p class="lead">자주 나오는 문자에 <b>짧은 코드</b>를 줍니다. 교과서 46~47p의 단계를 그대로 따라갑니다.
+        <span class="tag">활동지 활동 5·6</span></p>
+      <div class="presets" id="hfPresets">
+        <button data-v="banana">banana</button>
+        <button data-v="abracadabra">abracadabra</button>
+        <button data-v="aaabbccccc">aaabbccccc</button>
+        <button data-v="mississippi">mississippi</button>
+      </div>
+      <label class="fl" for="hfIn">문자열 입력</label>
+      <input type="text" id="hfIn" value="banana" autocomplete="off" spellcheck="false">
+      <div class="btnrow">
+        <button class="btn" id="hfRun">압축하기</button>
+        <button class="btn ghost" id="hfClear">지우기</button>
+      </div>
+      <div id="hfOut"></div>
+    </div>
+  </section>
+
+  <!-- ③ 압축률 -->
+  <section class="tab" id="tab-rate">
+    <div class="card">
+      <h2>압축률 계산기</h2>
+      <p class="lead">압축률(%) = (원본 크기 − 압축된 크기) ÷ 원본 크기 × 100
+        <span class="tag">활동지 활동 2</span></p>
+      <div class="presets" id="ratePresets">
+        <button data-a="100" data-b="30">100KB → 30KB</button>
+        <button data-a="200" data-b="50">200KB → 50KB</button>
+        <button data-a="43.6" data-b="4.23">43.6MB → 4.23MB</button>
+        <button data-a="2.52" data-b="0.646">2.52MB → 0.646MB</button>
+      </div>
+      <label class="fl" for="origSize">원본 크기</label>
+      <input type="number" id="origSize" value="100" min="0" step="0.01" inputmode="decimal">
+      <label class="fl" for="compSize">압축된 크기</label>
+      <input type="number" id="compSize" value="30" min="0" step="0.01" inputmode="decimal">
+      <div class="btnrow"><button class="btn" id="rateRun">압축률 계산</button></div>
+      <div id="rateOut"></div>
+      <div class="note warn"><b>자주 하는 착각</b> · 압축률 90%는 '원본의 90% 크기'가 아니라
+        <b>원본에서 90%를 줄여 10%만 남았다</b>는 뜻입니다.</div>
+    </div>
+  </section>
+
+  <!-- ④ 도트 그림 -->
+  <section class="tab" id="tab-dot">
+    <div class="card">
+      <h2>도트 그림 압축기</h2>
+      <p class="lead">칸을 눌러 그림을 그려 보세요. 한 줄씩 <b>런-렝스</b>로 압축해 줍니다.
+        <span class="tag">활동 ① 도트 그림 전보 대결</span></p>
+      <div class="presets" id="dotPresets">
+        <button data-p="heart">하트</button>
+        <button data-p="smile">웃는 얼굴</button>
+        <button data-p="house">집</button>
+        <button data-p="check">체스판</button>
+        <button data-p="noise">불규칙 점무늬</button>
+        <button data-r="blob">🎲 랜덤 덩어리</button>
+        <button data-r="noise">🎲 랜덤 점무늬</button>
+      </div>
+      <div class="dotwrap">
+        <div class="dotgrid" id="dotGrid"></div>
+        <div class="dotside">
+          <div class="stats" id="dotStats"></div>
+          <div class="note" id="dotNote"></div>
+        </div>
+      </div>
+      <div class="btnrow">
+        <button class="btn ghost" id="dotClear">전부 지우기</button>
+        <button class="btn ghost" id="dotInvert">색 뒤집기</button>
+        <button class="btn ghost" id="dotTallyReset">실험 기록 지우기</button>
+      </div>
+      <div id="dotTally"></div>
+      <h3>줄마다 압축한 결과</h3>
+      <div class="rlerows" id="dotRows"></div>
+      <div class="note warn"><b>세는 방법</b> · 칸 단위로 적으면 색 기호가 100개(10×10) 필요합니다.
+        런-렝스는 색 덩어리마다 <b>색 + 개수</b> 두 기호가 필요하므로 (색 덩어리 수)×2개입니다.</div>
+    </div>
+  </section>
+
+  <!-- ⑤ 퀴즈 -->
+  <section class="tab" id="tab-quiz">
+    <div class="card">
+      <h2>확인 퀴즈</h2>
+      <p class="lead">8문항입니다. 답을 누르면 바로 해설이 나옵니다.</p>
+      <div id="quiz"></div>
+      <div class="score" id="score"></div>
+      <div class="btnrow"><button class="btn ghost" id="quizReset">다시 풀기</button></div>
+    </div>
+  </section>
+</div>
+<footer>2026 정보 · Ⅱ단원 데이터 — 데이터 압축 실습</footer>
+
+<script>
+const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];
+const progress={rl:false,hf:false,rate:false,dot:false,quiz:false};
+function mark(k){ if(progress[k])return; progress[k]=true; $(`.pbadge[data-k="${k}"]`).classList.add('done'); }
+$$('#tabs button').forEach(b=>b.onclick=()=>{
+  $$('#tabs button').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+  $$('section.tab').forEach(s=>s.classList.remove('active'));
+  $('#tab-'+b.dataset.t).classList.add('active'); window.scrollTo({top:0,behavior:'smooth'});
+});
+const BITS=8;
+const pct=(a,b)=> (a-b)/a*100;
+const fmt=(n)=> (Math.round(n*10)/10).toFixed(1);
+
+/* ============ ① 런-렝스 ============ */
+function runLength(str){
+  let out='', i=0;
+  while(i<str.length){
+    let j=i; while(j<str.length && str[j]===str[i]) j++;
+    out += str[i] + (j-i); i=j;
+  }
+  return out;
+}
+$$('#rlPresets button').forEach(b=>b.onclick=()=>{ $('#rlIn').value=b.dataset.v; rlRun(); });
+function rlRun(){
+  const src=$('#rlIn').value.trim();
+  const box=$('#rlOut');
+  if(!src){ box.innerHTML='<div class="note bad">문자열을 입력하세요.</div>'; return; }
+  const out=runLength(src);
+  const b1=src.length*BITS, b2=out.length*BITS, r=pct(b1,b2);
+  const grew = b2>=b1;
+  box.innerHTML = `
+   <div class="codebox">압축 전  <span class="k">${src}</span>   (${src.length}개 문자 × 8 = ${b1}비트)
+압축 후  <span class="o">${out}</span>   (${out.length}개 문자 × 8 = ${b2}비트)</div>
+   <div class="stats">
+     <div class="stat"><div class="l">원본 비트</div><div class="v">${b1}</div></div>
+     <div class="stat"><div class="l">압축 후 비트</div><div class="v">${b2}</div></div>
+     <div class="stat ${grew?'bad':'good'}"><div class="l">압축률</div><div class="v">${fmt(r)}%</div></div>
+   </div>
+   <div class="note ${grew?'bad':''}">${grew
+     ? '<b>오히려 늘어났습니다.</b> 같은 문자가 연속으로 나오지 않아 반복 횟수 1을 일일이 적었기 때문입니다. → ② 허프만 압축기로 넘어가 보세요.'
+     : '<b>줄었습니다.</b> 같은 문자가 연속으로 반복될수록 런-렝스가 유리합니다.'}</div>`;
+  mark('rl');
+}
+$('#rlRun').onclick=rlRun;
+$('#rlClear').onclick=()=>{ $('#rlIn').value=''; $('#rlOut').innerHTML=''; };
+rlRun();
+
+/* ============ ② 허프만 ============ */
+/* 교과서 규칙 : 빈도 오름차순, 같은 빈도일 때 새로 만든 부모 노드를 먼저(왼쪽) 둔다.
+   → banana 는 a=1, abracadabra 는 a=0 으로 교과서와 일치한다. */
+function huffman(str){
+  const freq={};
+  for(const ch of str) freq[ch]=(freq[ch]||0)+1;
+  const letters=Object.keys(freq).sort();
+  let nodes=letters.map((ch,i)=>({ch, f:freq[ch], order:1000+i, leaf:true}));
+  let seq=0; const steps=[];
+  const srt=()=>nodes.sort((a,b)=> a.f-b.f || a.order-b.order);
+  srt();
+  if(nodes.length===1){
+    const only=nodes[0];
+    return {freq, codes:{[only.ch]:'0'}, root:{...only, code:'0'}, steps:[], single:true};
+  }
+  while(nodes.length>1){
+    srt();
+    const l=nodes.shift(), r=nodes.shift();
+    const p={f:l.f+r.f, order:seq, left:l, right:r, name:'p'+(seq+1), leaf:false};
+    steps.push(`${l.leaf?l.ch:l.name}(${l.f}) + ${r.leaf?r.ch:r.name}(${r.f})  →  ${nodes.length===0?'루트':p.name}(${p.f})`);
+    seq++; nodes.push(p);
+  }
+  const root=nodes[0];
+  const codes={};
+  (function walk(n,code){
+    if(n.leaf){ codes[n.ch]=code||'0'; return; }
+    walk(n.left, code+'0'); walk(n.right, code+'1');
+  })(root,'');
+  return {freq, codes, root, steps};
+}
+function treeSVG(root){
+  const leaves=[]; let depth=0;
+  (function measure(n,d){ depth=Math.max(depth,d); if(n.leaf){leaves.push(n); return;} measure(n.left,d+1); measure(n.right,d+1); })(root,0);
+  const W=Math.max(320, leaves.length*90), levelH=72, H=(depth+1)*levelH+40;
+  let xi=0; const pos=new Map();
+  (function place(n,d){
+    if(n.leaf){ pos.set(n,{x:40+xi*((W-80)/Math.max(1,leaves.length-1||1)), y:30+d*levelH}); xi++; return; }
+    place(n.left,d+1); place(n.right,d+1);
+    const a=pos.get(n.left), b=pos.get(n.right);
+    pos.set(n,{x:(a.x+b.x)/2, y:30+d*levelH});
+  })(root,0);
+  let g='';
+  (function draw(n){
+    const p=pos.get(n);
+    if(!n.leaf){
+      for(const [child,bit] of [[n.left,'0'],[n.right,'1']]){
+        const c=pos.get(child);
+        g+=`<line x1="${p.x}" y1="${p.y}" x2="${c.x}" y2="${c.y}" stroke="#c3ccd9" stroke-width="2"/>`;
+        g+=`<text x="${(p.x+c.x)/2 + (bit==='0'?-12:12)}" y="${(p.y+c.y)/2}" font-size="13" font-weight="700" fill="${bit==='0'?'#2a9d8f':'#b55a1e'}" text-anchor="middle">${bit}</text>`;
+        draw(child);
+      }
+    }
+    g+=`<circle cx="${p.x}" cy="${p.y}" r="19" fill="${n.leaf?'#14213d':'#e8f4f2'}" stroke="${n.leaf?'#14213d':'#2a9d8f'}" stroke-width="2"/>`;
+    g+=`<text x="${p.x}" y="${p.y+5}" font-size="${n.leaf?14:12}" font-weight="800" fill="${n.leaf?'#fff':'#14213d'}" text-anchor="middle">${n.leaf?n.ch:n.f}</text>`;
+    if(n.leaf) g+=`<text x="${p.x}" y="${p.y+34}" font-size="12" fill="#5c636b" text-anchor="middle">${n.f}회</text>`;
+  })(root);
+  return `<svg class="tree" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${g}</svg>`;
+}
+$$('#hfPresets button').forEach(b=>b.onclick=()=>{ $('#hfIn').value=b.dataset.v; hfRun(); });
+function hfRun(){
+  const src=$('#hfIn').value.trim().replace(/\s+/g,'');
+  const box=$('#hfOut');
+  if(src.length<2){ box.innerHTML='<div class="note bad">두 글자 이상 입력하세요.</div>'; return; }
+  if(new Set(src).size<2){ box.innerHTML='<div class="note bad">서로 다른 문자가 두 종류 이상이어야 트리를 만들 수 있습니다.</div>'; return; }
+  const {freq, codes, root, steps}=huffman(src);
+  const letters=Object.keys(freq).sort((a,b)=> freq[a]-freq[b] || (a<b?-1:1));
+  const bits=[...src].map(ch=>codes[ch]).join('');
+  const b1=src.length*BITS, b2=bits.length, r=pct(b1,b2);
+  box.innerHTML = `
+    <h3>단계 ① 빈도수 계산 (오름차순)</h3>
+    <table><tr><th>문자</th>${letters.map(c=>`<th>${c}</th>`).join('')}</tr>
+      <tr><td><b>빈도수</b></td>${letters.map(c=>`<td class="mono">${freq[c]}</td>`).join('')}</tr></table>
+    <h3>단계 ②③ 가장 작은 두 노드를 합치기</h3>
+    <div class="steplog">${steps.map(s=>`<div>${s}</div>`).join('')}</div>
+    ${treeSVG(root)}
+    <h3>단계 ④ 이진 코드 (왼쪽 0, 오른쪽 1)</h3>
+    <table><tr><th>문자</th><th>빈도수</th><th>이진 코드</th><th>코드 길이</th></tr>
+      ${letters.map(c=>`<tr><td class="mono">${c}</td><td>${freq[c]}</td>
+        <td class="mono">${codes[c]}</td><td>${codes[c].length}비트</td></tr>`).join('')}</table>
+    <h3>단계 ⑤ 원본을 이진 코드로 변환</h3>
+    <div class="codebox">${[...src].map(ch=>`<span class="k">${ch}</span>`).join(' ')}
+${[...src].map(ch=>`<span class="o">${codes[ch]}</span>`).join(' ')}</div>
+    <div class="stats">
+      <div class="stat"><div class="l">원본 비트</div><div class="v">${b1}</div></div>
+      <div class="stat"><div class="l">허프만 비트</div><div class="v">${b2}</div></div>
+      <div class="stat good"><div class="l">압축률</div><div class="v">${fmt(r)}%</div></div>
+    </div>
+    <div class="note"><b>확인</b> · 빈도가 가장 높은 문자의 코드가 가장 짧은지 표에서 확인해 보세요.
+      코드끼리 앞부분이 겹치지 않으므로 붙여 써도 정확히 복원됩니다.</div>`;
+  mark('hf');
+}
+$('#hfRun').onclick=hfRun;
+$('#hfClear').onclick=()=>{ $('#hfIn').value=''; $('#hfOut').innerHTML=''; };
+hfRun();
+
+/* ============ ③ 압축률 ============ */
+$$('#ratePresets button').forEach(b=>b.onclick=()=>{
+  $('#origSize').value=b.dataset.a; $('#compSize').value=b.dataset.b; rateRun();
+});
+function rateRun(){
+  const a=parseFloat($('#origSize').value), b=parseFloat($('#compSize').value);
+  const box=$('#rateOut');
+  if(!(a>0) || !(b>=0)){ box.innerHTML='<div class="note bad">원본 크기는 0보다 커야 합니다.</div>'; return; }
+  const r=pct(a,b), left=b/a*100;
+  box.innerHTML=`
+    <div class="codebox">압축률 = (<span class="k">${a}</span> − <span class="k">${b}</span>) ÷ <span class="k">${a}</span> × 100
+       = <span class="o">${fmt(r)} %</span></div>
+    <div class="stats">
+      <div class="stat"><div class="l">줄어든 비율</div><div class="v">${fmt(r)}%</div></div>
+      <div class="stat"><div class="l">남은 크기 비율</div><div class="v">${fmt(left)}%</div></div>
+      <div class="stat ${r<0?'bad':'good'}"><div class="l">판정</div><div class="v">${r<0?'증가':'감소'}</div></div>
+    </div>
+    <div class="note">${r<0
+      ? '<b>압축률이 음수</b>입니다 — 압축했더니 오히려 커진 경우입니다.'
+      : `원본을 100이라 하면 압축 후에는 <b>${fmt(left)}</b>만 남았습니다.`}</div>`;
+  mark('rate');
+}
+$('#rateRun').onclick=rateRun;
+['origSize','compSize'].forEach(id=>$('#'+id).addEventListener('change',rateRun));
+rateRun();
+
+/* ============ ④ 도트 그림 ============ */
+const DOT_N=10;
+const DOT_PRESETS={
+  heart:['..##..##..','.########.','##########','##########','##########',
+         '.########.','..######..','...####...','....##....','..........'],
+  smile:['....##....','..######..','.########.','.##.##.##.','##########',
+         '##########','.#.####.#.','.##....##.','..######..','....##....'],
+  house:['....##....','...####...','..######..','.########.','##########',
+         '##########','#..####..#','#..####..#','####..####','####..####'],
+  check:['#.#.#.#.#.','.#.#.#.#.#','#.#.#.#.#.','.#.#.#.#.#','#.#.#.#.#.',
+         '.#.#.#.#.#','#.#.#.#.#.','.#.#.#.#.#','#.#.#.#.#.','.#.#.#.#.#'],
+  noise:['#..#.#..##','.##...#.#.','#.#.##..#.','..#.#..#.#','#..##.#...',
+         '.#.#..#.##','#.#..##.#.','.##.#..#.#','#..#.##..#','.#.#.#.##.']
+};
+let dotState=Array.from({length:DOT_N},()=>Array(DOT_N).fill(0));
+
+(function dotBuild(){
+  const g=$('#dotGrid');
+  for(let y=0;y<DOT_N;y++) for(let x=0;x<DOT_N;x++){
+    const b=document.createElement('button');
+    b.type='button'; b.dataset.y=y; b.dataset.x=x;
+    b.setAttribute('aria-label',`${y+1}행 ${x+1}열`);
+    b.onclick=()=>{ dotState[y][x]^=1; b.classList.toggle('on'); dotRun(); };
+    g.appendChild(b);
+  }
+})();
+
+function dotPaint(){
+  $$('#dotGrid button').forEach(b=>{
+    b.classList.toggle('on', dotState[+b.dataset.y][+b.dataset.x]===1);
+  });
+}
+function dotLoad(key){
+  const p=DOT_PRESETS[key];
+  dotState=p.map(r=>[...r].map(c=>c==='#'?1:0));
+  dotPaint(); dotRun();
+}
+function dotRunsOf(row){
+  const out=[]; let i=0;
+  while(i<row.length){ let j=i; while(j<row.length && row[j]===row[i]) j++;
+    out.push([row[i], j-i]); i=j; }
+  return out;
+}
+function dotRun(record){
+  const rows=dotState.map(dotRunsOf);
+  const runs=rows.reduce((a,r)=>a+r.length,0);
+  const sym=runs*2, rate=(100-sym)/100*100, grew=sym>=100;
+  $('#dotStats').innerHTML=`
+    <div class="stat"><div class="l">색 덩어리</div><div class="v">${runs}</div></div>
+    <div class="stat"><div class="l">칸 단위 기호</div><div class="v">100</div></div>
+    <div class="stat"><div class="l">런-렝스 기호</div><div class="v">${sym}</div></div>
+    <div class="stat ${grew?'bad':'good'}"><div class="l">압축률</div><div class="v">${fmt(rate)}%</div></div>`;
+  const note=$('#dotNote');
+  note.className = 'note' + (grew?' bad':'');
+  note.innerHTML = runs===1
+    ? '<b>한 가지 색뿐입니다.</b> 덩어리가 가장 적어 압축률이 최고가 됩니다.'
+    : (grew
+      ? '<b>오히려 늘어났습니다.</b> 색이 계속 바뀌어 덩어리가 많습니다. 반복이 없으면 압축할 것도 없습니다 — 교과서 46p banana와 같은 상황입니다.'
+      : '<b>줄었습니다.</b> 같은 색이 길게 이어질수록 런-렝스가 유리합니다.');
+  $('#dotRows').innerHTML = rows.map((r,i)=>
+    `<span class="rn">${String(i+1).padStart(2,' ')}행</span>  ` +
+    r.map(([c,n])=>`<span class="${c?'b':'w'}">${c?'■':'□'}${n}</span>`).join(' ') +
+    `   <span class="rn">(${r.length*2}개)</span>`).join('<br>');
+  if(runs>1 && !grew) mark('dot');
+  if(record){
+    dotTally.n++; grew ? dotTally.up++ : dotTally.down++;
+    dotTallyShow();
+  }
+}
+let dotTally={n:0,down:0,up:0};
+function dotTallyShow(){
+  const t=dotTally, box=$('#dotTally');
+  if(!t.n){ box.innerHTML=''; return; }
+  box.innerHTML = `<div class="note ${t.up>t.down?'bad':''}">
+    <b>랜덤 실험 ${t.n}회</b> · 줄어든 경우 <b>${t.down}회</b> / 늘어난 경우 <b>${t.up}회</b>
+    ${t.n>=5 ? ' — 규칙이 없는 그림은 대체로 늘어나고, 덩어리가 큰 그림은 줄어듭니다.' : ''}</div>`;
+}
+function dotSmooth(g){
+  const nx=g.map(r=>[...r]);
+  for(let y=0;y<DOT_N;y++) for(let x=0;x<DOT_N;x++){
+    let c=0, t=0;
+    for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+      const yy=y+dy, xx=x+dx;
+      if(yy<0||xx<0||yy>=DOT_N||xx>=DOT_N) continue;
+      t++; c+=g[yy][xx];
+    }
+    nx[y][x] = c*2>t ? 1 : (c*2===t ? g[y][x] : 0);
+  }
+  return nx;
+}
+function dotRandom(kind){
+  let g=Array.from({length:DOT_N},()=>Array.from({length:DOT_N},()=>Math.random()<0.5?1:0));
+  if(kind==='blob'){ g=dotSmooth(dotSmooth(g)); }   /* 이웃을 보고 다듬어 큰 덩어리를 만든다 */
+  dotState=g; dotPaint(); dotRun(true);
+}
+$('#dotTallyReset').onclick=()=>{ dotTally={n:0,down:0,up:0}; dotTallyShow(); };
+
+$$('#dotPresets button').forEach(b=>b.onclick=()=>{
+  if(b.dataset.p) dotLoad(b.dataset.p); else dotRandom(b.dataset.r);
+});
+$('#dotClear').onclick=()=>{ dotState=dotState.map(r=>r.map(()=>0)); dotPaint(); dotRun(); };
+$('#dotInvert').onclick=()=>{ dotState=dotState.map(r=>r.map(v=>v^1)); dotPaint(); dotRun(); };
+dotLoad('heart');
+
+/* ============ ⑤ 퀴즈 ============ */
+const QUIZ=[
+ {q:'데이터 압축의 필요성으로 알맞지 않은 것은?',
+  o:['전송 속도를 개선한다','저장 공간을 절약한다','데이터의 내용을 암호로 바꾼다','전송 비용을 절감한다'],a:2,
+  e:'내용을 알아볼 수 없게 바꾸는 것은 암호화입니다. 압축은 크기를 줄이는 기술입니다.'},
+ {q:'원본 200KB 파일을 50KB로 압축했을 때 압축률은?',
+  o:['25%','50%','75%','400%'],a:2,
+  e:'(200 − 50) ÷ 200 × 100 = 75%. 원본에서 75%를 줄였다는 뜻입니다.'},
+ {q:'무손실 압축에 대한 설명으로 옳은 것은?',
+  o:['복원하면 원본과 완전히 일치한다','압축률이 손실 압축보다 항상 높다','주로 대용량 동영상에 쓴다','일부 정보를 제거해 압축한다'],a:0,
+  e:'무손실 압축은 원본과 완전히 일치하게 복원됩니다. 대신 압축률은 비교적 낮습니다.'},
+ {q:'다음 중 손실 압축 방식의 파일 형식은?',
+  o:['PNG','GIF','FLAC','JPEG'],a:3,
+  e:'JPEG는 손실 압축입니다. PNG·GIF·FLAC는 무손실 압축입니다.'},
+ {q:'문자열 aaabbccccc 를 런-렝스로 압축한 결과는?',
+  o:['a3b2c5','abc','a3b2c5a','3a2b5c'],a:0,
+  e:'문자와 반복 횟수를 번갈아 적습니다. 10개 문자(80비트)가 6개 문자(48비트)로 줄어 압축률 40%입니다.'},
+ {q:'문자열 banana 를 런-렝스로 압축하면?',
+  o:['크게 줄어든다','거의 변화가 없다','오히려 크기가 늘어난다','압축할 수 없다'],a:2,
+  e:'b1a1n1a1n1a1 로 12개 문자가 되어 48비트가 96비트로 늘어납니다. 같은 문자가 연속되지 않기 때문입니다.'},
+ {q:'허프만 압축의 원리로 옳은 것은?',
+  o:['모든 문자에 같은 길이의 코드를 준다','자주 나오는 문자에 짧은 코드를 준다','연속된 문자만 압축한다','색상 정보를 제거한다'],a:1,
+  e:'빈도가 높은 문자에 짧은 코드를, 낮은 문자에 긴 코드를 할당합니다.'},
+ {q:'소리 파일에서 비트 전송률을 128Kbps에서 32Kbps로 낮추면?',
+  o:['용량이 줄고 음질도 떨어진다','용량과 음질이 모두 좋아진다','용량만 늘어난다','아무 변화가 없다'],a:0,
+  e:'압축률이 높아져 용량은 크게 줄지만(2.52MB → 0.646MB) 음질은 떨어집니다.'}
+];
+let answered=0, correct=0;
+function renderQuiz(){
+  answered=0; correct=0; $('#score').className='score';
+  const box=$('#quiz'); box.innerHTML='';
+  QUIZ.forEach((item,i)=>{
+    const q=document.createElement('div'); q.className='q';
+    q.innerHTML=`<div class="qt"><span class="num">${i+1}</span>${item.q}</div>`;
+    const opts=document.createElement('div'); opts.className='opts';
+    const exp=document.createElement('div'); exp.className='exp';
+    exp.innerHTML=`<b>해설</b> ${item.e}`;
+    item.o.forEach((o,j)=>{
+      const b=document.createElement('button'); b.className='opt'; b.textContent=o;
+      b.onclick=()=>{
+        if(q.dataset.done) return;
+        q.dataset.done='1'; answered++;
+        [...opts.children].forEach((c,k)=>{
+          if(k===item.a) c.classList.add('right');
+          else if(k===j) c.classList.add('wrong');
+          c.disabled=true;
+        });
+        if(j===item.a) correct++;
+        exp.classList.add('show');
+        if(answered===QUIZ.length){
+          const sc=$('#score'); sc.className='score show';
+          sc.textContent=`${QUIZ.length}문항 중 ${correct}문항 정답`+
+            (correct===QUIZ.length?' — 완벽합니다!':' — 틀린 문항의 해설을 다시 읽어 보세요.');
+          if(correct>=QUIZ.length-1) mark('quiz');
+        }
+      };
+      opts.appendChild(b);
+    });
+    q.appendChild(opts); q.appendChild(exp); box.appendChild(q);
+  });
+}
+$('#quizReset').onclick=renderQuiz;
+renderQuiz();
+</script>
+</body>
+</html>
