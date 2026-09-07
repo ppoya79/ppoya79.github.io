@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>스마트 조 편성기 (Team Maker Pro)</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- Tone.js CDN for procedural sound effects -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- html2canvas CDN for PNG/PDF capture -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- jsPDF CDN for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .dragging {
+      opacity: 0.4;
+      transform: scale(0.97);
+    }
+    .drag-over {
+      border-color: #6366f1 !important;
+      background-color: #f5f3ff !important;
+    }
+    @keyframes pulse-subtle {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+    .animate-pulse-subtle {
+      animation: pulse-subtle 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+          <i data-lucide="users" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-bold text-slate-900 tracking-tight">Team Maker Pro</h1>
+            <span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-indigo-50 text-indigo-600 border border-indigo-200">v2.5</span>
+          </div>
+          <p class="text-xs text-slate-500 hidden sm:block">공정하고 재미있는 스마트 조 편성 도구</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <button id="soundToggleBtn" onclick="toggleSound()" class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors" title="효과음 켜기/끄기">
+          <i id="soundIcon" data-lucide="volume-2" class="w-4 h-4"></i>
+        </button>
+        <button onclick="openPresentationModal()" class="px-3 py-2 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1.5 transition-colors">
+          <i data-lucide="dice-5" class="w-4 h-4 text-indigo-600"></i>
+          <span>발표 순서 뽑기</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    
+    <!-- LEFT PANEL: Input & Settings (5 Cols on large) -->
+    <div class="lg:col-span-5 space-y-6">
+      
+      <!-- 1. Participant Input Card -->
+      <section class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">1</span>
+            <h2 class="font-bold text-slate-800 text-base">참가자 명단</h2>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="loadSamplePreset('students')" class="text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded font-medium transition-colors">학생 샘플</button>
+            <button onclick="loadSamplePreset('office')" class="text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded font-medium transition-colors">워크샵 샘플</button>
+            <button onclick="clearMembers()" class="text-xs px-2 py-1 text-red-500 hover:bg-red-50 rounded font-medium transition-colors">비우기</button>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-500 mb-2 leading-relaxed">
+          줄바꿈 또는 쉼표(,)로 구분해 입력하세요. 이름 뒤에 <code class="bg-slate-100 text-indigo-600 px-1 py-0.5 rounded font-mono">*</code>를 붙이면 <strong>조장 후보</strong>가 됩니다.
+          (예: <span class="text-slate-700 font-medium">김철수*, 이영희, 박지성*, 최민수</span>)
+        </p>
+
+        <div class="relative">
+          <textarea id="rawInput" rows="6" placeholder="참가자 이름을 입력하세요...&#10;김민준*&#10;이서연&#10;박도윤*&#10;최지우" 
+            class="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition custom-scroll resize-y"
+            oninput="parseInputAndUpdateList()"></textarea>
+        </div>
+
+        <div class="mt-3 flex items-center justify-between text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
+          <div>
+            총 인원: <span id="totalCount" class="font-bold text-indigo-600 text-sm">0</span>명
+          </div>
+          <div>
+            조장 후보: <span id="leaderCount" class="font-bold text-amber-600 text-sm">0</span>명
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Division Rules & Options -->
+      <section class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">2</span>
+          <h2 class="font-bold text-slate-800 text-base">편성 조건 설정</h2>
+        </div>
+
+        <!-- Mode Toggle -->
+        <div>
+          <label class="text-xs font-semibold text-slate-700 block mb-1.5">편성 기준</label>
+          <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl">
+            <button id="modeByTeamsBtn" onclick="setGroupingMode('byTeams')" class="py-2 text-xs font-semibold rounded-lg bg-white shadow-sm text-indigo-600 transition-all">
+              조 개수 기준 (N개 조)
+            </button>
+            <button id="modeBySizeBtn" onclick="setGroupingMode('bySize')" class="py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+              조당 인원 기준 (N명씩)
+            </button>
+          </div>
+        </div>
+
+        <!-- Number Controls -->
+        <div class="flex items-center justify-between bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+          <div>
+            <span id="targetLabel" class="text-xs font-bold text-slate-800 block">원하는 조 개수</span>
+            <span id="targetHelper" class="text-[11px] text-slate-500">생성될 총 조의 수</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="adjustTarget(-1)" class="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-700 hover:bg-slate-100 active:scale-95 shadow-sm">-</button>
+            <input id="targetInput" type="number" min="2" max="50" value="3" class="w-14 text-center font-bold text-base py-1 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-500" onchange="validateTargetInput()">
+            <button onclick="adjustTarget(1)" class="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-700 hover:bg-slate-100 active:scale-95 shadow-sm">+</button>
+          </div>
+        </div>
+
+        <!-- Advanced Rules -->
+        <div class="space-y-2.5 pt-1">
+          <label class="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer select-none">
+            <input id="balanceLeadersCheck" type="checkbox" checked class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-400 border-slate-300">
+            <span>조장 후보를 각 조에 균등하게 우선 배분</span>
+          </label>
+          
+          <div class="pt-2">
+            <label class="text-xs font-semibold text-slate-700 block mb-1">조 이름 테마</label>
+            <select id="namingTheme" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-indigo-500">
+              <option value="numbers">기본 (1조, 2조, 3조...)</option>
+              <option value="animals">귀여운 동물 (호랑이, 사자, 판다, 여우...)</option>
+              <option value="planets">우주 행성 (수성, 금성, 지구, 화성...)</option>
+              <option value="colors">다채로운 색상 (블루, 레드, 에메랄드, 퍼플...)</option>
+              <option value="alphabets">알파벳 팀 (Team A, Team B, Team C...)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Generate Button -->
+        <button id="generateBtn" onclick="startGenerationProcess()" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 active:scale-[0.99] transition flex items-center justify-center gap-2 text-sm">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span>랜덤 조 편성 시작하기</span>
+        </button>
+      </section>
+    </div>
+
+    <!-- RIGHT PANEL: Results Area (7 Cols on large) -->
+    <div class="lg:col-span-7 flex flex-col space-y-4">
+      
+      <!-- Top Action Bar for Generated Result -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="font-bold text-slate-900 text-base flex items-center gap-2">
+            <span>편성 결과 보드</span>
+            <span id="resultBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold">대기중</span>
+          </h2>
+          <p class="text-xs text-slate-500">팀원을 다른 조로 드래그해서 위치를 옮길 수 있습니다.</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="reShuffleOnly()" id="reshuffleBtn" disabled class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>다시 섞기</span>
+          </button>
+          <button onclick="copyResultsToClipboard()" id="copyBtn" disabled class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-600 hover:bg-indigo-100 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>결과 텍스트 복사</span>
+          </button>
+
+          <!-- 파일 저장 드롭다운 메뉴 -->
+          <div class="relative inline-block text-left" id="downloadDropdownContainer">
+            <button id="downloadDropdownBtn" onclick="toggleDownloadMenu(event)" disabled class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>파일 저장</span>
+              <i data-lucide="chevron-down" class="w-3 h-3 ml-0.5"></i>
+            </button>
+            <div id="downloadMenu" class="hidden absolute right-0 mt-1.5 w-56 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-30 text-xs transition-all">
+              <button onclick="downloadAsCSV()" class="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors">
+                <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-slate-800">Excel / CSV (.csv)</div>
+                  <div class="text-[10px] text-slate-400">엑셀/스프레드시트 호환</div>
+                </div>
+              </button>
+              <button onclick="downloadAsTXT()" class="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors">
+                <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="file-text" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-slate-800">텍스트 문서 (.txt)</div>
+                  <div class="text-[10px] text-slate-400">명단 포맷 텍스트 파일</div>
+                </div>
+              </button>
+              <div class="border-t border-slate-100 my-1"></div>
+              <button onclick="downloadAsPNG()" class="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors">
+                <div class="w-7 h-7 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="image" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-slate-800">이미지 카드 (.png)</div>
+                  <div class="text-[10px] text-slate-400">고해상도 이미지 저장</div>
+                </div>
+              </button>
+              <button onclick="downloadAsPDF()" class="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors">
+                <div class="w-7 h-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="file-check" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-slate-800">PDF 문서 (.pdf)</div>
+                  <div class="text-[10px] text-slate-400">출력 및 보관용 PDF</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Teams Grid Container -->
+      <div id="teamsContainer" class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-max min-h-[420px] custom-scroll">
+        <!-- Initial Empty Placeholder -->
+        <div id="emptyState" class="col-span-full h-full min-h-[360px] flex flex-col items-center justify-center p-8 bg-white border-2 border-dashed border-slate-200 rounded-2xl text-center">
+          <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center mb-4">
+            <i data-lucide="layout-grid" class="w-8 h-8"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-800 mb-1">아직 생성된 조가 없습니다</h3>
+          <p class="text-xs text-slate-500 max-w-sm mb-4">
+            왼쪽에서 명단을 입력하거나 샘플을 불러온 뒤, [랜덤 조 편성 시작하기] 버튼을 눌러주세요!
+          </p>
+          <button onclick="loadSamplePreset('students')" class="text-xs px-3.5 py-2 font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors flex items-center gap-1.5">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span>샘플 학생 명단 불러오기</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL: Presentation Order Draw (발표 순서 뽑기) -->
+  <div id="presentationModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
+            <i data-lucide="dice-5" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-slate-900 text-base">발표 순서 추첨</h3>
+        </div>
+        <button onclick="closePresentationModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500 mb-4">
+        현재 편성된 조들의 발표 또는 게임 진행 순서를 랜덤으로 공정하게 결정합니다.
+      </p>
+
+      <div id="presentationList" class="space-y-2 mb-5 max-h-64 overflow-y-auto custom-scroll pr-1">
+        <p class="text-xs text-center py-6 text-slate-400">편성된 조가 없습니다. 먼저 조 편성을 완료해주세요.</p>
+      </div>
+
+      <div class="flex items-center justify-end gap-2">
+        <button onclick="closePresentationModal()" class="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">닫기</button>
+        <button onclick="drawPresentationOrder()" id="drawOrderBtn" class="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 shadow-md shadow-indigo-100">
+          <i data-lucide="shuffle" class="w-3.5 h-3.5"></i>
+          <span>순서 무작위 추첨</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    // State management
+    const state = {
+      rawParticipants: [],
+      teams: [],
+      groupingMode: 'byTeams', // 'byTeams' | 'bySize'
+      targetValue: 3,
+      isSoundEnabled: true,
+      audioCtxStarted: false,
+      themes: {
+        numbers: (idx) => `${idx + 1}조`,
+        animals: ['🦁 사자 조', '🐯 호랑이 조', '🐼 판다 조', '🦊 여우 조', '🐨 코알라 조', '🐬 돌고래 조', '🦅 독수리 조', '🐺 늑대 조', '🦒 기린 조', '🐘 코끼리 조'],
+        planets: ['🪐 토성 조', '🌍 지구 조', '🌕 달 조', '🔥 화성 조', '✨ 금성 조', '⚡ 목성 조', '☀️ 태양 조', '🌌 은하 조'],
+        colors: ['🔴 레드 조', '🔵 블루 조', '🟢 에메랄드 조', '🟣 퍼플 조', '🟡 옐로우 조', '🟠 오렌지 조', '⚪ 화이트 조', '⚫ 블랙 조'],
+        alphabets: (idx) => `Team ${String.fromCharCode(65 + (idx % 26))}${idx >= 26 ? Math.floor(idx/26) : ''}`
+      }
+    };
+
+    // Sound engine using Tone.js
+    let synth = null;
+    let clickPlayer = null;
+
+    function initAudio() {
+      if (!state.audioCtxStarted) {
+        try {
+          Tone.start();
+          synth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: "triangle" },
+            envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.2 }
+          }).toDestination();
+          synth.volume.value = -12;
+          state.audioCtxStarted = true;
+        } catch (e) {
+          console.warn("Audio Context init deferred", e);
+        }
+      }
+    }
+
+    function playSound(type) {
+      if (!state.isSoundEnabled) return;
+      initAudio();
+      if (!synth) return;
+
+      try {
+        const now = Tone.now();
+        if (type === 'click') {
+          synth.triggerAttackRelease("C5", "32n", now);
+        } else if (type === 'shuffle') {
+          synth.triggerAttackRelease(["E5", "G5"], "16n", now);
+        } else if (type === 'fanfare') {
+          synth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "8n", now);
+          setTimeout(() => {
+            if (synth) synth.triggerAttackRelease(["G4", "C5", "E5", "G5"], "4n");
+          }, 150);
+        } else if (type === 'pop') {
+          synth.triggerAttackRelease("A5", "32n", now);
+        }
+      } catch (err) {
+        // Fallback silently if audio context is blocked
+      }
+    }
+
+    function toggleSound() {
+      state.isSoundEnabled = !state.isSoundEnabled;
+      const icon = document.getElementById('soundIcon');
+      if (state.isSoundEnabled) {
+        icon.setAttribute('data-lucide', 'volume-2');
+        showToast('효과음이 켜졌습니다.', 'info');
+        playSound('pop');
+      } else {
+        icon.setAttribute('data-lucide', 'volume-x');
+        showToast('효과음이 음소거되었습니다.', 'info');
+      }
+      lucide.createIcons();
+    }
+
+    function loadSamplePreset(type) {
+      playSound('pop');
+      let sample = '';
+      if (type === 'students') {
+        sample = `김민준*\n이서연\n박도윤*\n최지우\n정예준\n강하은*\n조시우\n윤서아\n장서진*\n임하린\n한지호\n오수아\n신유준\n배지안*\n권도현\n백지우`;
+        state.targetValue = 4;
+      } else if (type === 'office') {
+        sample = `박팀장*\n김책임*\n이선임\n최프로\n정연구원*\n송디자이너\n윤개발자\n강매니저*\n오파트장\n황신입\n문기획자\n조총무`;
+        state.targetValue = 3;
+      }
+      document.getElementById('rawInput').value = sample;
+      document.getElementById('targetInput').value = state.targetValue;
+      parseInputAndUpdateList();
+      showToast(`${type === 'students' ? '학생' : '워크샵'} 샘플 명단을 불러왔습니다.`, 'success');
+    }
+
+    function clearMembers() {
+      playSound('click');
+      document.getElementById('rawInput').value = '';
+      parseInputAndUpdateList();
+      showToast('명단을 비웠습니다.', 'info');
+    }
+
+    function parseInputAndUpdateList() {
+      const text = document.getElementById('rawInput').value;
+      const lines = text.split(/[\n,]+/).map(item => item.trim()).filter(item => item.length > 0);
+      
+      const parsed = lines.map((name, index) => {
+        const isLeader = name.endsWith('*') || name.startsWith('★') || name.startsWith('⭐');
+        const cleanName = name.replace(/[\*★⭐]/g, '').trim();
+        return {
+          id: 'p_' + index + '_' + Math.random().toString(36).substr(2, 5),
+          name: cleanName || '무명',
+          isLeader: isLeader
+        };
+      });
+
+      state.rawParticipants = parsed;
+      document.getElementById('totalCount').innerText = parsed.length;
+      document.getElementById('leaderCount').innerText = parsed.filter(p => p.isLeader).length;
+      validateTargetInput();
+    }
+
+    function setGroupingMode(mode) {
+      playSound('click');
+      state.groupingMode = mode;
+      const byTeamsBtn = document.getElementById('modeByTeamsBtn');
+      const bySizeBtn = document.getElementById('modeBySizeBtn');
+      const targetLabel = document.getElementById('targetLabel');
+      const targetHelper = document.getElementById('targetHelper');
+
+      if (mode === 'byTeams') {
+        byTeamsBtn.className = "py-2 text-xs font-semibold rounded-lg bg-white shadow-sm text-indigo-600 transition-all";
+        bySizeBtn.className = "py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition-all";
+        targetLabel.innerText = "원하는 조 개수";
+        targetHelper.innerText = "생성될 총 조의 수";
+      } else {
+        bySizeBtn.className = "py-2 text-xs font-semibold rounded-lg bg-white shadow-sm text-indigo-600 transition-all";
+        byTeamsBtn.className = "py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition-all";
+        targetLabel.innerText = "조당 인원 수";
+        targetHelper.innerText = "한 조에 들어갈 사람 수";
+      }
+    }
+
+    function adjustTarget(delta) {
+      playSound('click');
+      const input = document.getElementById('targetInput');
+      let val = parseInt(input.value, 10) || 2;
+      val = Math.max(2, Math.min(50, val + delta));
+      input.value = val;
+      state.targetValue = val;
+    }
+
+    function validateTargetInput() {
+      const input = document.getElementById('targetInput');
+      let val = parseInt(input.value, 10);
+      if (isNaN(val) || val < 2) val = 2;
+      if (val > 50) val = 50;
+      input.value = val;
+      state.targetValue = val;
+    }
+
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function getThemeTeamName(themeKey, index) {
+      const theme = state.themes[themeKey];
+      if (typeof theme === 'function') {
+        return theme(index);
+      } else if (Array.isArray(theme)) {
+        if (index < theme.length) return theme[index];
+        return `${theme[index % theme.length]} ${Math.floor(index / theme.length) + 1}`;
+      }
+      return `${index + 1}조`;
+    }
+
+    function calculateNumberOfTeams(totalMembers, mode, target) {
+      if (totalMembers <= 0) return 0;
+      if (mode === 'byTeams') {
+        return Math.min(totalMembers, Math.max(1, target));
+      } else {
+        // bySize: target is members per team
+        const numTeams = Math.ceil(totalMembers / target);
+        return Math.max(1, numTeams);
+      }
+    }
+
+    function startGenerationProcess() {
+      if (state.rawParticipants.length === 0) {
+        showToast('참가자를 1명 이상 입력해주세요!', 'error');
+        return;
+      }
+
+      validateTargetInput();
+      const total = state.rawParticipants.length;
+      const numTeams = calculateNumberOfTeams(total, state.groupingMode, state.targetValue);
+
+      if (numTeams <= 0) {
+        showToast('편성할 수 있는 조의 수가 유효하지 않습니다.', 'error');
+        return;
+      }
+
+      const generateBtn = document.getElementById('generateBtn');
+      generateBtn.disabled = true;
+      generateBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>두구두구... 섞는 중!</span>`;
+      lucide.createIcons();
+
+      playSound('shuffle');
+
+      // Visual shuffling animation on container
+      const container = document.getElementById('teamsContainer');
+      container.innerHTML = `
+        <div class="col-span-full h-80 flex flex-col items-center justify-center space-y-4">
+          <div class="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+          <p class="text-sm font-bold text-slate-700 animate-pulse">공정하게 팀원을 섞고 있습니다...</p>
+        </div>
+      `;
+
+      setTimeout(() => {
+        executeGrouping(numTeams);
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4"></i><span>랜덤 조 편성 시작하기</span>`;
+        lucide.createIcons();
+        
+        // Confetti burst
+        fireCelebrationConfetti();
+        playSound('fanfare');
+        showToast('조 편성이 완료되었습니다!', 'success');
+      }, 550);
+    }
+
+    function executeGrouping(numTeams) {
+      const balanceLeaders = document.getElementById('balanceLeadersCheck').checked;
+      const themeKey = document.getElementById('namingTheme').value;
+
+      // Split into leaders and regular
+      let leaders = [];
+      let regulars = [];
+
+      state.rawParticipants.forEach(p => {
+        if (balanceLeaders && p.isLeader) {
+          leaders.push({ ...p });
+        } else {
+          regulars.push({ ...p });
+        }
+      });
+
+      // Randomize both groups
+      leaders = shuffleArray(leaders);
+      regulars = shuffleArray(regulars);
+
+      // Initialize team buckets
+      const teams = [];
+      for (let i = 0; i < numTeams; i++) {
+        teams.push({
+          id: 'team_' + i,
+          name: getThemeTeamName(themeKey, i),
+          members: []
+        });
+      }
+
+      // 1. Distribute leaders round-robin
+      let teamIndex = 0;
+      leaders.forEach(leader => {
+        teams[teamIndex % numTeams].members.push(leader);
+        teamIndex++;
+      });
+
+      // 2. Distribute regulars round-robin (continuing or balanced)
+      regulars.forEach(member => {
+        // Sort teams by least member count first to balance sizes evenly
+        teams.sort((a, b) => a.members.length - b.members.length);
+        teams[0].members.push(member);
+      });
+
+      // Maintain original team order by ID
+      teams.sort((a, b) => parseInt(a.id.replace('team_', '')) - parseInt(b.id.replace('team_', '')));
+
+      state.teams = teams;
+      renderTeams();
+
+      // Enable action buttons
+      document.getElementById('reshuffleBtn').disabled = false;
+      document.getElementById('copyBtn').disabled = false;
+      document.getElementById('downloadDropdownBtn').disabled = false;
+      document.getElementById('resultBadge').innerText = `총 ${state.teams.length}개 조 / ${state.rawParticipants.length}명`;
+      document.getElementById('resultBadge').className = "text-xs px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-semibold";
+    }
+
+    function reShuffleOnly() {
+      if (state.teams.length === 0) return;
+      startGenerationProcess();
+    }
+
+    function renderTeams() {
+      const container = document.getElementById('teamsContainer');
+      container.innerHTML = '';
+
+      if (state.teams.length === 0) {
+        return;
+      }
+
+      state.teams.forEach((team, tIdx) => {
+        const teamCard = document.createElement('div');
+        teamCard.className = "bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col transition hover:border-indigo-200 hover:shadow-md";
+        teamCard.id = team.id;
+
+        // Card Header
+        const header = document.createElement('div');
+        header.className = "flex items-center justify-between pb-3 border-b border-slate-100 mb-3";
+        header.innerHTML = `
+          <div class="flex items-center gap-2">
+            <input type="text" value="${team.name}" onchange="updateTeamName('${team.id}', this.value)" 
+              class="font-bold text-slate-800 text-sm bg-transparent border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-white rounded px-1.5 py-0.5 outline-none transition w-36 truncate" title="클릭하여 조 이름 수정">
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+            <span id="count_${team.id}">${team.members.length}</span>명
+          </span>
+        `;
+        teamCard.appendChild(header);
+
+        // Member Drop Zone
+        const dropZone = document.createElement('div');
+        dropZone.className = "flex-1 space-y-2 min-h-[110px] p-2 rounded-xl bg-slate-50/70 border-2 border-dashed border-slate-200/80 transition-colors custom-scroll";
+        dropZone.dataset.teamId = team.id;
+
+        // Drag events on dropZone
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleDrop);
+
+        if (team.members.length === 0) {
+          dropZone.innerHTML = `<div class="h-full flex items-center justify-center text-xs text-slate-400">팀원을 이곳으로 드래그하세요</div>`;
+        } else {
+          team.members.forEach((member) => {
+            const item = createMemberTagElement(member, team.id);
+            dropZone.appendChild(item);
+          });
+        }
+
+        teamCard.appendChild(dropZone);
+        container.appendChild(teamCard);
+      });
+
+      lucide.createIcons();
+    }
+
+    function createMemberTagElement(member, teamId) {
+      const el = document.createElement('div');
+      el.draggable = true;
+      el.id = member.id;
+      el.dataset.memberId = member.id;
+      el.dataset.teamId = teamId;
+      el.className = `flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-slate-200 shadow-sm cursor-grab active:cursor-grabbing hover:border-indigo-300 transition-all ${
+        member.isLeader ? 'ring-1 ring-amber-400/80 bg-amber-50/40' : ''
+      }`;
+
+      el.innerHTML = `
+        <div class="flex items-center gap-2 overflow-hidden">
+          <i data-lucide="grip-vertical" class="w-3.5 h-3.5 text-slate-300 flex-shrink-0"></i>
+          <span class="text-xs font-semibold text-slate-800 truncate">${member.name}</span>
+          ${member.isLeader ? `<span class="flex-shrink-0 text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded flex items-center gap-0.5"><i data-lucide="crown" class="w-2.5 h-2.5"></i>조장</span>` : ''}
+        </div>
+        <button onclick="toggleMemberLeaderStatus('${teamId}', '${member.id}')" title="${member.isLeader ? '조장 해제' : '조장으로 임명'}" class="text-slate-400 hover:text-amber-500 p-1 rounded transition">
+          <i data-lucide="crown" class="w-3.5 h-3.5 ${member.isLeader ? 'text-amber-500 fill-amber-400' : ''}"></i>
+        </button>
+      `;
+
+      el.addEventListener('dragstart', handleDragStart);
+      el.addEventListener('dragend', handleDragEnd);
+
+      return el;
+    }
+
+    function updateTeamName(teamId, newName) {
+      const team = state.teams.find(t => t.id === teamId);
+      if (team && newName.trim()) {
+        team.name = newName.trim();
+      }
+    }
+
+    function toggleMemberLeaderStatus(teamId, memberId) {
+      playSound('pop');
+      const team = state.teams.find(t => t.id === teamId);
+      if (!team) return;
+      const member = team.members.find(m => m.id === memberId);
+      if (member) {
+        member.isLeader = !member.isLeader;
+        renderTeams();
+      }
+    }
+
+    let draggedMemberId = null;
+    let sourceTeamId = null;
+
+    function handleDragStart(e) {
+      draggedMemberId = this.dataset.memberId;
+      sourceTeamId = this.dataset.teamId;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedMemberId);
+    }
+
+    function handleDragEnd(e) {
+      this.classList.remove('dragging');
+      document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      this.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+      this.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+      const targetTeamId = this.dataset.teamId;
+
+      if (!draggedMemberId || !sourceTeamId || sourceTeamId === targetTeamId) {
+        return;
+      }
+
+      // Move member between teams in state
+      const sourceTeam = state.teams.find(t => t.id === sourceTeamId);
+      const targetTeam = state.teams.find(t => t.id === targetTeamId);
+
+      if (sourceTeam && targetTeam) {
+        const memberIdx = sourceTeam.members.findIndex(m => m.id === draggedMemberId);
+        if (memberIdx !== -1) {
+          const [movedMember] = sourceTeam.members.splice(memberIdx, 1);
+          targetTeam.members.push(movedMember);
+          playSound('pop');
+          renderTeams();
+        }
+      }
+    }
+
+    function copyResultsToClipboard() {
+      if (state.teams.length === 0) return;
+
+      playSound('click');
+      let copyText = `🎉 [팀/조 편성 결과] 🎉\n`;
+      copyText += `총 ${state.teams.length}개 조 (${state.rawParticipants.length}명)\n\n`;
+
+      state.teams.forEach((team) => {
+        const leader = team.members.find(m => m.isLeader);
+        const membersList = team.members.map(m => m.isLeader ? `👑 ${m.name}(조장)` : m.name).join(', ');
+        copyText += `📌 ${team.name} (${team.members.length}명)\n`;
+        copyText += `   멤버: ${membersList || '없음'}\n\n`;
+      });
+
+      copyText += `Generated by Team Maker Pro`;
+
+      // Fallback copy strategy
+      const textArea = document.createElement("textarea");
+      textArea.value = copyText;
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
+      document.body.appendChild(textArea);
+      textArea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showToast('클립보드에 결과가 복사되었습니다! 카카오톡 등에 붙여넣기하세요.', 'success');
+        } else {
+          showToast('복사 권한이 제한되었습니다.', 'error');
+        }
+      } catch (err) {
+        showToast('복사 중 오류가 발생했습니다.', 'error');
+      }
+      document.body.removeChild(textArea);
+    }
+
+    // 파일 다운로드 드롭다운 메뉴 토글
+    function toggleDownloadMenu(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('downloadMenu');
+      menu.classList.toggle('hidden');
+    }
+
+    function closeDownloadMenu() {
+      const menu = document.getElementById('downloadMenu');
+      if (menu && !menu.classList.contains('hidden')) {
+        menu.classList.add('hidden');
+      }
+    }
+
+    // 타임스탬프 기반 파일명 생성 (예: 20260907_0915)
+    function getFileTimestamp() {
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const year = now.getFullYear();
+      const month = pad(now.getMonth() + 1);
+      const date = pad(now.getDate());
+      const hours = pad(now.getHours());
+      const minutes = pad(now.getMinutes());
+      return `${year}${month}${date}_${hours}${minutes}`;
+    }
+
+    // Excel / CSV 파일 다운로드 (한글 깨짐 방지 UTF-8 BOM 포함)
+    function downloadAsCSV() {
+      closeDownloadMenu();
+      if (!state.teams || state.teams.length === 0) {
+        showToast('다운로드할 조 편성 결과가 없습니다.', 'error');
+        return;
+      }
+
+      playSound('pop');
+
+      // CSV 헤더 및 데이터 생성
+      let csvContent = '\uFEFF'; // UTF-8 BOM for Excel
+      csvContent += '조 이름,이름,조장 여부\n';
+
+      state.teams.forEach(team => {
+        team.members.forEach(member => {
+          const safeTeamName = `"${team.name.replace(/"/g, '""')}"`;
+          const safeMemberName = `"${member.name.replace(/"/g, '""')}"`;
+          const role = member.isLeader ? '조장' : '팀원';
+          csvContent += `${safeTeamName},${safeMemberName},${role}\n`;
+        });
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      triggerFileDownload(blob, `조편성결과_${getFileTimestamp()}.csv`);
+      showToast('Excel(CSV) 파일로 다운로드되었습니다.', 'success');
+    }
+
+    // 텍스트 파일 (.txt) 다운로드
+    function downloadAsTXT() {
+      closeDownloadMenu();
+      if (!state.teams || state.teams.length === 0) {
+        showToast('다운로드할 조 편성 결과가 없습니다.', 'error');
+        return;
+      }
+
+      playSound('pop');
+
+      let txtContent = `========================================\n`;
+      txtContent += `       팀/조 편성 결과 보고서\n`;
+      txtContent += `========================================\n`;
+      txtContent += `생성 일시: ${new Date().toLocaleString('ko-KR')}\n`;
+      txtContent += `총 편성: ${state.teams.length}개 조 (총 ${state.rawParticipants.length}명)\n\n`;
+
+      state.teams.forEach((team, index) => {
+        txtContent += `[${team.name}] (${team.members.length}명)\n`;
+        if (team.members.length === 0) {
+          txtContent += `  - (배정된 인원 없음)\n`;
+        } else {
+          team.members.forEach((m, mIdx) => {
+            txtContent += `  ${mIdx + 1}. ${m.name}${m.isLeader ? ' (★조장)' : ''}\n`;
+          });
+        }
+        txtContent += `\n`;
+      });
+
+      txtContent += `----------------------------------------\n`;
+      txtContent += `Generated by Team Maker Pro\n`;
+
+      const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8;' });
+      triggerFileDownload(blob, `조편성결과_${getFileTimestamp()}.txt`);
+      showToast('텍스트(.txt) 파일로 다운로드되었습니다.', 'success');
+    }
+
+    // 고해상도 보고서 레이아웃 캔버스 생성 (PNG / PDF 공용 헬퍼)
+    async function generateExportCanvas() {
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'fixed';
+      wrapper.style.left = '-9999px';
+      wrapper.style.top = '0';
+      wrapper.style.width = '820px';
+      wrapper.style.padding = '36px';
+      wrapper.style.backgroundColor = '#f8fafc';
+      wrapper.style.fontFamily = "'Pretendard', sans-serif";
+      wrapper.style.boxSizing = 'border-box';
+
+      // 상단 헤더 영역
+      const headerDiv = document.createElement('div');
+      headerDiv.style.marginBottom = '24px';
+      headerDiv.style.borderBottom = '2px solid #e2e8f0';
+      headerDiv.style.paddingBottom = '16px';
+      headerDiv.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+          <div>
+            <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0;">🎉 팀 / 조 편성 결과표</h1>
+            <p style="font-size: 13px; color: #64748b; margin: 0;">총 <strong>${state.teams.length}</strong>개 조 · 전체 참가자 <strong>${state.rawParticipants.length}</strong>명</p>
+          </div>
+          <div style="font-size: 11px; color: #94a3b8; text-align: right;">
+            출력일시: ${new Date().toLocaleString('ko-KR')}
+          </div>
+        </div>
+      `;
+      wrapper.appendChild(headerDiv);
+
+      // 팀 카드 2열 그리드
+      const grid = document.createElement('div');
+      grid.style.display = 'grid';
+      grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+      grid.style.gap = '16px';
+
+      state.teams.forEach(team => {
+        const card = document.createElement('div');
+        card.style.backgroundColor = '#ffffff';
+        card.style.borderRadius = '16px';
+        card.style.border = '1px solid #e2e8f0';
+        card.style.padding = '18px';
+        card.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)';
+
+        const teamHeader = `
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; margin-bottom: 12px;">
+            <span style="font-size: 15px; font-weight: 800; color: #1e293b;">${team.name}</span>
+            <span style="font-size: 12px; font-weight: 700; color: #4f46e5; background-color: #eef2ff; padding: 3px 10px; border-radius: 9999px;">${team.members.length}명</span>
+          </div>
+        `;
+
+        const membersHtml = team.members.length === 0 
+          ? `<div style="font-size: 12px; color: #94a3b8; text-align: center; padding: 16px;">배정된 인원 없음</div>`
+          : `<div style="display: flex; flex-direction: column; gap: 8px;">` +
+            team.members.map(m => `
+              <div style="display: flex; justify-content: space-between; align-items: center; background-color: ${m.isLeader ? '#fffbeb' : '#f8fafc'}; border: 1px solid ${m.isLeader ? '#fde68a' : '#e2e8f0'}; border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 600; color: #334155;">
+                <span>${m.name}</span>
+                ${m.isLeader ? `<span style="font-size: 11px; font-weight: 700; color: #b45309; background-color: #fef3c7; padding: 2px 7px; border-radius: 6px;">👑 조장</span>` : ''}
+              </div>
+            `).join('') +
+            `</div>`;
+
+        card.innerHTML = teamHeader + membersHtml;
+        grid.appendChild(card);
+      });
+
+      wrapper.appendChild(grid);
+
+      // 하단 푸터
+      const footer = document.createElement('div');
+      footer.style.marginTop = '24px';
+      footer.style.paddingTop = '14px';
+      footer.style.borderTop = '1px solid #e2e8f0';
+      footer.style.textAlign = 'center';
+      footer.style.fontSize = '11px';
+      footer.style.color = '#94a3b8';
+      footer.innerText = 'Generated by Team Maker Pro';
+      wrapper.appendChild(footer);
+
+      document.body.appendChild(wrapper);
+
+      try {
+        const canvas = await html2canvas(wrapper, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#f8fafc'
+        });
+        return canvas;
+      } finally {
+        document.body.removeChild(wrapper);
+      }
+    }
+
+    // PNG 이미지 다운로드
+    async function downloadAsPNG() {
+      closeDownloadMenu();
+      if (!state.teams || state.teams.length === 0) {
+        showToast('다운로드할 조 편성 결과가 없습니다.', 'error');
+        return;
+      }
+
+      showToast('이미지(PNG) 파일 생성 중...', 'info');
+      try {
+        const canvas = await generateExportCanvas();
+        canvas.toBlob((blob) => {
+          if (blob) {
+            triggerFileDownload(blob, `조편성결과_${getFileTimestamp()}.png`);
+            playSound('pop');
+            showToast('PNG 이미지 파일로 저장되었습니다.', 'success');
+          }
+        }, 'image/png');
+      } catch (err) {
+        console.error('PNG export failed:', err);
+        showToast('이미지 저장 중 문제가 발생했습니다.', 'error');
+      }
+    }
+
+    // PDF 문서 다운로드
+    async function downloadAsPDF() {
+      closeDownloadMenu();
+      if (!state.teams || state.teams.length === 0) {
+        showToast('다운로드할 조 편성 결과가 없습니다.', 'error');
+        return;
+      }
+
+      showToast('PDF 문서 생성 중...', 'info');
+      try {
+        const canvas = await generateExportCanvas();
+        const imgData = canvas.toDataURL('image/png');
+        
+        const { jsPDF } = window.jspdf;
+        const orientation = canvas.width > canvas.height ? 'landscape' : 'portrait';
+        const pdf = new jsPDF({
+          orientation: orientation,
+          unit: 'px',
+          format: [canvas.width, canvas.height]
+        });
+
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.save(`조편성결과_${getFileTimestamp()}.pdf`);
+        playSound('pop');
+        showToast('PDF 문서로 저장되었습니다.', 'success');
+      } catch (err) {
+        console.error('PDF export failed:', err);
+        showToast('PDF 저장 중 문제가 발생했습니다.', 'error');
+      }
+    }
+
+    // Blob 기반 파일 다운로드 트리거 헬퍼
+    function triggerFileDownload(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function openPresentationModal() {
+      playSound('click');
+      const modal = document.getElementById('presentationModal');
+      const list = document.getElementById('presentationList');
+      modal.classList.remove('hidden');
+
+      if (state.teams.length === 0) {
+        list.innerHTML = `<p class="text-xs text-center py-6 text-slate-400">편성된 조가 없습니다. 먼저 조 편성을 진행해주세요.</p>`;
+        document.getElementById('drawOrderBtn').disabled = true;
+      } else {
+        document.getElementById('drawOrderBtn').disabled = false;
+        renderPresentationList(state.teams.map(t => t.name));
+      }
+      lucide.createIcons();
+    }
+
+    function closePresentationModal() {
+      playSound('click');
+      document.getElementById('presentationModal').classList.add('hidden');
+    }
+
+    function renderPresentationList(teamNames) {
+      const list = document.getElementById('presentationList');
+      list.innerHTML = '';
+      teamNames.forEach((name, idx) => {
+        const row = document.createElement('div');
+        row.className = "flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs";
+        row.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-[11px]">${idx + 1}</span>
+            <span class="font-bold text-slate-800">${name}</span>
+          </div>
+          <span class="text-slate-400 font-medium text-[11px]">${idx === 0 ? '첫 번째 발표' : `${idx + 1}번째`}</span>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    function drawPresentationOrder() {
+      if (state.teams.length === 0) return;
+      playSound('shuffle');
+
+      const btn = document.getElementById('drawOrderBtn');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>추첨 중...</span>`;
+      lucide.createIcons();
+
+      const names = state.teams.map(t => t.name);
+      
+      let counter = 0;
+      const interval = setInterval(() => {
+        renderPresentationList(shuffleArray(names));
+        counter++;
+        if (counter > 8) {
+          clearInterval(interval);
+          const finalOrder = shuffleArray(names);
+          renderPresentationList(finalOrder);
+          btn.disabled = false;
+          btn.innerHTML = `<i data-lucide="shuffle" class="w-3.5 h-3.5"></i><span>다시 추첨</span>`;
+          lucide.createIcons();
+          playSound('fanfare');
+          fireCelebrationConfetti();
+          showToast('발표 순서가 정해졌습니다!', 'success');
+        }
+      }, 100);
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      const colors = {
+        success: 'bg-emerald-600 text-white shadow-emerald-200',
+        error: 'bg-rose-600 text-white shadow-rose-200',
+        info: 'bg-slate-900 text-white shadow-slate-300'
+      };
+
+      const icons = {
+        success: 'check-circle-2',
+        error: 'alert-circle',
+        info: 'info'
+      };
+
+      toast.className = `flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium transform transition-all duration-300 translate-y-4 opacity-0 pointer-events-auto ${colors[type] || colors.info}`;
+      toast.innerHTML = `
+        <i data-lucide="${icons[type] || 'info'}" class="w-4 h-4 flex-shrink-0"></i>
+        <span>${message}</span>
+      `;
+
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-2', 'opacity-0');
+        setTimeout(() => {
+          if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 300);
+      }, 3200);
+    }
+
+    function fireCelebrationConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 60,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      parseInputAndUpdateList();
+
+      // Audio activation trigger on first user gesture
+      const unlockAudio = () => {
+        initAudio();
+        document.removeEventListener('click', unlockAudio);
+      };
+      document.addEventListener('click', unlockAudio);
+
+      // 드롭다운 외부 클릭 시 닫기
+      document.addEventListener('click', (e) => {
+        const container = document.getElementById('downloadDropdownContainer');
+        if (container && !container.contains(e.target)) {
+          closeDownloadMenu();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
