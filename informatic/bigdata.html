@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>데이터 수집·전처리 실습 - 유형 분류 · 5V · 전처리 · 질문 검증소</title>
+<style>
+:root{
+  --bg:#f4f6fa; --panel:#fff; --line:#dfe4ec; --ink:#14213d; --sub:#5c636b;
+  --navy:#14213d; --teal:#2a9d8f; --teal-soft:#e8f4f2;
+  --orange:#f4a261; --orange-soft:#fdf0e4; --orange-ink:#b55a1e;
+  --red:#c0392b; --red-soft:#fbebe9; --grey:#f2f4f6;
+  --code:#101a2e; --radius:14px;
+  --mono:'Consolas','D2Coding','Courier New',monospace;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0; background:var(--bg); color:var(--ink); line-height:1.6;
+  font-family:'Pretendard','Malgun Gothic','맑은 고딕',system-ui,sans-serif}
+.wrap{max-width:1100px; margin:0 auto; padding:0 16px 72px}
+header{background:var(--navy); color:#fff; padding:22px 0 18px}
+header .wrap{padding-bottom:0}
+.badge-unit{display:inline-block; background:rgba(255,255,255,.16); border-radius:999px;
+  padding:4px 13px; font-size:13px; font-weight:700}
+h1{margin:10px 0 4px; font-size:26px; font-weight:800; letter-spacing:-.02em}
+.subtitle{margin:0; color:#c5cdd8; font-size:14.5px}
+.progress{display:flex; gap:8px; flex-wrap:wrap; margin-top:16px}
+.pbadge{background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.28);
+  border-radius:999px; padding:7px 14px; font-size:13.5px; font-weight:700;
+  display:flex; align-items:center; gap:7px}
+.pbadge .dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.45)}
+.pbadge.done{background:#fff; color:var(--navy); border-color:#fff}
+.pbadge.done .dot{background:var(--teal)}
+nav.tabs{display:flex; gap:8px; flex-wrap:wrap; margin:20px 0}
+nav.tabs button{border:1px solid var(--line); background:#fff; color:var(--sub);
+  padding:12px 18px; border-radius:999px; font-size:15px; font-weight:700;
+  font-family:inherit; min-height:46px; cursor:pointer}
+nav.tabs button.active{background:var(--navy); border-color:var(--navy); color:#fff}
+section.tab{display:none} section.tab.active{display:block}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:20px; margin-bottom:16px}
+.card h2{margin:0 0 4px; font-size:20px; font-weight:800}
+.card h3{margin:20px 0 10px; font-size:16.5px; font-weight:800}
+.card .lead{margin:0 0 16px; color:var(--sub); font-size:14.5px}
+.note{background:var(--teal-soft); border-radius:10px; padding:13px 15px; font-size:14.5px; margin:14px 0}
+.note.warn{background:var(--orange-soft); color:#7a4a10}
+.note.bad{background:var(--red-soft); color:#8d2c22}
+.tag{display:inline-block; background:var(--grey); border-radius:6px; padding:2px 8px;
+  font-size:12.5px; color:var(--sub); font-weight:700}
+.btn{border:0; background:var(--teal); color:#fff; border-radius:10px; padding:13px 22px;
+  font-weight:800; font-size:16px; font-family:inherit; min-height:46px; cursor:pointer}
+.btn.navy{background:var(--navy)} .btn.ghost{background:#fff; color:var(--sub); border:1px solid var(--line)}
+.btnrow{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px}
+.items{display:flex; flex-wrap:wrap; gap:10px; background:var(--grey);
+  border-radius:12px; padding:12px; min-height:56px}
+.chip{border:1px solid #c9d2e0; background:#fff; border-radius:10px; padding:11px 14px;
+  font-size:16px; font-weight:700; color:var(--navy); min-height:44px;
+  display:flex; align-items:center; gap:7px; font-family:inherit; cursor:pointer}
+.chip.sel{background:var(--navy); color:#fff; border-color:var(--navy)}
+.chip.ok{background:var(--teal-soft); border-color:var(--teal)}
+.chip.no{background:var(--red-soft); border-color:#e8a9a2}
+.bins{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:14px}
+.bin{border:2px dashed #c9d2e0; border-radius:12px; padding:12px; background:#fff; min-height:110px}
+.bin.target{border-color:var(--teal); background:var(--teal-soft)}
+.bin h4{margin:0 0 8px; font-size:15px; font-weight:800; color:var(--navy)}
+.bin .list{display:flex; flex-direction:column; gap:8px}
+.hintline{margin-top:12px; font-size:14px; color:var(--sub); min-height:22px}
+.result{border-radius:12px; padding:14px 16px; font-size:14.5px; margin-top:14px; display:none}
+.result.show{display:block}
+.result.good{background:var(--teal-soft); border:1px solid #a9ddd6}
+.result.bad{background:var(--red-soft); border:1px solid #eec3be}
+.result ul{margin:8px 0 0; padding-left:20px}
+table{width:100%; border-collapse:collapse; margin-top:12px; font-size:14.5px}
+th,td{border:1px solid var(--line); padding:9px 8px; text-align:center}
+th{background:var(--navy); color:#fff; font-weight:800; font-size:13.5px}
+table.sheet td{cursor:pointer; font-family:var(--mono); font-weight:700; min-height:42px}
+table.sheet td:active{background:#eef1f7}
+table.sheet td.found{background:var(--teal-soft); color:var(--teal)}
+table.sheet td.miss{background:var(--red-soft)}
+table.sheet th.col{cursor:pointer}
+table.sheet th.col.found{background:var(--teal)}
+table.sheet td.empty{background:#fff8e1}
+.panel{border:1px solid var(--line); border-radius:12px; padding:14px; margin-top:12px; background:#fff; display:none}
+.panel.show{display:block}
+.panel .q{font-weight:800; margin-bottom:10px; font-size:15px}
+.panel .opts{display:flex; flex-wrap:wrap; gap:8px}
+.panel .opts button{border:1px solid var(--line); background:#fff; border-radius:10px;
+  padding:11px 14px; font-size:15px; font-weight:700; color:var(--navy);
+  min-height:44px; font-family:inherit; cursor:pointer}
+.q2{border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-bottom:12px; background:#fff}
+.q2 .qt{font-weight:800; font-size:15.5px; margin-bottom:12px}
+.q2 .qt .num{display:inline-grid; place-items:center; width:26px; height:26px; border-radius:50%;
+  background:var(--navy); color:#fff; font-size:13px; margin-right:8px; vertical-align:2px}
+.opts2{display:grid; gap:8px}
+.opt{border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:16px;
+  background:#fff; min-height:46px; display:flex; align-items:center; text-align:left;
+  font-family:inherit; color:var(--ink); cursor:pointer}
+.opt.right{border-color:var(--teal); background:var(--teal-soft); font-weight:800}
+.opt.wrong{border-color:#e8a9a2; background:var(--red-soft)}
+.exp{margin-top:10px; font-size:14px; color:var(--sub); background:var(--grey);
+  border-radius:9px; padding:11px 13px; display:none}
+.exp.show{display:block}
+.score{background:var(--navy); color:#fff; border-radius:12px; padding:16px 18px;
+  font-size:17px; font-weight:800; display:none; margin-top:4px}
+.score.show{display:block}
+.qform{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin:14px 0 0}
+.qform label{display:flex; flex-direction:column; gap:6px; font-size:14px; font-weight:700; color:var(--sub)}
+.qform input{border:1px solid var(--line); border-radius:10px; padding:12px 13px;
+  font-size:16px; font-family:inherit; color:var(--ink); min-height:46px; background:#fff}
+.qform input:focus{outline:2px solid var(--teal); outline-offset:1px}
+.gategrp{border:1px solid var(--line); border-radius:12px; padding:14px; margin-top:12px; background:#fff}
+.gategrp.pass{border-color:var(--teal); background:var(--teal-soft)}
+.gategrp h4{margin:0 0 10px; font-size:15.5px; font-weight:800; color:var(--navy)}
+.gategrp h4 .st{float:right; font-size:13px; font-weight:800; color:var(--sub)}
+.gategrp.pass h4 .st{color:var(--teal)}
+.pickrow{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; margin-top:12px}
+.picklabel{font-size:14px; font-weight:800; color:var(--navy); margin-bottom:6px}
+footer{text-align:center; color:#93a0b5; font-size:13px; padding:26px 0 10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <span class="badge-unit">Ⅱ단원 · 데이터</span>
+    <h1>데이터 수집·전처리 실습</h1>
+    <p class="subtitle">데이터 유형·속성 분류 · 빅데이터 5V · 전처리 실습 · 탐구 질문 검증소 · 확인 퀴즈</p>
+    <div class="progress" id="prog">
+      <div class="pbadge" data-k="type"><span class="dot"></span>유형·속성</div>
+      <div class="pbadge" data-k="v5"><span class="dot"></span>5V</div>
+      <div class="pbadge" data-k="pre"><span class="dot"></span>전처리</div>
+      <div class="pbadge" data-k="gate"><span class="dot"></span>질문 검증</div>
+      <div class="pbadge" data-k="quiz"><span class="dot"></span>퀴즈</div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="tabs" id="tabs">
+    <button class="active" data-t="type">① 유형·속성 분류</button>
+    <button data-t="v5">② 빅데이터 5V</button>
+    <button data-t="pre">③ 전처리 실습</button>
+    <button data-t="gate">④ 질문 검증소</button>
+    <button data-t="quiz">⑤ 확인 퀴즈</button>
+  </nav>
+
+  <!-- ① 유형·속성 -->
+  <section class="tab active" id="tab-type">
+    <div class="card">
+      <h2>데이터 유형 분류</h2>
+      <p class="lead">항목을 누른 다음 들어갈 칸을 누르세요. 정형화 여부로 나눕니다.
+        <span class="tag">활동지 활동 3</span></p>
+      <div class="items" id="tPool"></div>
+      <div class="hintline" id="tHint">항목을 먼저 고르세요.</div>
+      <div class="bins" id="tBins"></div>
+      <div class="btnrow">
+        <button class="btn" id="tCheck">정답 확인</button>
+        <button class="btn ghost" id="tReset">다시 하기</button>
+      </div>
+      <div class="result" id="tResult"></div>
+
+      <h3>데이터 속성 분류</h3>
+      <p class="lead" style="margin-bottom:8px">순서가 있는지, 셀 수 있는지로 나눕니다.</p>
+      <div class="items" id="aPool"></div>
+      <div class="hintline" id="aHint">항목을 먼저 고르세요.</div>
+      <div class="bins" id="aBins"></div>
+      <div class="btnrow">
+        <button class="btn" id="aCheck">정답 확인</button>
+        <button class="btn ghost" id="aReset">다시 하기</button>
+      </div>
+      <div class="result" id="aResult"></div>
+    </div>
+  </section>
+
+  <!-- ② 5V -->
+  <section class="tab" id="tab-v5">
+    <div class="card">
+      <h2>빅데이터 5V 찾기</h2>
+      <p class="lead">사례를 읽고 어떤 특징에 해당하는지 고르세요. <span class="tag">활동지 활동 2</span></p>
+      <div id="v5box"></div>
+      <div class="score" id="v5score"></div>
+      <div class="btnrow"><button class="btn ghost" id="v5Reset">다시 하기</button></div>
+      <div class="note"><b>기억하기</b> · 규모(Volume) · 속도(Velocity) · 다양성(Variety) ·
+        정확성(Veracity) · 가치(Value) — 앞 글자가 모두 V 입니다.</div>
+    </div>
+  </section>
+
+  <!-- ③ 전처리 -->
+  <section class="tab" id="tab-pre">
+    <div class="card">
+      <h2>전처리 실습 — 잘못된 곳을 찾아라</h2>
+      <p class="lead">여름이가 모은 데이터입니다(교과서 65p). <b>문제가 있는 칸을 누른 뒤</b> 어떤 문제인지 고르세요.
+        찾아야 할 문제는 <b>4가지</b>입니다. <span class="tag">활동지 활동 6</span></p>
+      <div id="sheetBox"></div>
+      <div class="panel" id="prePanel">
+        <div class="q" id="preQ"></div>
+        <div class="opts">
+          <button data-v="format">데이터 형식 오류</button>
+          <button data-v="outlier">이상값</button>
+          <button data-v="missing">결측값</button>
+          <button data-v="drop">불필요한 속성</button>
+          <button data-v="none">문제 없음</button>
+        </div>
+      </div>
+      <div class="hintline" id="preHint">찾은 문제 : 0 / 4</div>
+      <div class="result" id="preResult"></div>
+      <div class="btnrow">
+        <button class="btn navy" id="preApply">전처리 적용해 보기</button>
+        <button class="btn ghost" id="preReset">다시 하기</button>
+      </div>
+      <div id="preAfter"></div>
+    </div>
+  </section>
+
+  <!-- ④ 질문 검증소 -->
+  <section class="tab" id="tab-gate">
+    <div class="card">
+      <h2>질문 진단 — 이 질문, 통과일까 보류일까?</h2>
+      <p class="lead">좋은 탐구 질문의 조건은 세 가지입니다. ① 답이 숫자로 나온다 ② 비교할 것이 둘 이상이다 ③ 데이터가 실제로 있다.<br>
+        아래 여덟 개를 판정해 보세요. 답을 누르면 바로 이유가 나옵니다.</p>
+      <div id="diag"></div>
+      <div class="score" id="diagScore"></div>
+      <div class="btnrow"><button class="btn ghost" id="diagReset">다시 풀기</button></div>
+    </div>
+
+    <div class="card">
+      <h2>내 질문 자가 점검</h2>
+      <p class="lead">내가 정한 질문을 세 관문에 넣어 봅니다. 통과한 질문만 다음 시간으로 가져갑니다.</p>
+
+      <h3>1단계 · 질문 만들기</h3>
+      <div class="items" id="frameBox"></div>
+      <div class="qform">
+        <label>A 자리에 들어갈 말<input id="inA" type="text" placeholder="예: 미세먼지 농도" autocomplete="off"></label>
+        <label>B 자리에 들어갈 말<input id="inB" type="text" placeholder="예: 계절" autocomplete="off"></label>
+      </div>
+      <div class="note" id="qPreview">틀을 고르고 두 칸을 채우면 내 질문이 여기에 만들어집니다.</div>
+
+      <h3>2단계 · 세 관문 점검</h3>
+      <p class="lead">직접 해 본 것만 누르세요. 누르면 켜집니다.</p>
+      <div id="gateBox"></div>
+
+      <h3>3단계 · 판정</h3>
+      <div class="btnrow">
+        <button class="btn navy" id="judge">판정하기</button>
+        <button class="btn ghost" id="gateReset">처음부터</button>
+      </div>
+      <div class="result" id="judgeResult"></div>
+    </div>
+
+    <div class="card">
+      <h2>차트 고르기 도우미</h2>
+      <p class="lead">쓸 속성 두 개의 종류를 고르면 어울리는 차트를 알려 줍니다. (17차시에 다시 배웁니다)</p>
+      <div class="pickrow">
+        <div>
+          <div class="picklabel">속성 ①</div>
+          <div class="items" id="pick1"></div>
+        </div>
+        <div>
+          <div class="picklabel">속성 ②</div>
+          <div class="items" id="pick2"></div>
+        </div>
+      </div>
+      <div class="note" id="chartOut">두 속성의 종류를 모두 고르세요.</div>
+    </div>
+  </section>
+
+  <!-- ④ 퀴즈 -->
+  <section class="tab" id="tab-quiz">
+    <div class="card">
+      <h2>확인 퀴즈</h2>
+      <p class="lead">8문항입니다. 답을 누르면 바로 해설이 나옵니다.</p>
+      <div id="quiz"></div>
+      <div class="score" id="score"></div>
+      <div class="btnrow"><button class="btn ghost" id="quizReset">다시 풀기</button></div>
+    </div>
+  </section>
+</div>
+<footer>2026 정보 · Ⅱ단원 데이터 — 데이터 수집·전처리 실습 (15~16차시)</footer>
+
+<script>
+const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];
+const progress={type:false,v5:false,pre:false,gate:false,quiz:false};
+function mark(k){ if(progress[k])return; progress[k]=true; $(`.pbadge[data-k="${k}"]`).classList.add('done'); }
+$$('#tabs button').forEach(b=>b.onclick=()=>{
+  $$('#tabs button').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+  $$('section.tab').forEach(s=>s.classList.remove('active'));
+  $('#tab-'+b.dataset.t).classList.add('active'); window.scrollTo({top:0,behavior:'smooth'});
+});
+
+/* ============ 공통 분류 엔진 ============ */
+function makeSorter(cfg){
+  let place={}, picked=null;
+  const pool=$(cfg.pool), bins=$(cfg.bins), hint=$(cfg.hint), result=$(cfg.result);
+  function chip(it, inBin){
+    const el=document.createElement('button');
+    el.className='chip'+(picked===it.id?' sel':'')+(it._m==='ok'?' ok':'')+(it._m==='no'?' no':'');
+    el.textContent=it.label+(it._m==='ok'?'  ✓':it._m==='no'?'  ✕':'');
+    el.onclick=(ev)=>{
+      ev.stopPropagation();
+      if(inBin){ delete place[it.id]; picked=null; hint.textContent='다시 꺼냈습니다.'; render(); return; }
+      picked=(picked===it.id)?null:it.id;
+      hint.textContent=picked?`'${it.label}'을 골랐습니다. 들어갈 칸을 누르세요.`:'선택을 취소했습니다.';
+      render();
+    };
+    return el;
+  }
+  function render(){
+    pool.innerHTML='';
+    const left=cfg.items.filter(it=>!place[it.id]);
+    if(!left.length) pool.innerHTML='<span style="color:#5c636b;font-size:14.5px;padding:10px">모두 나누었습니다. [정답 확인]을 눌러 보세요.</span>';
+    left.forEach(it=>pool.appendChild(chip(it)));
+    bins.innerHTML='';
+    cfg.bins_.forEach(b=>{
+      const box=document.createElement('div');
+      box.className='bin'+(picked?' target':'');
+      const mine=cfg.items.filter(it=>place[it.id]===b.k);
+      box.innerHTML=`<h4>${b.t}</h4>`;
+      const list=document.createElement('div'); list.className='list';
+      mine.forEach(it=>list.appendChild(chip(it,true)));
+      box.appendChild(list);
+      box.onclick=(e)=>{
+        if(e.target.closest('.chip')) return;
+        if(!picked){ hint.textContent='먼저 위에서 항목을 고르세요.'; return; }
+        place[picked]=b.k; picked=null; hint.textContent='옮겼습니다.'; render();
+      };
+      bins.appendChild(box);
+    });
+  }
+  $(cfg.check).onclick=()=>{
+    const done=cfg.items.filter(it=>place[it.id]);
+    if(done.length<cfg.items.length){
+      result.className='result show bad';
+      result.innerHTML=`아직 나누지 않은 항목이 <b>${cfg.items.length-done.length}개</b> 있습니다.`;
+      return;
+    }
+    const wrong=[];
+    cfg.items.forEach(it=>{ const ok=place[it.id]===it.ans; it._m=ok?'ok':'no'; if(!ok) wrong.push(it); });
+    render();
+    if(!wrong.length){
+      result.className='result show good';
+      result.innerHTML='<b>모두 정확합니다.</b> '+cfg.okMsg;
+      mark(cfg.markKey);
+    } else {
+      result.className='result show bad';
+      result.innerHTML=`<b>${cfg.items.length-wrong.length} / ${cfg.items.length} 정답.</b><ul>`+
+        wrong.map(it=>`<li><b>${it.label}</b> → ${cfg.bins_.find(b=>b.k===it.ans).t} : ${it.why}</li>`).join('')+'</ul>';
+    }
+  };
+  $(cfg.reset).onclick=()=>{
+    place={}; picked=null; cfg.items.forEach(it=>delete it._m);
+    result.className='result'; hint.textContent='항목을 먼저 고르세요.'; render();
+  };
+  render();
+}
+
+makeSorter({
+  pool:'#tPool', bins:'#tBins', hint:'#tHint', result:'#tResult',
+  check:'#tCheck', reset:'#tReset', markKey:'type',
+  okMsg:'속성과 값이 구분되어 있는지가 판단 기준입니다.',
+  bins_:[{k:'s',t:'정형 데이터'},{k:'h',t:'반정형 데이터'},{k:'u',t:'비정형 데이터'}],
+  items:[
+    {id:1,label:'우리 반 키·몸무게 스프레드시트',ans:'s',why:'속성과 값이 표로 구분되어 있습니다.'},
+    {id:2,label:'공공데이터포털 CSV 파일',ans:'s',why:'쉼표로 속성이 구분된 정형 데이터입니다.'},
+    {id:3,label:'학교 홈페이지 HTML 문서',ans:'h',why:'형식은 있지만 정리·분류가 필요한 반정형입니다.'},
+    {id:4,label:'유튜브 영상 파일',ans:'u',why:'정형화된 형태가 없는 비정형 데이터입니다.'},
+    {id:5,label:'SNS 게시물',ans:'u',why:'속성·의미 파악이 어려운 비정형 데이터입니다.'},
+    {id:6,label:'설문 응답 정리표',ans:'s',why:'속성과 값이 구분된 정형 데이터입니다.'}
+  ]
+});
+makeSorter({
+  pool:'#aPool', bins:'#aBins', hint:'#aHint', result:'#aResult',
+  check:'#aCheck', reset:'#aReset', markKey:'type',
+  okMsg:'순서가 있는지, 셀 수 있는지로 판단합니다.',
+  bins_:[{k:'n',t:'명목형'},{k:'o',t:'순서형'},{k:'c',t:'연속형'},{k:'d',t:'이산형'}],
+  items:[
+    {id:11,label:'성별 (남/여)',ans:'n',why:'단순 분류로 순서가 없습니다.'},
+    {id:12,label:'성적 (A~E)',ans:'o',why:'값 사이에 순서가 있습니다.'},
+    {id:13,label:'키 (cm)',ans:'c',why:'연속적으로 변하는 수치입니다.'},
+    {id:14,label:'형제 수 (명)',ans:'d',why:'셀 수 있는 수치입니다.'},
+    {id:15,label:'계절 (봄~겨울)',ans:'n',why:'순서가 없는 범주입니다.'},
+    {id:16,label:'수면 시간 (시간)',ans:'c',why:'연속적으로 변하는 수치입니다.'}
+  ]
+});
+
+/* ============ ② 5V ============ */
+const V5=[
+ {q:'어떤 물건을 온라인으로 구매하면 구매 정보가 카드사·쇼핑몰에 계속 누적된다.',a:0,
+  e:'데이터의 양이 계속 늘어나는 것 → 규모(Volume)'},
+ {q:'내비게이션이 사고 상황을 실시간으로 계산해 다른 길을 안내한다.',a:1,
+  e:'데이터가 빠르게 생성·처리되는 것 → 속도(Velocity)'},
+ {q:'표 형태 데이터뿐 아니라 이미지·동영상·센서 데이터도 함께 처리한다.',a:2,
+  e:'여러 유형을 모두 다루는 것 → 다양성(Variety)'},
+ {q:'데이터가 많을수록 엉터리 데이터가 있을 수 있으므로 확인해야 한다.',a:3,
+  e:'신뢰할 수 있는 데이터인지 확인 → 정확성(Veracity)'},
+ {q:'대용량 데이터에서 분석 목적에 맞는 유용한 의미를 찾아낸다.',a:4,
+  e:'함축된 가치를 찾아내는 것 → 가치(Value)'}
+];
+const VNAMES=['규모(Volume)','속도(Velocity)','다양성(Variety)','정확성(Veracity)','가치(Value)'];
+function renderV5(){
+  let done=0, ok=0;
+  const box=$('#v5box'); box.innerHTML=''; $('#v5score').className='score';
+  V5.forEach((item,i)=>{
+    const q=document.createElement('div'); q.className='q2';
+    q.innerHTML=`<div class="qt"><span class="num">${i+1}</span>${item.q}</div>`;
+    const opts=document.createElement('div'); opts.className='opts2';
+    const exp=document.createElement('div'); exp.className='exp'; exp.innerHTML=`<b>해설</b> ${item.e}`;
+    VNAMES.forEach((v,j)=>{
+      const b=document.createElement('button'); b.className='opt'; b.textContent=v;
+      b.onclick=()=>{
+        if(q.dataset.done) return;
+        q.dataset.done='1'; done++;
+        [...opts.children].forEach((c,k)=>{
+          if(k===item.a) c.classList.add('right');
+          else if(k===j) c.classList.add('wrong');
+          c.disabled=true;
+        });
+        if(j===item.a) ok++;
+        exp.classList.add('show');
+        if(done===V5.length){
+          const sc=$('#v5score'); sc.className='score show';
+          sc.textContent=`${V5.length}문항 중 ${ok}문항 정답`;
+          if(ok>=4) mark('v5');
+        }
+      };
+      opts.appendChild(b);
+    });
+    q.appendChild(opts); q.appendChild(exp); box.appendChild(q);
+  });
+}
+$('#v5Reset').onclick=renderV5; renderV5();
+
+/* ============ ③ 전처리 ============ */
+const COLS=['학년','반','번호','이름','평균학습시간','정보시험성적'];
+const ROWS=[
+ ['1학년','1','3','박가을','3','5000'],
+ ['1','1','1','김봄','5','95'],
+ ['1','1','2','김여름','6','100'],
+ ['1','1','4','이겨울','4','92'],
+ ['1','1','5','이우주','2','85'],
+ ['1','1','6','정산','3','92'],
+ ['1','1','7','최바다','10','97'],
+ ['1','1','8','한별','5.5','']
+];
+/* 찾아야 할 4가지 */
+const TARGETS={ 'r0c0':'format', 'r0c5':'outlier', 'r7c5':'missing', 'col3':'drop' };
+const LABEL={format:'데이터 형식 오류',outlier:'이상값',missing:'결측값',drop:'불필요한 속성'};
+const WHY={
+  format:"학년 칸에 '1학년'과 '1'이 섞여 있습니다. 같은 값을 다르게 적었으므로 형식을 통일해야 합니다.",
+  outlier:'정보시험성적 5000점은 다른 값(85~100)과 비교해 과도하게 벗어난 이상값입니다.',
+  missing:'정보시험성적이 비어 있습니다. 수집되지 않은 결측값입니다.',
+  drop:'이름은 분석에 필요하지 않은 속성입니다. 개인 정보 보호를 위해서도 제거하는 것이 좋습니다.'
+};
+let found={}, selKey=null;
+function renderSheet(){
+  const head=`<tr><th></th>${COLS.map((c,j)=>
+    `<th class="col${found['col'+j]?' found':''}" data-col="${j}">${c}</th>`).join('')}</tr>`;
+  const body=ROWS.map((r,i)=>`<tr><th>${i+2}</th>${r.map((v,j)=>{
+    const key=`r${i}c${j}`;
+    const cls=[found[key]?'found':'', v===''?'empty':''].filter(Boolean).join(' ');
+    return `<td class="${cls}" data-key="${key}">${v===''?'(빈칸)':v}</td>`;
+  }).join('')}</tr>`).join('');
+  $('#sheetBox').innerHTML=`<table class="sheet">${head}${body}</table>`;
+  $$('#sheetBox td[data-key]').forEach(td=>td.onclick=()=>openPanel(td.dataset.key, td.textContent));
+  $$('#sheetBox th[data-col]').forEach(th=>th.onclick=()=>openPanel('col'+th.dataset.col, th.textContent+' 속성 전체'));
+  const n=Object.keys(found).length;
+  $('#preHint').textContent=`찾은 문제 : ${n} / 4`;
+}
+function openPanel(key,label){
+  if(found[key]) return;
+  selKey=key;
+  $('#preQ').textContent=`'${label}' — 이 칸(속성)의 문제는 무엇일까요?`;
+  $('#prePanel').classList.add('show');
+}
+$$('#prePanel .opts button').forEach(b=>b.onclick=()=>{
+  if(!selKey) return;
+  const want=TARGETS[selKey];
+  const box=$('#preResult');
+  if(b.dataset.v==='none'){
+    box.className='result '+(want?'show bad':'show good');
+    box.innerHTML = want ? '이 칸에는 문제가 있습니다. 다시 살펴보세요.' : '맞습니다. 이 칸은 문제가 없습니다.';
+  } else if(!want){
+    box.className='result show bad';
+    box.innerHTML='이 칸은 문제가 없는 값입니다. 다른 곳을 찾아보세요.';
+  } else if(b.dataset.v===want){
+    found[selKey]=want;
+    box.className='result show good';
+    box.innerHTML=`<b>${LABEL[want]} — 맞습니다.</b> ${WHY[want]}`;
+    if(Object.keys(found).length===4){
+      box.innerHTML+='<br><b>네 가지를 모두 찾았습니다.</b> [전처리 적용해 보기]를 눌러 정리된 데이터를 확인하세요.';
+      mark('pre');
+    }
+  } else {
+    box.className='result show bad';
+    box.innerHTML=`문제는 있지만 <b>${LABEL[b.dataset.v]}</b>은 아닙니다. 다시 생각해 보세요.`;
+  }
+  $('#prePanel').classList.remove('show'); selKey=null; renderSheet();
+});
+$('#preApply').onclick=()=>{
+  const avg=(arr)=>{ const v=arr.filter(x=>x!=='').map(Number); return (v.reduce((a,b)=>a+b,0)/v.length); };
+  const scores=ROWS.map(r=>r[5]).filter((v,i)=>v!=='' && i!==0);
+  const mean=Math.round(avg(scores)*10)/10;
+  const cleaned=ROWS.map((r,i)=>{
+    const row=[...r];
+    row[0]='1';
+    if(i===0) row[5]=String(mean)+' *';
+    if(row[5]==='') row[5]=String(mean)+' *';
+    row.splice(3,1);
+    return row;
+  });
+  const cols=COLS.filter((c,j)=>j!==3);
+  $('#preAfter').innerHTML=`
+    <h3>전처리 후 데이터</h3>
+    <table><tr><th></th>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>
+      ${cleaned.map((r,i)=>`<tr><th>${i+2}</th>${r.map(v=>`<td>${v}</td>`).join('')}</tr>`).join('')}</table>
+    <div class="note"><b>적용한 처리</b><br>
+      ① 불필요한 속성 제거 — '이름' 열 삭제<br>
+      ② 형식 오류 통일 — '1학년' → '1'<br>
+      ③ 이상값 대체 — 5000점을 평균 ${mean}점으로 대체 (* 표시)<br>
+      ④ 결측값 대체 — 빈칸을 평균 ${mean}점으로 대체 (* 표시)</div>
+    <div class="note warn">이상값·결측값은 <b>제거</b>하는 방법도 있습니다. 어느 쪽이 좋을지는
+      데이터의 수와 분석 목적에 따라 달라집니다.</div>`;
+  mark('pre');
+};
+$('#preReset').onclick=()=>{
+  found={}; selKey=null; $('#preResult').className='result';
+  $('#preAfter').innerHTML=''; $('#prePanel').classList.remove('show'); renderSheet();
+};
+renderSheet();
+
+/* ============ ④ 질문 검증소 ============ */
+const DIAG=[
+ {q:'우리 반 학생들은 행복할까?', pass:false,
+  e:'행복은 숫자로 잴 수 없습니다. 「속성 바꾸기」로 고칩니다 → "우리 반 학생들의 하루 여가 시간은 몇 시간인가?"'},
+ {q:'미세먼지 농도는 계절에 따라 다를까?', pass:true,
+  e:'계절(순서형) × 농도(연속형). 에어코리아 최종확정 측정자료에 실제로 있습니다. 막대그래프로 그립니다.'},
+ {q:'전 세계 인구는 몇 명일까?', pass:false,
+  e:'답이 값 하나뿐이라 그래프가 그려지지 않습니다. 비교할 것을 넣어야 합니다 → "우리 지역 인구는 어느 연령대가 가장 많을까?"'},
+ {q:'기온이 올라가면 아이스크림 판매량도 늘어날까?', pass:true,
+  e:'연속형 두 개의 관계를 묻습니다. 산점도로 그립니다. 기상 자료와 판매 통계가 모두 공개되어 있습니다.'},
+ {q:'우리 학교 3학년의 내신 성적은 2학년보다 높을까?', pass:false,
+  e:'개인 성적은 공개되지 않는 정보입니다. 「대상 바꾸기」로 공개 통계가 있는 집단으로 옮깁니다.'},
+ {q:'지하철은 몇 시에 가장 붐빌까?', pass:true,
+  e:'시간대(순서형) × 승차 인원(이산형). 서울 열린데이터광장에 파일이 있습니다. 다만 파일이 크니 역 2~3개만 남기세요.'},
+ {q:'빅데이터는 좋은 것일까?', pass:false,
+  e:'의견을 묻는 질문이라 데이터로 답이 나오지 않습니다. 탐구 질문은 "얼마나" "다른가"로 끝나야 합니다.'},
+ {q:'사교육비는 학교급에 따라 얼마나 다를까?', pass:true,
+  e:'학교급(순서형) × 금액(연속형). KOSIS 국가통계포털에서 바로 내려받을 수 있습니다.'}
+];
+let dAns=0, dCor=0;
+function renderDiag(){
+  dAns=0; dCor=0; $('#diagScore').className='score';
+  const box=$('#diag'); box.innerHTML='';
+  DIAG.forEach((item,i)=>{
+    const q=document.createElement('div'); q.className='q2';
+    q.innerHTML=`<div class="qt"><span class="num">${i+1}</span>${item.q}</div>`;
+    const opts=document.createElement('div'); opts.className='opts2';
+    const exp=document.createElement('div'); exp.className='exp';
+    exp.innerHTML=`<b>${item.pass?'통과':'보류'}</b> ${item.e}`;
+    ['통과 — 이대로 데이터를 찾으러 간다','보류 — 질문을 고쳐야 한다'].forEach((label,j)=>{
+      const b=document.createElement('button'); b.className='opt'; b.textContent=label;
+      b.onclick=()=>{
+        if(q.dataset.done) return;
+        q.dataset.done='1'; dAns++;
+        const right = item.pass?0:1;
+        [...opts.children].forEach((c,k)=>{
+          if(k===right) c.classList.add('right');
+          else if(k===j) c.classList.add('wrong');
+          c.disabled=true;
+        });
+        if(j===right) dCor++;
+        exp.classList.add('show');
+        if(dAns===DIAG.length){
+          const sc=$('#diagScore'); sc.className='score show';
+          sc.textContent=`${DIAG.length}문항 중 ${dCor}문항 정답`+
+            (dCor===DIAG.length?' — 질문 보는 눈이 생겼습니다!':' — 틀린 문항의 이유를 다시 읽어 보세요.');
+          if(dCor>=DIAG.length-2) mark('gate');
+        }
+      };
+      opts.appendChild(b);
+    });
+    q.appendChild(opts); q.appendChild(exp); box.appendChild(q);
+  });
+}
+$('#diagReset').onclick=renderDiag; renderDiag();
+
+/* ---- 내 질문 자가 점검 ---- */
+const FRAMES=[
+  {id:'A', label:'틀 A   ( A )는 ( B )에 따라 다를까?', make:(a,b)=>`${a}는 ${b}에 따라 다를까?`},
+  {id:'B', label:'틀 B   ( A )가 늘어나면 ( B )도 늘어날까?', make:(a,b)=>`${a}가 늘어나면 ${b}도 늘어날까?`}
+];
+let frame=null;
+function renderFrames(){
+  const box=$('#frameBox'); box.innerHTML='';
+  FRAMES.forEach(f=>{
+    const b=document.createElement('button');
+    b.className='chip'+(frame===f.id?' sel':''); b.textContent=f.label;
+    b.onclick=()=>{ frame=f.id; renderFrames(); updatePreview(); };
+    box.appendChild(b);
+  });
+}
+function updatePreview(){
+  const a=$('#inA').value.trim(), b=$('#inB').value.trim();
+  const el=$('#qPreview');
+  if(!frame){ el.className='note'; el.textContent='먼저 틀 A 또는 틀 B를 고르세요.'; return; }
+  if(!a||!b){ el.className='note'; el.textContent='두 칸을 모두 채우면 내 질문이 만들어집니다.'; return; }
+  const f=FRAMES.find(x=>x.id===frame);
+  el.className='note'; el.innerHTML=`<b>내 탐구 질문</b><br>${f.make(a,b)}`;
+}
+$('#inA').oninput=updatePreview; $('#inB').oninput=updatePreview;
+renderFrames();
+
+const GATES=[
+ {key:'g1', name:'관문 1 · 이 질문에 답할 데이터가 실제로 있는가',
+  items:['주소(URL)를 실제로 열어 보았다',
+         '파일을 내려받았거나 화면의 표를 확인했다',
+         '쓸 속성 2개를 이름으로 말할 수 있다'],
+  fail:'좁히기 카드 ① 기간 좁히기 · ② 지역 좁히기 · ③ 대상 바꾸기 중 하나를 골라 질문을 고쳐 쓰세요.'},
+ {key:'g2', name:'관문 2 · 숫자로 잴 수 있는가',
+  items:['속성 ①의 종류(명목·순서·연속·이산)를 정했다',
+         '속성 ②의 종류를 정했다',
+         '어떤 차트로 그릴지 정했다'],
+  fail:'좁히기 카드 ④ 속성 바꾸기 — 잴 수 없는 것을 잴 수 있는 것으로 바꾸세요. 아래 「차트 고르기 도우미」가 도움이 됩니다.'},
+ {key:'g3', name:'관문 3 · 윤리 점검',
+  items:['개인을 알아볼 수 있는 정보가 데이터에 없다',
+         '만든 기관과 내려받은 날짜를 적을 수 있다',
+         '한쪽 지역·한쪽 집단에 치우친 자료인지 확인했다'],
+  fail:'개인 정보가 들어 있다면 집계된 통계값으로 바꾸고, 출처를 모르면 원래 기관 사이트에서 다시 받으세요.'}
+];
+let checked={};
+function renderGates(){
+  const box=$('#gateBox'); box.innerHTML='';
+  GATES.forEach(g=>{
+    const done=g.items.every((_,i)=>checked[g.key+i]);
+    const cnt=g.items.filter((_,i)=>checked[g.key+i]).length;
+    const wrap=document.createElement('div');
+    wrap.className='gategrp'+(done?' pass':'');
+    wrap.innerHTML=`<h4>${g.name}<span class="st">${cnt} / ${g.items.length}${done?'   통과':''}</span></h4>`;
+    const items=document.createElement('div'); items.className='items';
+    g.items.forEach((t,i)=>{
+      const on=!!checked[g.key+i];
+      const b=document.createElement('button');
+      b.className='chip'+(on?' ok':'');
+      b.textContent=(on?'✓  ':'○  ')+t;
+      b.onclick=()=>{ checked[g.key+i]=!on; renderGates(); };
+      items.appendChild(b);
+    });
+    wrap.appendChild(items); box.appendChild(wrap);
+  });
+}
+renderGates();
+
+$('#judge').onclick=()=>{
+  const r=$('#judgeResult');
+  const a=$('#inA').value.trim(), b=$('#inB').value.trim();
+  if(!frame||!a||!b){
+    r.className='result bad show';
+    r.innerHTML='<b>먼저 질문을 만드세요.</b> 틀을 고르고 A·B 두 칸을 채워야 판정할 수 있습니다.';
+    return;
+  }
+  const failed=GATES.filter(g=>!g.items.every((_,i)=>checked[g.key+i]));
+  const q=FRAMES.find(x=>x.id===frame).make(a,b);
+  if(failed.length===0){
+    r.className='result good show';
+    r.innerHTML=`<b>통과</b> — 「${q}」<ul>`+
+      '<li>이제 짝에게 활동지를 넘겨 교차 검증을 받으세요. 짝이 내 주소를 직접 열어 봅니다.</li>'+
+      '<li>통과하면 활동지의 「저장 기록」 칸을 채우고 파일을 두 군데에 저장합니다.</li>'+
+      '<li>오늘 확정한 이 질문이 18차시 보고서의 출발점이 됩니다.</li></ul>';
+    mark('gate');
+  }else{
+    r.className='result bad show';
+    r.innerHTML=`<b>보류</b> — 「${q}」<br>아직 통과하지 못한 관문이 ${failed.length}개 있습니다.<ul>`+
+      failed.map(g=>`<li><b>${g.name}</b><br>${g.fail}</li>`).join('')+
+      '</ul>질문을 바꾸는 것은 실패가 아닙니다. 두 번 막혔다면 선생님께 「질문 은행」을 요청하세요.';
+  }
+};
+$('#gateReset').onclick=()=>{
+  frame=null; checked={}; $('#inA').value=''; $('#inB').value='';
+  $('#judgeResult').className='result'; renderFrames(); renderGates(); updatePreview();
+};
+
+/* ---- 차트 고르기 도우미 ---- */
+const KINDS=['명목형','순서형','연속형','이산형'];
+let pick=[null,null];
+const CHART={
+  '명목형|순서형':['묶은 막대그래프','두 분류를 겹쳐 비교합니다. 개수를 세는 열이 하나 더 필요합니다.'],
+  '명목형|연속형':['막대그래프','성별·지역처럼 이름만 다른 집단의 평균을 비교합니다. 항목이 5개 이하면 원그래프도 됩니다.'],
+  '명목형|이산형':['막대그래프','집단별 개수를 나란히 비교합니다.'],
+  '명목형|명목형':['교차표 또는 묶은 막대그래프','수치가 하나도 없습니다. 각 조합의 개수를 세어 막대로 그립니다.'],
+  '순서형|순서형':['교차표 또는 묶은 막대그래프','수치 속성이 하나도 없습니다. 잴 수 있는 속성을 하나 더 찾아보세요.'],
+  '순서형|연속형':['꺾은선그래프 또는 막대그래프','학년·월·시간대처럼 순서가 있는 값에 따라 수치가 어떻게 달라지는지 보여 줍니다.'],
+  '순서형|이산형':['막대그래프','순서가 있는 집단별로 개수를 나란히 비교합니다.'],
+  '연속형|연속형':['산점도','두 수치 사이에 관계가 있는지 봅니다. 점이 오른쪽 위로 몰리면 함께 늘어나는 관계입니다.'],
+  '연속형|이산형':['산점도','하나는 수치, 하나는 개수 — 관계를 보려면 산점도가 알맞습니다.'],
+  '이산형|이산형':['막대그래프 또는 산점도','개수끼리 비교하면 막대, 관계를 보려면 산점도입니다.']
+};
+function renderPick(idx){
+  const box=$('#pick'+(idx+1)); box.innerHTML='';
+  KINDS.forEach(k=>{
+    const b=document.createElement('button');
+    b.className='chip'+(pick[idx]===k?' sel':''); b.textContent=k;
+    b.onclick=()=>{ pick[idx]=k; renderPick(idx); showChart(); };
+    box.appendChild(b);
+  });
+}
+function showChart(){
+  const el=$('#chartOut');
+  if(!pick[0]||!pick[1]){ el.className='note'; el.textContent='두 속성의 종류를 모두 고르세요.'; return; }
+  const key=[pick[0],pick[1]].sort((x,y)=>KINDS.indexOf(x)-KINDS.indexOf(y)).join('|');
+  const hit=CHART[key];
+  el.className='note';
+  el.innerHTML=hit?`<b>${hit[0]}</b><br>${hit[1]}`
+                  :'<b>막대그래프</b><br>가장 무난한 선택입니다. 17차시에 자세히 배웁니다.';
+}
+renderPick(0); renderPick(1);
+
+/* ============ ④ 퀴즈 ============ */
+const QUIZ=[
+ {q:'빅데이터의 뜻으로 알맞은 것은?',
+  o:['디지털 환경에서 만들어지는 대량의 데이터 집합','크기가 큰 하나의 파일',
+     '암호화된 데이터의 모음','압축된 데이터의 모음'],a:0,
+  e:'넓은 뜻으로는 대량의 데이터를 수집·처리·분석해 가치를 추출하는 기술을 가리키기도 합니다.'},
+ {q:'빅데이터의 5V에 해당하지 않는 것은?',
+  o:['규모(Volume)','속도(Velocity)','가치(Value)','가격(Value for money)'],a:3,
+  e:'5V는 규모·속도·다양성·정확성·가치입니다.'},
+ {q:'스프레드시트나 CSV 파일처럼 속성과 값이 구분된 데이터는?',
+  o:['정형 데이터','반정형 데이터','비정형 데이터','메타 데이터'],a:0,
+  e:'정형 데이터는 의미 파악이 쉽고 원본을 바로 쓸 수 있습니다.'},
+ {q:'동영상, 소셜 미디어 게시물처럼 정형화된 형태가 없는 데이터는?',
+  o:['정형 데이터','반정형 데이터','비정형 데이터','수치형 데이터'],a:2,
+  e:'비정형 데이터는 사전 작업에 많은 시간과 비용이 듭니다.'},
+ {q:'성적(A/B/C/D/E)은 어떤 속성인가?',
+  o:['명목형','순서형','연속형','이산형'],a:1,
+  e:'분류된 값 사이에 순서가 있으므로 순서형입니다.'},
+ {q:'다음 중 온라인 공공 데이터를 수집하기에 알맞은 곳은?',
+  o:['공공 데이터 포털','메신저 앱','문서 작성 프로그램','파일 압축 프로그램'],a:0,
+  e:'공공데이터포털·AI Hub 등이 정부 기관의 공공 데이터를 제공합니다.'},
+ {q:'수집한 데이터에서 다른 값과 비교해 과도하게 벗어난 값을 무엇이라 하는가?',
+  o:['결측값','이상값','메타 데이터','속성'],a:1,
+  e:'이상값입니다. 누락된 값은 결측값입니다.'},
+ {q:'데이터를 수집할 때 지켜야 할 윤리로 알맞지 않은 것은?',
+  o:['개인 정보는 사전 동의를 받고 수집한다','데이터의 출처와 정확성을 확인한다',
+     '분석 결과가 잘 나오도록 한쪽에 치우친 데이터만 모은다','저작권 정책을 준수한다'],a:2,
+  e:'편향된 데이터는 편향된 결과를 낳아 특정 집단에 차별을 만들 수 있습니다.'}
+];
+let answered=0, correct=0;
+function renderQuiz(){
+  answered=0; correct=0; $('#score').className='score';
+  const box=$('#quiz'); box.innerHTML='';
+  QUIZ.forEach((item,i)=>{
+    const q=document.createElement('div'); q.className='q2';
+    q.innerHTML=`<div class="qt"><span class="num">${i+1}</span>${item.q}</div>`;
+    const opts=document.createElement('div'); opts.className='opts2';
+    const exp=document.createElement('div'); exp.className='exp'; exp.innerHTML=`<b>해설</b> ${item.e}`;
+    item.o.forEach((o,j)=>{
+      const b=document.createElement('button'); b.className='opt'; b.textContent=o;
+      b.onclick=()=>{
+        if(q.dataset.done) return;
+        q.dataset.done='1'; answered++;
+        [...opts.children].forEach((c,k)=>{
+          if(k===item.a) c.classList.add('right');
+          else if(k===j) c.classList.add('wrong');
+          c.disabled=true;
+        });
+        if(j===item.a) correct++;
+        exp.classList.add('show');
+        if(answered===QUIZ.length){
+          const sc=$('#score'); sc.className='score show';
+          sc.textContent=`${QUIZ.length}문항 중 ${correct}문항 정답`+
+            (correct===QUIZ.length?' — 완벽합니다!':' — 틀린 문항의 해설을 다시 읽어 보세요.');
+          if(correct>=QUIZ.length-1) mark('quiz');
+        }
+      };
+      opts.appendChild(b);
+    });
+    q.appendChild(opts); q.appendChild(exp); box.appendChild(q);
+  });
+}
+$('#quizReset').onclick=renderQuiz; renderQuiz();
+</script>
+</body>
+</html>
