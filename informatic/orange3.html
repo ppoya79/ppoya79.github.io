@@ -1,0 +1,3066 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<title>오렌지3 시각화 교실</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="코드 없이 마우스로 데이터를 그림으로 — 오렌지3(Orange3) 데이터 시각화 입문">
+<style>
+:root{
+  --ground:#F2F3F5;
+  --surface:#FFFFFF;
+  --surface-2:#F7F8FA;
+  --ink:#15181E;
+  --ink-2:#3E4450;
+  --muted:#69707C;
+  --line:#DEE1E6;
+  --line-strong:#C7CBD2;
+  --accent:#E8590C;
+  --accent-strong:#D9480F;
+  --accent-soft:#FBE7DA;
+  --violet:#7048E8;
+  --violet-soft:#ECE8FB;
+  --blue:#1971C2;
+  --blue-soft:#E1EFFA;
+  --green:#2F9E44;
+  --green-soft:#E2F3E6;
+  --ds-a:#1971C2;
+  --ds-b:#E8590C;
+  --ds-c:#2F9E44;
+  --shadow:0 1px 2px rgba(18,22,30,.05),0 10px 28px rgba(18,22,30,.07);
+  --sans:system-ui,-apple-system,"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1115;
+    --surface:#16191F;
+    --surface-2:#1B1F27;
+    --ink:#EDEFF3;
+    --ink-2:#C4C9D3;
+    --muted:#8B93A1;
+    --line:#2A2F39;
+    --line-strong:#3C4350;
+    --accent:#FF7A33;
+    --accent-strong:#FF8C4D;
+    --accent-soft:#39231A;
+    --violet:#9775FA;
+    --violet-soft:#282343;
+    --blue:#4DABF7;
+    --blue-soft:#152A40;
+    --green:#51CF66;
+    --green-soft:#14301D;
+    --ds-a:#4DABF7;
+    --ds-b:#FF7A33;
+    --ds-c:#51CF66;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1115;
+  --surface:#16191F;
+  --surface-2:#1B1F27;
+  --ink:#EDEFF3;
+  --ink-2:#C4C9D3;
+  --muted:#8B93A1;
+  --line:#2A2F39;
+  --line-strong:#3C4350;
+  --accent:#FF7A33;
+  --accent-strong:#FF8C4D;
+  --accent-soft:#39231A;
+  --violet:#9775FA;
+  --violet-soft:#282343;
+  --blue:#4DABF7;
+  --blue-soft:#152A40;
+  --green:#51CF66;
+  --green-soft:#14301D;
+  --ds-a:#4DABF7;
+  --ds-b:#FF7A33;
+  --ds-c:#51CF66;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none !important}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+}
+.container{max-width:1040px;margin:0 auto;padding:0 24px}
+a{color:var(--accent-strong)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+::selection{background:var(--accent-soft)}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:20;
+  background:var(--ground);
+  background:color-mix(in srgb, var(--ground) 88%, transparent);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+}
+.topbar-in{display:flex;align-items:center;gap:14px;height:56px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;letter-spacing:-.01em}
+.brand svg{flex:none}
+.brand small{font-weight:600;color:var(--muted);font-size:12px}
+.topbar-spacer{flex:1}
+.theme-btn{
+  font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--line-strong);border-radius:999px;
+  padding:6px 14px;cursor:pointer;transition:border-color .15s ease,color .15s ease;
+}
+.theme-btn:hover{border-color:var(--accent);color:var(--accent-strong)}
+.topnav{display:flex;gap:20px;font-size:13.5px;font-weight:600;color:var(--ink-2)}
+.topnav a{text-decoration:none;color:inherit}
+.topnav a:hover{color:var(--accent-strong)}
+@media (max-width:760px){.topnav{display:none}}
+
+/* ---------- hero ---------- */
+.hero{padding:64px 0 40px}
+.hero-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:40px;align-items:center}
+@media (max-width:900px){.hero-grid{grid-template-columns:minmax(0,1fr)}}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.14em;
+  color:var(--accent-strong);margin-bottom:18px;
+}
+.eyebrow::before{content:"";width:22px;height:2px;background:var(--accent)}
+h1{
+  font-size:clamp(30px,4.6vw,44px);line-height:1.22;font-weight:900;
+  letter-spacing:-.02em;text-wrap:balance;
+}
+h1 .hl{color:var(--accent-strong)}
+.lede{margin-top:16px;color:var(--ink-2);font-size:17px;max-width:34em}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--sans);font-size:15px;font-weight:700;text-decoration:none;
+  border-radius:10px;padding:11px 20px;cursor:pointer;
+  transition:transform .12s ease,box-shadow .12s ease,background .12s ease;
+}
+.btn-primary{background:var(--accent);color:#fff;border:1px solid var(--accent-strong)}
+.btn-primary:hover{background:var(--accent-strong);transform:translateY(-1px);box-shadow:var(--shadow)}
+.btn-ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line-strong)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent-strong)}
+.hero-meta{margin-top:22px;display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--muted);font-size:13px;font-family:var(--mono)}
+
+/* ---------- panels & canvas motif ---------- */
+.panel{
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  box-shadow:var(--shadow);overflow:hidden;
+}
+.panel-head{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;border-bottom:1px solid var(--line);
+  font-size:13px;font-weight:700;color:var(--ink-2);
+}
+.panel-head .dots{display:flex;gap:5px;margin-right:2px}
+.panel-head .dots i{width:8px;height:8px;border-radius:50%;background:var(--line-strong)}
+.panel-head .live{
+  margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:600;
+  color:var(--accent-strong);letter-spacing:.08em;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.panel-head .live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent);animation:blink 1.6s ease infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+@media (prefers-reduced-motion: reduce){.panel-head .live::before{animation:none}}
+.canvas-bg{
+  background-image:radial-gradient(var(--line-strong) 1px, transparent 1.4px);
+  background-size:18px 18px;
+}
+.wf-svg{display:block;width:100%;height:auto}
+.wf-svg text{font-family:var(--sans)}
+.node{cursor:pointer}
+.node .card{
+  fill:var(--surface);stroke:var(--line-strong);stroke-width:1;
+  transition:stroke .15s ease;
+}
+.node:hover .card{stroke:var(--accent)}
+.node.active .card{stroke:var(--accent);stroke-width:2}
+.node.ghost .card{stroke:var(--line-strong);stroke-dasharray:5 4;fill:transparent}
+.node.ghost .nlabel,.node.ghost .nsub{opacity:.45}
+.nlabel{font-size:13px;font-weight:700;fill:var(--ink)}
+.nsub{font-size:11px;font-weight:500;fill:var(--muted)}
+.catdot{stroke:var(--surface);stroke-width:1.5}
+.wf-info{border-top:1px solid var(--line);padding:14px 16px;min-height:96px}
+.wf-info .wi-name{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px}
+.wf-info .wi-cat{
+  font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;
+  padding:2px 8px;border-radius:999px;color:#fff;
+}
+.wf-info .wi-desc{margin-top:6px;color:var(--ink-2);font-size:14px}
+.wf-info .wi-io{margin-top:6px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.linkpath{fill:none;stroke:var(--line-strong);stroke-width:2}
+.linkflow{fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:7 7;opacity:0}
+.linkflow.on{opacity:.85;animation:flowmove 1.1s linear infinite}
+@keyframes flowmove{to{stroke-dashoffset:-14}}
+@media (prefers-reduced-motion: reduce){.linkflow.on{animation:none}}
+.linktag{font-family:var(--mono);font-size:10px;font-weight:600;fill:var(--muted)}
+.pulse{fill:var(--accent);opacity:.9}
+.chip-r{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1}
+.chip-t{font-family:var(--mono);font-size:11px;font-weight:600;fill:var(--accent-strong)}
+.chip-g{display:none}
+.chip-g.show{display:block}
+
+/* ---------- sections ---------- */
+.section{padding:64px 0 8px}
+.section-head{max-width:660px;margin-bottom:30px}
+h2{font-size:clamp(24px,3.2vw,32px);font-weight:900;letter-spacing:-.015em;line-height:1.3;text-wrap:balance}
+.section-head p{margin-top:10px;color:var(--ink-2);font-size:16px}
+.prose p{margin-bottom:14px;color:var(--ink-2)}
+.prose strong{color:var(--ink)}
+.about-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:36px;align-items:start}
+@media (max-width:900px){.about-grid{grid-template-columns:minmax(0,1fr)}}
+
+.fact-card{
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:16px 18px;box-shadow:var(--shadow);
+}
+.fact-card + .fact-card{margin-top:12px}
+.fact-card h3{font-size:15px;font-weight:800;display:flex;align-items:center;gap:9px}
+.fact-card h3 .sq{width:9px;height:9px;border-radius:3px;flex:none}
+.fact-card p{margin-top:5px;font-size:13.5px;color:var(--muted)}
+.glossary{
+  margin-top:14px;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:12px;padding:14px 18px;font-size:13.5px;
+}
+.glossary dt{font-weight:800;display:inline}
+.glossary dd{display:inline;color:var(--ink-2);margin-left:6px}
+.glossary .g-row + .g-row{margin-top:8px}
+
+/* ---------- anscombe ---------- */
+.ans-panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.ans-stats{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  border-bottom:1px solid var(--line);
+}
+@media (max-width:720px){.ans-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{padding:16px 20px;border-right:1px solid var(--line)}
+.stat:last-child{border-right:none}
+@media (max-width:720px){.stat:nth-child(2n){border-right:none}}
+.stat .k{font-size:12px;font-weight:600;color:var(--muted)}
+.stat .v{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;margin-top:2px}
+.ans-toggle-row{padding:14px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.ans-hint{font-size:13.5px;color:var(--muted)}
+.ans-grid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;
+  padding:8px 20px 20px;
+}
+@media (max-width:720px){.ans-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ans-cell{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px}
+.ans-cell .cap{font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--muted);text-align:center;margin-top:4px}
+.ans-cell svg{display:block;width:100%;height:auto}
+.ans-cell svg text{font-family:var(--mono)}
+.ans-takeaway{
+  margin:2px 20px 18px;padding:12px 16px;border-radius:10px;
+  background:var(--accent-soft);color:var(--ink);font-size:14px;font-weight:600;
+  border:1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.ans-note{padding:0 20px 16px;font-size:12.5px;color:var(--muted)}
+
+/* ---------- gallery ---------- */
+.wg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:16px}
+.wg-card{
+  display:block;
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  overflow:hidden;box-shadow:var(--shadow);
+  transition:transform .15s ease,box-shadow .15s ease;
+}
+.wg-card:hover{transform:translateY(-3px);box-shadow:0 2px 4px rgba(18,22,30,.06),0 14px 34px rgba(18,22,30,.11)}
+.wg-fig{background:var(--surface-2);border-bottom:1px solid var(--line);padding:10px 12px 8px}
+.wg-fig svg{display:block;width:100%;height:auto}
+.wg-body{padding:13px 15px 15px}
+.wg-name{font-weight:800;font-size:15px}
+.wg-name span{font-family:var(--mono);font-weight:600;font-size:11.5px;color:var(--muted);margin-left:6px}
+.wg-desc{margin-top:5px;font-size:13px;color:var(--ink-2)}
+.wg-when{margin-top:8px;font-size:12.5px;color:var(--muted)}
+.wg-when b{color:var(--accent-strong);font-weight:700}
+.wg-card-link{color:inherit;text-decoration:none;cursor:pointer}
+.wg-card-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wg-card-link:hover .wg-more{text-decoration:underline}
+.wg-more{margin-top:10px;font-size:12px;font-weight:700;color:var(--accent-strong)}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+section[id]{scroll-margin-top:70px}
+
+/* ---------- stepper ---------- */
+.step-wrap{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:24px;align-items:stretch}
+@media (max-width:900px){.step-wrap{grid-template-columns:minmax(0,1fr)}}
+.step-text{
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  box-shadow:var(--shadow);padding:22px;display:flex;flex-direction:column;
+}
+.step-num{
+  font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent-strong);
+  letter-spacing:.12em;
+}
+.step-title{font-size:20px;font-weight:900;margin-top:6px;letter-spacing:-.01em}
+.step-body{margin-top:10px;color:var(--ink-2);font-size:14.5px}
+.step-tip{
+  margin-top:14px;padding:10px 14px;border-radius:10px;font-size:13px;
+  background:var(--surface-2);border:1px dashed var(--line-strong);color:var(--muted);
+}
+.step-tip b{color:var(--ink-2)}
+.step-ctrl{margin-top:auto;padding-top:18px;display:flex;align-items:center;gap:10px}
+.step-dots{display:flex;gap:7px;margin:0 6px}
+.step-dots button{
+  width:9px;height:9px;border-radius:50%;border:none;cursor:pointer;
+  background:var(--line-strong);padding:0;transition:background .15s ease,transform .15s ease;
+}
+.step-dots button.cur{background:var(--accent);transform:scale(1.25)}
+.step-btn{
+  font-family:var(--sans);font-size:13.5px;font-weight:700;
+  background:var(--surface);border:1px solid var(--line-strong);color:var(--ink);
+  border-radius:9px;padding:8px 15px;cursor:pointer;transition:all .12s ease;
+}
+.step-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent-strong)}
+.step-btn:disabled{opacity:.4;cursor:default}
+.step-stage{
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;
+}
+.step-stage .canvas-bg{flex:1;min-height:280px}
+.step-stage .wf-svg{width:100%;height:100%;min-height:280px}
+
+/* ---------- iris demo ---------- */
+.demo-ctrl{
+  display:flex;flex-wrap:wrap;align-items:center;gap:12px;
+  padding:14px 16px;border-bottom:1px solid var(--line);
+}
+.demo-ctrl label{font-size:13px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:8px}
+.demo-ctrl select{
+  font-family:var(--sans);font-size:13.5px;font-weight:600;color:var(--ink);
+  background:var(--surface-2);border:1px solid var(--line-strong);border-radius:8px;
+  padding:7px 10px;cursor:pointer;
+}
+.demo-hint{margin-left:auto;font-size:12.5px;color:var(--muted)}
+/* box anatomy + mean/median playground */
+.section-head.has-fold{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.section-head.has-fold > div{flex:1;min-width:0}
+.fold-btn{flex:none;margin-top:4px;padding:9px 15px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-2);font:600 13px/1 var(--sans);cursor:pointer;transition:border-color .15s ease,color .15s ease,transform .15s ease}
+.fold-btn:hover{border-color:var(--accent);color:var(--accent-strong)}
+.fold-btn:active{transform:scale(.97)}
+.fold-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* scatter anatomy */
+.corr-ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:12px 16px 0}
+.corr-ctrl input[type=range]{flex:1;min-width:180px;accent-color:var(--accent)}
+.corr-ctrl .cr-lbl{font:600 12px var(--sans);color:var(--muted);flex:none}
+.corr-readout{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline;padding:6px 18px 14px;font-size:13.5px}
+.corr-readout b{font-family:var(--mono);font-size:16px;color:var(--accent-strong)}
+/* bar vs histogram anatomy */
+.bvh-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media (max-width:880px){.bvh-grid{grid-template-columns:1fr}}
+.bvh-wide{margin-bottom:16px}
+.bvh-badge{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent-strong);margin-left:8px;vertical-align:2px}
+.bvh-quiz{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.bvh-q{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.bvh-q .qq{font-size:13.5px;font-weight:700;color:var(--ink);flex:1;min-width:200px}
+.bvh-btn{padding:7px 12px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-2);font:700 12.5px/1 var(--sans);cursor:pointer}
+.bvh-btn:hover{border-color:var(--accent);color:var(--accent-strong)}
+.bvh-btn.ok{border-color:var(--green);color:var(--green);background:var(--green-soft)}
+.bvh-btn.no{border-color:var(--muted);color:var(--muted);background:var(--surface-2);text-decoration:line-through}
+.bvh-why{flex-basis:100%;font-size:12.5px;color:var(--green);font-weight:600;display:none}
+.bvh-q.done .bvh-why{display:block}
+@media (max-width:720px){.bvh-btn{flex:1;min-width:120px}}
+/* widget anatomy menu */
+.ana-list{display:flex;flex-direction:column;gap:10px}
+.ana-item{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+.ana-item summary{display:flex;align-items:center;gap:10px;padding:14px 18px;cursor:pointer;list-style:none;font-weight:700;font-size:15px;color:var(--ink)}
+.ana-item summary::-webkit-details-marker{display:none}
+.ana-item summary:hover{color:var(--accent-strong)}
+.ana-item summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.ana-name{display:inline-flex;align-items:center;gap:8px}
+.ana-name::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+.ana-en{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--muted)}
+.ana-go{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted)}
+.ana-item[open] summary{border-bottom:1px solid var(--line);background:var(--surface-2)}
+.ana-item[open] .ana-go{color:var(--accent-strong)}
+.ana-body{padding:16px 18px}
+.ana-lead{font-size:13.5px;color:var(--ink-2);margin-bottom:12px}
+.ana-btn{display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.ana-grid{display:grid;grid-template-columns:230px 1fr;gap:16px;align-items:start}
+.ana-fig{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px}
+.ana-fig svg{display:block;width:100%;height:auto}
+.ana-parts{margin:0;display:flex;flex-direction:column;gap:8px}
+.ana-row{display:grid;grid-template-columns:112px 1fr;gap:10px;align-items:baseline}
+.ana-row dt{font-weight:800;font-size:13.5px;color:var(--accent-strong)}
+.ana-row dd{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.65}
+.ana-demo{display:inline-block;margin-top:12px;font-size:13px;font-weight:700;color:var(--accent-strong);text-decoration:none}
+.ana-demo:hover{text-decoration:underline}
+.ana-vs{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:14px}
+.ana-vs-col{min-width:0}
+.ana-vs-title{font-weight:800;font-size:13.5px;color:var(--ink);margin-bottom:8px}
+.ana-vs-title span{font-family:var(--mono);font-size:10.5px;font-weight:600;color:var(--muted);margin-left:6px}
+.ana-vs-col svg{display:block;width:100%;height:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+.ana-vs-list{margin:0;padding:0 0 0 16px;font-size:12.5px;color:var(--ink-2);line-height:1.6;display:flex;flex-direction:column;gap:3px}
+.ana-vs-list b{color:var(--accent-strong)}
+.ana-vs-sum{grid-column:1/-1;margin:2px 0 0;font-size:13px;color:var(--ink-2);border-top:1px dashed var(--line-strong);padding-top:10px}
+.ana-vs-sum b{color:var(--accent-strong)}
+@media (max-width:720px){.ana-vs{grid-template-columns:1fr}}
+@media (max-width:760px){.ana-grid{grid-template-columns:1fr}.ana-row{grid-template-columns:96px 1fr}}
+.anatomy-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:16px;align-items:stretch;margin-bottom:16px}
+.anatomy-svgwrap{padding:12px 14px 8px}
+.anatomy-svgwrap svg{display:block;width:100%;height:auto}
+.anat-part{cursor:pointer;outline:none}
+.anat-part.dim{opacity:.25}
+.anat-part.sel .anat-lbl{font-weight:800}
+.anat-part:focus-visible .anat-hit{stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 3}
+.anat-info{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;justify-content:center;box-shadow:var(--shadow)}
+.anat-info .ai-title{font-weight:800;font-size:17px;margin-bottom:8px;display:flex;align-items:center;gap:9px}
+.anat-info .ai-dot{width:10px;height:10px;border-radius:50%;flex:none}
+.anat-info .ai-body{color:var(--ink-2);font-size:14px;line-height:1.7}
+.anat-info .ai-math{margin-top:14px;font-family:var(--mono);font-size:12.5px;color:var(--accent-strong);background:var(--accent-soft);border-radius:8px;padding:9px 11px;line-height:1.6}
+.play-ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 16px 0}
+#playCanvas{display:block;width:100%;height:215px;touch-action:none;cursor:grab}
+.play-readout{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline;padding:8px 18px 16px;font-size:14px}
+.play-readout .ro-mean b{color:var(--violet);font-family:var(--mono);font-size:19px}
+.play-readout .ro-med b{color:var(--accent-strong);font-family:var(--mono);font-size:19px}
+.play-readout .ro-note{color:var(--muted);font-size:12.5px;margin-left:auto}
+@media (max-width:920px){.anatomy-grid{grid-template-columns:1fr}.play-readout .ro-note{margin-left:0;width:100%}}
+@media (max-width:720px){.demo-hint{margin-left:0;width:100%}}
+#irisCanvas{display:block;width:100%;height:380px;touch-action:none;cursor:crosshair}
+.demo-legend{display:flex;flex-wrap:wrap;gap:14px;padding:10px 16px;border-top:1px solid var(--line);font-size:13px}
+.lg-item{display:inline-flex;align-items:center;gap:7px;color:var(--ink-2);font-weight:600}
+.lg-dot{width:10px;height:10px;border-radius:50%}
+.lg-n{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:500}
+.demo-sel{
+  padding:11px 16px;border-top:1px solid var(--line);
+  background:var(--surface-2);font-size:13.5px;color:var(--ink-2);
+  display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;min-height:46px;
+}
+.demo-sel .sel-null{color:var(--muted)}
+.demo-sel b{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--ink)}
+.demo-sel .chip{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent-strong)}
+
+/* ---------- datasets ---------- */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:640px}
+th{
+  text-align:left;font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--muted);
+  padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface-2);white-space:nowrap;
+}
+td{padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+td .ds-name{font-weight:800}
+td .ds-ko{display:block;font-size:12px;color:var(--muted);font-weight:500}
+.tag{
+  display:inline-block;font-size:11px;font-weight:700;font-family:var(--mono);
+  padding:2px 8px;border-radius:999px;letter-spacing:.04em;
+}
+.tag-c{background:var(--blue-soft);color:var(--blue)}
+.tag-r{background:var(--green-soft);color:var(--green)}
+.tbl-note{margin-top:12px;font-size:13px;color:var(--muted)}
+
+/* ---------- start / tips ---------- */
+.start-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:24px;align-items:start}
+@media (max-width:900px){.start-grid{grid-template-columns:minmax(0,1fr)}}
+ol.start-steps{list-style:none;counter-reset:s;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.start-steps li{counter-increment:s;padding:16px 20px 16px 58px;position:relative;border-bottom:1px solid var(--line)}
+.start-steps li:last-child{border-bottom:none}
+.start-steps li::before{
+  content:counter(s);position:absolute;left:18px;top:16px;
+  width:26px;height:26px;border-radius:8px;background:var(--accent-soft);
+  color:var(--accent-strong);font-family:var(--mono);font-weight:700;font-size:13px;
+  display:flex;align-items:center;justify-content:center;
+}
+.start-steps b{display:block;font-size:15px;font-weight:800;margin-bottom:2px}
+.start-steps p{font-size:13.5px;color:var(--ink-2)}
+.code{
+  font-family:var(--mono);font-size:12.5px;background:var(--surface-2);
+  border:1px solid var(--line);border-radius:6px;padding:1px 7px;color:var(--ink);
+  white-space:nowrap;
+}
+.tip-grid{display:grid;gap:14px}
+.tip-card{
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:16px 18px;box-shadow:var(--shadow);
+}
+.tip-card .t-tag{
+  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;
+  color:var(--accent-strong);
+}
+.tip-card b{display:block;font-size:15px;font-weight:800;margin-top:5px}
+.tip-card p{margin-top:4px;font-size:13.5px;color:var(--muted)}
+
+/* ---------- footer ---------- */
+footer{margin-top:72px;border-top:1px solid var(--line);padding:26px 0 40px;color:var(--muted);font-size:13px}
+footer .f-in{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between}
+
+/* ---------- reveal ---------- */
+.js .reveal{opacity:0;transform:translateY(14px);transition:opacity .55s ease,transform .55s ease}
+.js .reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion: reduce){
+  .js .reveal{opacity:1;transform:none;transition:none}
+}
+</style>
+<script>document.documentElement.className += ' js';</script>
+</head>
+<body>
+<header class="topbar">
+  <div class="container topbar-in">
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" fill="var(--accent)"/>
+        <g stroke="#fff" stroke-width="1.4" fill="none">
+          <circle cx="12" cy="12" r="6.2"/>
+          <path d="M12 5.8v12.4M6.4 8.9l11.2 6.2M17.6 8.9L6.4 15.1"/>
+        </g>
+      </svg>
+      오렌지3 시각화 교실
+      <small>Orange3 · Data Visualization</small>
+    </div>
+    <div class="topbar-spacer"></div>
+    <nav class="topnav" aria-label="페이지 이동">
+      <a href="#why">왜 그림인가</a>
+      <a href="#gallery">위젯</a>
+      <a href="#workflow">따라하기</a>
+      <a href="#demo">실습</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" type="button" aria-label="화면 모드 변경">테마: 시스템</button>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ HERO ============ -->
+<section class="hero container">
+  <div class="hero-grid">
+    <div>
+      <span class="eyebrow">오렌지3(Orange3) · 데이터 시각화 입문</span>
+      <h1>코드 없이, 마우스로 —<br><span class="hl">데이터가 그림이 되는 곳</span></h1>
+      <p class="lede">
+        오렌지3는 위젯을 선으로 연결해 데이터를 분석하는 오픈소스 도구입니다.
+        프로그래밍을 몰라도 산점도·상자 그림·히스토그램을 자유롭게 그리고,
+        그림 위에서 마우스로 데이터를 직접 골라낼 수 있습니다.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#demo">산점도 체험하기</a>
+        <a class="btn btn-ghost" href="#workflow">5분 따라하기</a>
+      </div>
+      <div class="hero-meta">
+        <span>무료 · 오픈소스</span>
+        <span>Windows / macOS / Linux</span>
+        <span>위젯 100여 개</span>
+        <span>설치 후 인터넷 불필요</span>
+      </div>
+    </div>
+    <div class="panel" aria-label="오렌지3 워크플로우 예시">
+      <div class="panel-head">
+        <span class="dots"><i></i><i></i><i></i></span>
+        캔버스 — 위젯을 연결하면 분석이 됩니다
+        <span class="live">LIVE</span>
+      </div>
+      <div class="canvas-bg">
+        <svg class="wf-svg" id="wfSvg" viewBox="0 0 420 300" role="img" aria-label="File 위젯에서 Scatter Plot, Data Table로 이어지는 워크플로우"></svg>
+      </div>
+      <div class="wf-info" id="wfInfo" aria-live="polite">
+        <div class="wi-name">위젯을 눌러 보세요</div>
+        <div class="wi-desc">카드 하나하나가 <strong>위젯</strong>, 위젯을 잇는 선이 <strong>채널</strong>입니다. 선을 따라 데이터가 흐릅니다.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ABOUT ============ -->
+<section class="section container" id="about">
+  <div class="section-head reveal">
+    <span class="eyebrow">오렌지3란</span>
+    <h2>스프레드시트를 다루듯, 데이터 분석을 다룹니다</h2>
+    <p>슬로베니아 류블랴나 대학이 만드는 오픈소스 데이터 마이닝 도구. 분석 절차를 ‘코드’가 아니라 ‘그림(워크플로우)’로 만듭니다.</p>
+  </div>
+  <div class="about-grid">
+    <div class="prose reveal">
+      <p>
+        오렌지3에서 분석은 <strong>위젯을 연결하는 일</strong>입니다. 데이터를 불러오는 <strong>File</strong>,
+        관계를 보는 <strong>Scatter Plot</strong>, 결과를 확인하는 <strong>Data Table</strong> —
+        기능 블록을 캔버스에 놓고 선으로 잇으면, 그 연결도가 곧 분석 절차가 됩니다.
+      </p>
+      <p>
+        시각화 위젯은 ‘보여 주기’로 끝나지 않습니다. 그래프 위에서 <strong>점을 직접 드래그해 선택</strong>하면
+        그 선택이 하나의 데이터 필터가 되어 다음 위젯으로 전달됩니다. 그림을 보는 행위가 곧 분석이 되는 셈입니다.
+      </p>
+      <p>
+        그래서 오렌지3는 <strong>초·중·고·대학의 데이터 문해 수업</strong>에서 널리 쓰입니다.
+        개념 설명에 코드가 필요 없고, 결과가 즉시 눈에 보이기 때문입니다.
+      </p>
+      <dl class="glossary">
+        <div class="g-row"><dt>위젯</dt><dd>한 가지 일을 하는 기능 블록 — 불러오기, 그래프, 모델, 평가 등 100여 개</dd></div>
+        <div class="g-row"><dt>채널</dt><dd>위젯을 잇는 선. 데이터가 흐르는 방향을 정합니다</dd></div>
+        <div class="g-row"><dt>신호</dt><dd>채널로 흘러가는 실제 내용물 — 데이터 표, 선택된 행, 학습된 모델</dd></div>
+      </dl>
+    </div>
+    <div class="reveal">
+      <div class="fact-card">
+        <h3><span class="sq" style="background:var(--accent)"></span>마우스로 분석한다</h3>
+        <p>코드 0줄. 위젯을 끌어 놓고 연결하면 워크플로우가 곧 분석 절차입니다.</p>
+      </div>
+      <div class="fact-card">
+        <h3><span class="sq" style="background:var(--violet)"></span>위젯 100여 개</h3>
+        <p>파일·정제·시각화·머신러닝·모델 평가까지 한 캔버스에서 이어집니다.</p>
+      </div>
+      <div class="fact-card">
+        <h3><span class="sq" style="background:var(--blue)"></span>완전 무료 · 오픈소스</h3>
+        <p>학교 PC에 자유롭게 설치할 수 있고, 예시 데이터셋도 함께 들어 있습니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WHY ============ -->
+<section class="section container" id="why">
+  <div class="section-head reveal">
+    <span class="eyebrow">왜 그림으로 보는가</span>
+    <h2>숫자만 보면, 완전히 다른 그림을 놓칩니다</h2>
+    <p>아래 네 데이터셋은 통계 요약이 <strong>완전히 같습니다</strong>. 과연 같은 데이터일까요? 버튼을 눌러 그림으로 확인해 보세요.</p>
+  </div>
+  <div class="ans-panel reveal">
+    <div class="ans-stats" id="ansStats">
+      <div class="stat"><div class="k">x 평균</div><div class="v" id="stMx">—</div></div>
+      <div class="stat"><div class="k">y 평균</div><div class="v" id="stMy">—</div></div>
+      <div class="stat"><div class="k">상관계수 r</div><div class="v" id="stR">—</div></div>
+      <div class="stat"><div class="k">회귀식</div><div class="v" id="stFit" style="font-size:16px">—</div></div>
+    </div>
+    <div class="ans-toggle-row">
+      <button class="btn btn-primary" id="ansBtn" type="button" aria-expanded="false">그림으로 보기 ↓</button>
+      <span class="ans-hint">오렌지3에서는 이 네 데이터를 Scatter Plot 네 개로 나란히 놓아 바로 비교합니다.</span>
+    </div>
+    <div class="ans-grid" id="ansGrid" hidden></div>
+    <div class="ans-takeaway" id="ansTakeaway" hidden>
+      평균·상관계수·회귀선이 모두 같은 네 데이터 — 그러나 그림은 전혀 다릅니다.
+      요약 숫자에 숨어 있는 구조를 꺼내는 도구가 바로 데이터 시각화입니다.
+    </div>
+    <div class="ans-note">데이터: F. J. Anscombe(1973)가 시각화의 필요성을 보이기 위해 만든 “앤스콤 4중주”.</div>
+  </div>
+</section>
+
+<!-- ============ GALLERY ============ -->
+<section class="section container" id="gallery">
+  <div class="section-head reveal">
+    <span class="eyebrow">시각화 위젯 갤러리</span>
+    <h2>어떤 그림을 그릴 수 있나</h2>
+    <p>Visualize 범주의 대표 위젯 여덟 가지. 모두 그래프 위에서 직접 데이터를 선택해 다음 단계로 넘길 수 있습니다.</p>
+  </div>
+  <div class="wg-grid">
+
+    <a class="wg-card reveal wg-card-link" href="#scatteranatomy" aria-label="산점도 — 해부도로 자세히 보기">
+      <div class="wg-fig">
+        <svg viewBox="0 0 120 72" aria-hidden="true">
+          <g stroke="var(--line-strong)"><line x1="14" y1="10" x2="14" y2="60"/><line x1="14" y1="60" x2="112" y2="60"/></g>
+          <g fill="var(--blue)" opacity=".9">
+            <circle cx="26" cy="50" r="3"/><circle cx="31" cy="46" r="3"/><circle cx="36" cy="52" r="3"/><circle cx="29" cy="55" r="3"/>
+          </g>
+          <g fill="var(--accent)" opacity=".9">
+            <circle cx="52" cy="38" r="3"/><circle cx="58" cy="42" r="3"/><circle cx="63" cy="34" r="3"/><circle cx="56" cy="47" r="3"/>
+          </g>
+          <g fill="var(--green)" opacity=".9">
+            <circle cx="84" cy="22" r="3"/><circle cx="90" cy="26" r="3"/><circle cx="95" cy="18" r="3"/><circle cx="88" cy="30" r="3"/>
+          </g>
+        </svg>
+      </div>
+      <div class="wg-body">
+        <div class="wg-name">산점도<span>Scatter Plot</span></div>
+        <div class="wg-desc">두 변수를 X·Y축에 놓고 한 행을 점 하나로. 색·크기·모양으로 변수를 더 겹쳐 표현합니다.</div>
+        <div class="wg-when"><b>언제:</b> 두 변수의 관계를 보고 싶을 때 · 점을 드래그해 골라내기</div>
+        <div class="wg-more">클릭 → 해부도로 자세히 보기</div>
+      </div>
+    </a>
+
+    <a class="wg-card reveal wg-card-link" href="#boxanatomy" aria-label="상자 그림 — 해부도로 자세히 보기">
+      <div class="wg-fig">
+        <svg viewBox="0 0 120 72" aria-hidden="true">
+          <g stroke="var(--line-strong)"><line x1="14" y1="10" x2="14" y2="60"/><line x1="14" y1="60" x2="112" y2="60"/></g>
+          <g stroke="var(--muted)" stroke-width="1.2">
+            <line x1="32" y1="18" x2="32" y2="54"/><line x1="60" y1="22" x2="60" y2="58"/><line x1="88" y1="12" x2="88" y2="46"/>
+          </g>
+          <rect x="23" y="28" width="18" height="18" rx="2" fill="var(--blue-soft)" stroke="var(--blue)"/>
+          <line x1="23" y1="37" x2="41" y2="37" stroke="var(--blue)" stroke-width="2"/>
+          <rect x="51" y="32" width="18" height="18" rx="2" fill="var(--accent-soft)" stroke="var(--accent)"/>
+          <line x1="51" y1="41" x2="69" y2="41" stroke="var(--accent)" stroke-width="2"/>
+          <rect x="79" y="20" width="18" height="18" rx="2" fill="var(--green-soft)" stroke="var(--green)"/>
+          <line x1="79" y1="29" x2="97" y2="29" stroke="var(--green)" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="wg-body">
+        <div class="wg-name">상자 그림<span>Box Plot</span></div>
+        <div class="wg-desc">중앙값·평균값(점선)·사분위수·이상치를 한 줄로 요약해, 집단별 분포를 나란히 비교합니다.</div>
+        <div class="wg-when"><b>언제:</b> 집단 간 값의 퍼짐과 이상치를 비교할 때</div>
+        <div class="wg-more">클릭 → 해부도로 자세히 보기</div>
+      </div>
+    </a>
+
+    <a class="wg-card reveal wg-card-link" href="#barvshist" aria-label="분포 — 막대 그래프 vs 히스토그램 해부로 이동">
+      <div class="wg-fig">
+        <svg viewBox="0 0 120 72" aria-hidden="true">
+          <g stroke="var(--line-strong)"><line x1="16" y1="8" x2="16" y2="60"/><line x1="16" y1="60" x2="114" y2="60"/></g>
+          <g fill="var(--blue-soft)" stroke="var(--blue)" stroke-width="1">
+            <rect x="22" y="50" width="9" height="10"/><rect x="31" y="42" width="9" height="18"/><rect x="40" y="30" width="9" height="30"/><rect x="49" y="18" width="9" height="42"/><rect x="58" y="26" width="9" height="34"/><rect x="67" y="40" width="9" height="20"/><rect x="76" y="48" width="9" height="12"/><rect x="85" y="54" width="9" height="6"/>
+          </g>
+          <path d="M20 58 C36 54 44 18 58 18 C72 18 80 54 98 58" fill="none" stroke="var(--accent)" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="wg-body">
+        <div class="wg-name">분포<span>Distributions</span></div>
+        <div class="wg-desc">히스토그램과 밀도 곡선으로 한 변수의 모양을 봅니다. 색으로 집단별 분포를 겹쳐 비교할 수 있습니다.</div>
+        <div class="wg-when"><b>언제:</b> 한 변수가 어떻게 퍼져 있는지, 집단별로 다른지 볼 때</div>
+        <div class="wg-more">클릭 → 막대 vs 히스토그램 해부</div>
+      </div>
+    </a>
+
+    <div class="wg-card reveal">
+      <div class="wg-fig">
+        <svg viewBox="0 0 120 72" aria-hidden="true">
+          <g stroke="var(--line-strong)"><line x1="16" y1="8" x2="16" y2="60"/><line x1="16" y1="60" x2="114" y2="60"/></g>
+          <polyline points="20,54 36,46 52,50 68,34 84,26 100,18 110,22" fill="none" stroke="var(--violet)" stroke-width="2.2"/>
+          <circle cx="20" cy="54" r="2.6" fill="var(--violet)"/><circle cx="110" cy="22" r="2.6" fill="var(--violet)"/>
+        </svg>
+      </div>
+      <div class="wg-body">
+        <div class="wg-name">선 그래프<span>Line Plot</span></div>
+        <div class="wg-desc">행 순서나 시간의 흐름에 따른 변화를 선으로 이어 보입니다.</div>
+        <div class="wg-when"><b>언제:</b> 시계열·누적 데이터의 추세와 변곡점을 볼 때</div>
+      </div>
+    </div>
+
+    <div class="wg-card reveal">
+      <div class="wg-fig">
+        <svg viewBox="0 0 120 72" aria-hidden="true">
+          <g fill="var(--accent)">
+            <rect x="20" y="12" width="11" height="11" fill-opacity=".15"/><rect x="31" y="12" width="11" height="11" fill-opacity=".3"/><rect x="42" y="12" width="11" height="11" fill-opacity=".75"/><rect x="53" y="12" width="11" height="11" fill-opacity=".9"/><rect x="64" y="12" width="11" height="11" fill-opacity=".45"/><rect x="75" y="12" width="11" height="11" fill-opacity=".2"/><rect x="86" y="12" width="11" height="11" fill-opacity=".3"/><rect x="20" y="23" width="11" height="11" fill-opacity=".25"/><rect x="31" y="23" width="11" height="11" fill-opacity=".55"/><rect x="42" y="23" width="11" height="11" fill-opacity=".85"/><rect x="53" y="23" width="11" height="11" fill-opacity=".9"/><rect x="64" y="23" width="11" height="11" fill-opacity=".7"/><rect x="75" y="23" width="11" height="11" fill-opacity=".5"/><rect x="86" y="23" width="11" height="11" fill-opacity=".2"/><rect x="20" y="34" width="11" height="11" fill-opacity=".1"/><rect x="31" y="34" width="11" height="11" fill-opacity=".35"/><rect x="42" y="34" width="11" height="11" fill-opacity=".6"/><rect x="53" y="34" width="11" height="11" fill-opacity=".8"/><rect x="64" y="34" width="11" height="11" fill-opacity=".85"/><rect x="75" y="34" width="11" height="11" fill-opacity=".4"/><rect x="86" y="34" width="11" height="11" fill-opacity=".15"/><rect x="20" y="45" width="11" height="11" fill-opacity=".2"/><rect x="31" y="45" width="11" height="11" fill-opacity=".15"/><rect x="42" y="45" width="11" height="11" fill-opacity=".3"/><rect x="53" y="45" width="11" height="11" fill-opacity=".55"/><rect x="64" y="45" width="11" height="11" fill-opacity=".35"/><rect x="75" y="45" width="11" height="11" fill-opacity=".25"/><rect x="86" y="45" width="11" height="11" fill-opacity=".1"/>
+          </g>
+        </svg>
+      </div>
+      <div class="wg-body">
+        <div class="wg-name">열 지도<span>Heat Map</span></div>
+        <div class="wg-desc">값의 크기를 색의 진하기로 바꿔 표 전체를 한눈에. 행·열을 재정렬해 패턴을 드러냅니다.</div>
+        <div class="wg-when"><b>언제:</b> 변수가 많을 때 덩어리·패턴을 찾을 때</div>
+      </div>
+    </div>
+
+    <div class="wg-card reveal">
+      <div class="wg-fig">
+        <svg viewBox="0 0 120 72" aria-hidden="true">
+          <g stroke="var(--line-strong)"><line x1="14" y1="10" x2="14" y2="62"/><line x1="14" y1="62" x2="112" y2="62"/></g>
+          <rect x="24" y="10" width="32" height="30" fill="var(--ds-a)"/>
+          <rect x="24" y="40" width="32" height="14" fill="var(--ds-b)"/>
+          <rect x="24" y="54" width="32" height="8" fill="var(--ds-c)"/>
+          <rect x="66" y="10" width="32" height="10" fill="var(--ds-a)"/>
+          <rect x="66" y="20" width="32" height="30" fill="var(--ds-c)"/>
+          <rect x="66" y="50" width="32" height="12" fill="var(--ds-b)"/>
+        </svg>
+      </div>
+      <div class="wg-body">
+        <div class="wg-name">모자이크<span>Mosaic Display</span></div>
+        <div class="wg-desc">범주형 변수 여러 개의 조합 비율을 사각 면적으로 쌓아 보여 줍니다.</div>
+        <div class="wg-when"><b>언제:</b> 생존이 객실 등급·성별에 따라 달라졌는지처럼 범주 조합을 볼 때</div>
+      </div>
+    </div>
+
+    <div class="wg-card reveal">
+      <div class="wg-fig">
+        <svg viewBox="0 0 120 72" aria-hidden="true">
+          <g stroke="var(--muted)" stroke-width="1.2" fill="none">
+            <path d="M60 16 L38 40 M60 16 L82 40 M38 44 L26 60 M38 44 L48 60 M82 44 L72 60 M82 44 L94 60"/>
+          </g>
+          <circle cx="60" cy="14" r="6" fill="var(--violet)"/>
+          <circle cx="38" cy="42" r="5" fill="var(--violet)"/>
+          <circle cx="82" cy="42" r="5" fill="var(--violet)"/>
+          <circle cx="26" cy="61" r="4.2" fill="var(--ds-a)"/>
+          <circle cx="48" cy="61" r="4.2" fill="var(--ds-b)"/>
+          <circle cx="72" cy="61" r="4.2" fill="var(--ds-c)"/>
+          <circle cx="94" cy="61" r="4.2" fill="var(--ds-a)"/>
+        </svg>
+      </div>
+      <div class="wg-body">
+        <div class="wg-name">트리 뷰어<span>Tree Viewer</span></div>
+        <div class="wg-desc">학습된 의사결정나무를 분기 구조 그대로 그립니다. 어떤 변수가 먼저 갈랐는지 읽을 수 있습니다.</div>
+        <div class="wg-when"><b>언제:</b> 모델의 판단 근거를 사람에게 설명할 때</div>
+      </div>
+    </div>
+
+    <div class="wg-card reveal">
+      <div class="wg-fig">
+        <svg viewBox="0 0 120 72" aria-hidden="true">
+          <g stroke="var(--line-strong)"><line x1="14" y1="10" x2="14" y2="60"/><line x1="14" y1="60" x2="112" y2="60"/></g>
+          <path d="M42 12 C52 22 54 34 49 46 C46 54 38 54 35 46 C30 34 32 22 42 12 Z" fill="var(--blue-soft)" stroke="var(--blue)"/>
+          <line x1="42" y1="24" x2="42" y2="50" stroke="var(--blue)" stroke-width="1.4"/>
+          <path d="M82 20 C92 28 93 38 88 47 C85 53 78 53 76 47 C72 38 74 28 82 20 Z" fill="var(--green-soft)" stroke="var(--green)"/>
+          <line x1="82" y1="30" x2="82" y2="50" stroke="var(--green)" stroke-width="1.4"/>
+        </svg>
+      </div>
+      <div class="wg-body">
+        <div class="wg-name">바이올린<span>Violin Plot</span></div>
+        <div class="wg-desc">상자 그림에 분포의 모양을 입힌 그림. 값이 어디에 몰려 있는지까지 보입니다.</div>
+        <div class="wg-when"><b>언제:</b> 퍼짐뿐 아니라 분포의 ‘모양’까지 비교할 때</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ WIDGET ANATOMY MENU ============ -->
+<section class="section container" id="anatomymenu">
+  <div class="section-head reveal">
+    <span class="eyebrow">위젯 해부 메뉴</span>
+    <h2>여덟 가지 그래프, 부분별로 뜯어 보기</h2>
+    <p>위젯 이름을 눌러 해부를 펼치세요. 산점도와 상자 그림은 놀이터가 있는 전용 인터랙티브 해부 섹션으로도 연결됩니다.</p>
+  </div>
+  <div class="ana-list reveal">
+    <details class="ana-item">
+      <summary><span class="ana-name">산점도</span><span class="ana-en">Scatter Plot</span><span class="ana-go">해부 보기 ▾</span></summary>
+      <div class="ana-body">
+        <div class="ana-grid">
+          <div class="ana-fig">
+            <svg viewBox="0 0 220 120" aria-hidden="true">
+              <g stroke="var(--line-strong)"><line x1="14" y1="10" x2="14" y2="95"/><line x1="14" y1="95" x2="210" y2="95"/></g>
+              <line x1="24" y1="88" x2="196" y2="20" stroke="var(--violet)" stroke-width="1.6" stroke-dasharray="6 4"/>
+              <g fill="var(--blue)" fill-opacity=".9"><circle cx="34" cy="82" r="3.5"/><circle cx="42" cy="74" r="3.5"/><circle cx="38" cy="88" r="3.5"/><circle cx="50" cy="80" r="3.5"/></g>
+              <g fill="var(--accent)" fill-opacity=".9"><circle cx="96" cy="58" r="3.5"/><circle cx="106" cy="50" r="3.5"/><circle cx="100" cy="66" r="3.5"/><circle cx="114" cy="44" r="3.5"/></g>
+              <g fill="var(--green)" fill-opacity=".9"><circle cx="160" cy="34" r="3.5"/><circle cx="172" cy="28" r="3.5"/><circle cx="168" cy="42" r="3.5"/><circle cx="182" cy="38" r="3.5"/></g>
+              <circle cx="106" cy="50" r="6" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+              <text x="118" y="56" font-size="10" font-weight="700" fill="var(--ink)">점 = 개체 1개</text>
+              <text x="52" y="24" font-size="10" font-weight="700" fill="var(--violet)">추세선</text>
+              <text x="150" y="88" font-size="10" fill="var(--ink-2)">색 = 품종</text>
+            </svg>
+          </div>
+          <dl class="ana-parts">
+            <div class="ana-row"><dt>점</dt><dd>점 하나 = 개체 하나. 붓꽃이면 한 송이, 학생이면 한 명이에요.</dd></div>
+            <div class="ana-row"><dt>X·Y축</dt><dd>점의 가로·세로 위치가 개체의 두 값을 동시에 말해 줘요.</dd></div>
+            <div class="ana-row"><dt>색·크기·모양</dt><dd>세 번째 변수를 점 위에 얹을 수 있어요 — iris에서는 색 = 품종.</dd></div>
+            <div class="ana-row"><dt>추세선</dt><dd>점들의 큰 흐름을 한 줄로. 오른쪽 위로 향하면 양의 관계예요.</dd></div>
+            <div class="ana-row"><dt>무리·이상점</dt><dd>비슷한 개체는 뭉치고, 유난히 떨어진 점은 눈에 띄어요.</dd></div>
+          </dl>
+        </div>
+        <a class="ana-demo" href="#scatteranatomy">전용 산점도 해부에서 부분별로 만져 보기 →</a>
+      </div>
+    </details>
+    <details class="ana-item">
+      <summary><span class="ana-name">상자 그림</span><span class="ana-en">Box Plot</span><span class="ana-go">해부 보기 ▾</span></summary>
+      <div class="ana-body">
+        <div class="ana-grid">
+          <div class="ana-fig">
+            <svg viewBox="0 0 220 120" aria-hidden="true">
+              <line x1="18" y1="58" x2="202" y2="58" stroke="var(--line-strong)"/>
+              <g stroke="var(--muted)" stroke-width="1.6">
+                <line x1="30" y1="58" x2="62" y2="58"/><line x1="140" y1="58" x2="172" y2="58"/>
+                <line x1="30" y1="50" x2="30" y2="66"/><line x1="172" y1="50" x2="172" y2="66"/>
+              </g>
+              <rect x="62" y="40" width="78" height="36" rx="5" fill="var(--blue-soft)" stroke="var(--blue)" stroke-width="1.4"/>
+              <line x1="96" y1="40" x2="96" y2="76" stroke="var(--ink)" stroke-width="3"/>
+              <line x1="112" y1="40" x2="112" y2="76" stroke="var(--violet)" stroke-width="1.6" stroke-dasharray="5 3"/>
+              <circle cx="188" cy="58" r="4" fill="var(--blue)"/>
+              <text x="104" y="30" font-size="10" font-weight="700" fill="var(--ink)" text-anchor="end">중앙값</text>
+              <text x="114" y="30" font-size="10" font-weight="700" fill="var(--violet)">평균(점선)</text>
+              <text x="101" y="94" font-size="10" fill="var(--ink-2)" text-anchor="middle">상자 = 가운데 50%</text>
+              <text x="188" y="44" font-size="10" fill="var(--ink-2)" text-anchor="middle">이상점</text>
+              <text x="30" y="44" font-size="10" fill="var(--ink-2)" text-anchor="middle">수염</text>
+            </svg>
+          </div>
+          <dl class="ana-parts">
+            <div class="ana-row"><dt>수염</dt><dd>이상점을 뺀 나머지 값의 최소~최대 범위예요.</dd></div>
+            <div class="ana-row"><dt>상자</dt><dd>Q1~Q3, 가운데 50%가 사는 상자. 좁으면 대부분 비슷한 값이라는 뜻이에요.</dd></div>
+            <div class="ana-row"><dt>중앙값</dt><dd>줄 세워 정확히 가운데 값 — 굵은 선으로 표시돼요.</dd></div>
+            <div class="ana-row"><dt>평균</dt><dd>모두 더해 나눈 값 — 점선. 점선이 굵은 선보다 오른쪽이면 큰 값이 평균을 끌어 올린 거예요.</dd></div>
+            <div class="ana-row"><dt>이상점</dt><dd>수염 바깥에 동그라미로 따로 찍힌 값이에요.</dd></div>
+          </dl>
+        </div>
+        <a class="ana-demo" href="#boxanatomy">박스플롯 해부 + 평균 vs 중앙값 놀이터에서 직접 보기 →</a>
+      </div>
+    </details>
+    <details class="ana-item">
+      <summary><span class="ana-name">분포</span><span class="ana-en">Distributions</span><span class="ana-go">해부 보기 ▾</span></summary>
+      <div class="ana-body">
+        <div class="ana-grid">
+          <div class="ana-fig">
+            <svg viewBox="0 0 220 120" aria-hidden="true">
+              <g stroke="var(--line-strong)"><line x1="14" y1="10" x2="14" y2="95"/><line x1="14" y1="95" x2="210" y2="95"/></g>
+              <g fill="var(--blue)" fill-opacity=".8">
+                <rect x="20" y="65" width="16" height="30"/><rect x="38" y="40" width="16" height="55"/><rect x="56" y="17" width="16" height="78"/><rect x="74" y="35" width="16" height="60"/><rect x="92" y="55" width="16" height="40"/><rect x="110" y="70" width="16" height="25"/><rect x="128" y="81" width="16" height="14"/>
+              </g>
+              <text x="64" y="12" font-size="10" font-weight="700" fill="var(--ink)" text-anchor="middle">봉우리</text>
+              <text x="146" y="72" font-size="10" fill="var(--ink-2)">← 꼬리</text>
+              <path d="M20 101 h44" stroke="var(--accent)" stroke-width="2" fill="none"/>
+              <text x="42" y="114" font-size="10" fill="var(--accent)" text-anchor="middle">구간(bin)</text>
+              <text x="10" y="8" font-size="9" fill="var(--muted)" text-anchor="end">개수</text>
+            </svg>
+          </div>
+          <dl class="ana-parts">
+            <div class="ana-row"><dt>구간(bin)</dt><dd>값을 같은 폭의 칸으로 나눈 것 — 막대 하나는 한 칸에 들어간 개체 수예요.</dd></div>
+            <div class="ana-row"><dt>봉우리</dt><dd>가장 높은 막대. 이 값대로 개체가 가장 많다는 뜻(최빈 구간)이에요.</dd></div>
+            <div class="ana-row"><dt>꼬리</dt><dd>한쪽으로 길게 늘어진 모양. 오른쪽 꼬리가 길면 큰 값 몇 개가 평균을 끌어 올려요.</dd></div>
+            <div class="ana-row"><dt>축과 색</dt><dd>가로 = 값, 세로 = 개수. 색을 얹으면 품종별 묶음 막대가 되어 집단 비교가 됩니다.</dd></div>
+          </dl>
+        </div>
+        <div class="ana-vs">
+          <div class="ana-vs-col">
+            <div class="ana-vs-title">막대 그래프<span>Bar Chart</span></div>
+            <svg viewBox="0 0 220 110" aria-hidden="true">
+              <g stroke="var(--line-strong)"><line x1="16" y1="12" x2="16" y2="85"/><line x1="16" y1="85" x2="206" y2="85"/></g>
+              <g>
+                <rect x="34" y="40" width="34" height="45" rx="3" fill="var(--blue)" fill-opacity=".85"/>
+                <rect x="92" y="15" width="34" height="70" rx="3" fill="var(--accent)" fill-opacity=".85"/>
+                <rect x="150" y="55" width="34" height="30" rx="3" fill="var(--green)" fill-opacity=".85"/>
+              </g>
+              <text x="51" y="100" font-size="10" fill="var(--ink-2)" text-anchor="middle">1반</text>
+              <text x="109" y="100" font-size="10" fill="var(--ink-2)" text-anchor="middle">2반</text>
+              <text x="167" y="100" font-size="10" fill="var(--ink-2)" text-anchor="middle">3반</text>
+              <text x="108" y="10" font-size="9" fill="var(--muted)" text-anchor="middle">범주(서로 다른 종류) — 막대가 떨어져 있어요</text>
+            </svg>
+            <ul class="ana-vs-list">
+              <li>가로줄 = <b>범주</b> — 품종, 반, 계절처럼 종류가 다른 것</li>
+              <li>막대 사이에 <b>간격</b>이 있어요 — 붙이면 안 돼요</li>
+              <li>막대 하나 = 범주 <b>하나</b>의 개수·평균</li>
+              <li>막대 <b>순서를 바꿔도</b> 돼요</li>
+            </ul>
+          </div>
+          <div class="ana-vs-col">
+            <div class="ana-vs-title">분포 · 히스토그램<span>Distributions</span></div>
+            <svg viewBox="0 0 220 110" aria-hidden="true">
+              <g stroke="var(--line-strong)"><line x1="16" y1="12" x2="16" y2="85"/><line x1="16" y1="85" x2="206" y2="85"/></g>
+              <g fill="var(--blue)" fill-opacity=".85" stroke="var(--surface)" stroke-width="1">
+                <rect x="24" y="71" width="24" height="14"/><rect x="48" y="55" width="24" height="30"/><rect x="72" y="33" width="24" height="52"/><rect x="96" y="13" width="24" height="72"/><rect x="120" y="35" width="24" height="50"/><rect x="144" y="57" width="24" height="28"/><rect x="168" y="73" width="24" height="12"/>
+              </g>
+              <text x="24" y="100" font-size="10" fill="var(--ink-2)" text-anchor="middle">0</text>
+              <text x="120" y="100" font-size="10" fill="var(--ink-2)" text-anchor="middle">5</text>
+              <text x="192" y="100" font-size="10" fill="var(--ink-2)" text-anchor="middle">10</text>
+              <text x="108" y="10" font-size="9" fill="var(--muted)" text-anchor="middle">연속된 값(수직선) — 막대가 붙어 있어요</text>
+            </svg>
+            <ul class="ana-vs-list">
+              <li>가로줄 = <b>연속된 값</b> — 키, 시간, 점수처럼 셀 수 있는 수치</li>
+              <li>막대가 <b>붙어</b> 있어요 — 구간(bin)이 이어지니까</li>
+              <li>막대 하나 = 값 <b>구간 하나</b>에 들어간 개수</li>
+              <li>작은 값 → 큰 값 <b>순서가 고정</b>!</li>
+            </ul>
+          </div>
+          <p class="ana-vs-sum">한 줄 정리 — <b>범주를 비교하면 막대 그래프</b>, 값이 어디에 몰려 있는지 <b>모양을 보려면 분포</b>. 막대가 붙어 있고 축이 수직선이면 히스토그램입니다.</p>
+        </div>
+        <a class="ana-demo" href="#demo">실습 데모의 히스토그램에서 직접 보기 →</a>
+        <a class="ana-demo" href="#barvshist">막대 그래프 vs 히스토그램 해부 전체에서 비교하기 →</a>
+      </div>
+    </details>
+    <details class="ana-item">
+      <summary><span class="ana-name">선 그래프</span><span class="ana-en">Line Plot</span><span class="ana-go">해부 보기 ▾</span></summary>
+      <div class="ana-body">
+        <div class="ana-grid">
+          <div class="ana-fig">
+            <svg viewBox="0 0 220 120" aria-hidden="true">
+              <g stroke="var(--line-strong)"><line x1="14" y1="10" x2="14" y2="95"/><line x1="14" y1="95" x2="210" y2="95"/></g>
+              <polyline points="16,85 50,60 78,68 110,40 150,48 200,22" fill="none" stroke="var(--accent)" stroke-width="2"/>
+              <g fill="var(--accent)"><circle cx="50" cy="60" r="3.5"/><circle cx="110" cy="40" r="3.5"/><circle cx="200" cy="22" r="3.5"/></g>
+              <text x="54" y="52" font-size="10" font-weight="700" fill="var(--ink)">점 = 관측</text>
+              <text x="148" y="70" font-size="10" fill="var(--ink-2)">선 = 흐름</text>
+              <text x="158" y="30" font-size="10" font-weight="700" fill="var(--violet)">↗ 급한 구간</text>
+            </svg>
+          </div>
+          <dl class="ana-parts">
+            <div class="ana-row"><dt>선</dt><dd>점을 순서대로 이은 흐름. 시간·순서가 있는 데이터에 씁니다.</dd></div>
+            <div class="ana-row"><dt>점</dt><dd>한 시점(한 행)의 값이에요.</dd></div>
+            <div class="ana-row"><dt>기울기</dt><dd>급할수록 그 구간에서 빠르게 변했다는 뜻이에요.</dd></div>
+            <div class="ana-row"><dt>추세</dt><dd>전체적으로 오르는지 내리는지 — 위아래 요동보다 큰 흐름을 봅니다.</dd></div>
+            <div class="ana-row"><dt>여러 색 선</dt><dd>개체·그룹별로 선을 나눠 놓으면 흐름을 나란히 비교할 수 있어요.</dd></div>
+          </dl>
+        </div>
+        <a class="ana-demo" href="#demo">실습 데모의 선 그래프(행 순서)에서 직접 보기 →</a>
+      </div>
+    </details>
+    <details class="ana-item">
+      <summary><span class="ana-name">열 지도</span><span class="ana-en">Heat Map</span><span class="ana-go">해부 보기 ▾</span></summary>
+      <div class="ana-body">
+        <div class="ana-grid">
+          <div class="ana-fig">
+            <svg viewBox="0 0 220 120" aria-hidden="true">
+              <g fill="var(--accent)">
+                <rect x="24" y="16" width="16" height="12" fill-opacity=".9"/><rect x="42" y="16" width="16" height="12" fill-opacity=".25"/><rect x="60" y="16" width="16" height="12" fill-opacity=".6"/><rect x="78" y="16" width="16" height="12" fill-opacity=".15"/><rect x="96" y="16" width="16" height="12" fill-opacity=".8"/><rect x="114" y="16" width="16" height="12" fill-opacity=".4"/>
+                <rect x="24" y="30" width="16" height="12" fill-opacity=".2"/><rect x="42" y="30" width="16" height="12" fill-opacity=".55"/><rect x="60" y="30" width="16" height="12" fill-opacity=".3"/><rect x="78" y="30" width="16" height="12" fill-opacity=".75"/><rect x="96" y="30" width="16" height="12" fill-opacity=".25"/><rect x="114" y="30" width="16" height="12" fill-opacity=".65"/>
+                <rect x="24" y="44" width="16" height="12" fill-opacity=".7"/><rect x="42" y="44" width="16" height="12" fill-opacity=".2"/><rect x="60" y="44" width="16" height="12" fill-opacity=".85"/><rect x="78" y="44" width="16" height="12" fill-opacity=".3"/><rect x="96" y="44" width="16" height="12" fill-opacity=".6"/><rect x="114" y="44" width="16" height="12" fill-opacity=".2"/>
+                <rect x="24" y="58" width="16" height="12" fill-opacity=".3"/><rect x="42" y="58" width="16" height="12" fill-opacity=".8"/><rect x="60" y="58" width="16" height="12" fill-opacity=".25"/><rect x="78" y="58" width="16" height="12" fill-opacity=".55"/><rect x="96" y="58" width="16" height="12" fill-opacity=".9"/><rect x="114" y="58" width="16" height="12" fill-opacity=".35"/>
+              </g>
+              <text x="32" y="12" font-size="10" font-weight="700" fill="var(--ink)">셀 = 한 값</text>
+              <text x="140" y="30" font-size="10" fill="var(--ink-2)">진하기</text>
+              <text x="140" y="42" font-size="10" fill="var(--ink-2)">= 크기</text>
+              <g>
+                <rect x="140" y="86" width="14" height="10" fill="var(--accent)" fill-opacity=".15"/><rect x="156" y="86" width="14" height="10" fill="var(--accent)" fill-opacity=".45"/><rect x="172" y="86" width="14" height="10" fill="var(--accent)" fill-opacity=".9"/>
+                <text x="140" y="110" font-size="9" fill="var(--muted)">작음</text>
+                <text x="180" y="110" font-size="9" fill="var(--muted)">큼</text>
+              </g>
+            </svg>
+          </div>
+          <dl class="ana-parts">
+            <div class="ana-row"><dt>셀</dt><dd>행×열이 만나는 한 칸 — 개체 하나의 값 하나예요.</dd></div>
+            <div class="ana-row"><dt>색의 진하기</dt><dd>값의 크기를 색으로. 범례(스케일)를 꼭 함께 확인해야 해요.</dd></div>
+            <div class="ana-row"><dt>줄무늬</dt><dd>세로·가로로 색 줄이 이어지면 규칙이 있다는 신호예요.</dd></div>
+            <div class="ana-row"><dt>언제</dt><dd>변수가 많아 산점도로는 못 볼 때, 전체를 한 장에 훑을 때 씁니다.</dd></div>
+          </dl>
+        </div>
+      </div>
+    </details>
+    <details class="ana-item">
+      <summary><span class="ana-name">모자이크</span><span class="ana-en">Mosaic Display</span><span class="ana-go">해부 보기 ▾</span></summary>
+      <div class="ana-body">
+        <div class="ana-grid">
+          <div class="ana-fig">
+            <svg viewBox="0 0 220 120" aria-hidden="true">
+              <g stroke="var(--surface)" stroke-width="1.5">
+                <rect x="30" y="20" width="80" height="45" fill="var(--blue)" fill-opacity=".85"/>
+                <rect x="30" y="65" width="80" height="30" fill="var(--accent)" fill-opacity=".85"/>
+                <rect x="110" y="20" width="80" height="18" fill="var(--blue)" fill-opacity=".85"/>
+                <rect x="110" y="38" width="80" height="40" fill="var(--accent)" fill-opacity=".85"/>
+                <rect x="110" y="78" width="80" height="17" fill="var(--green)" fill-opacity=".85"/>
+              </g>
+              <line x1="110" y1="20" x2="110" y2="95" stroke="var(--ink)" stroke-dasharray="3 3"/>
+              <text x="110" y="14" font-size="10" fill="var(--ink-2)" text-anchor="middle">세로 분할 = 변수</text>
+              <text x="70" y="112" font-size="10" fill="var(--ink-2)" text-anchor="middle">면적 = 개수 비율</text>
+              <text x="150" y="112" font-size="10" fill="var(--ink-2)" text-anchor="middle">가로 분할 = 다음 변수</text>
+            </svg>
+          </div>
+          <dl class="ana-parts">
+            <div class="ana-row"><dt>면적</dt><dd>칸의 넓이가 곧 개수 비율이에요. 넓은 칸 = 많은 개체.</dd></div>
+            <div class="ana-row"><dt>분할</dt><dd>변수 하나당 한 번씩 나눠요. 범주형 변수들의 조합 비율이 한 장에 담깁니다.</dd></div>
+            <div class="ana-row"><dt>색</dt><dd>클래스별 비율을 색으로 채워요.</dd></div>
+            <div class="ana-row"><dt>읽기</dt><dd>색이 한쪽으로 쏠린 칸 = “그 조합에서는 결과가 이렇게 치우친다”는 발견.</dd></div>
+          </dl>
+        </div>
+      </div>
+    </details>
+    <details class="ana-item">
+      <summary><span class="ana-name">트리 뷰어</span><span class="ana-en">Tree Viewer</span><span class="ana-go">해부 보기 ▾</span></summary>
+      <div class="ana-body">
+        <div class="ana-grid">
+          <div class="ana-fig">
+            <svg viewBox="0 0 220 120" aria-hidden="true">
+              <g stroke="var(--muted)">
+                <line x1="110" y1="26" x2="60" y2="52"/><line x1="110" y1="26" x2="160" y2="52"/>
+                <line x1="60" y1="66" x2="35" y2="92"/><line x1="60" y1="66" x2="85" y2="92"/>
+                <line x1="160" y1="66" x2="135" y2="92"/><line x1="160" y1="66" x2="185" y2="92"/>
+              </g>
+              <circle cx="110" cy="18" r="8" fill="var(--violet)"/>
+              <circle cx="60" cy="58" r="7" fill="var(--violet)" fill-opacity=".7"/>
+              <circle cx="160" cy="58" r="7" fill="var(--violet)" fill-opacity=".7"/>
+              <g>
+                <rect x="27" y="92" width="16" height="12" rx="3" fill="var(--blue)"/>
+                <rect x="77" y="92" width="16" height="12" rx="3" fill="var(--accent)"/>
+                <rect x="127" y="92" width="16" height="12" rx="3" fill="var(--accent)"/>
+                <rect x="177" y="92" width="16" height="12" rx="3" fill="var(--green)"/>
+              </g>
+              <text x="128" y="14" font-size="10" font-weight="700" fill="var(--ink)">뿌리 = 전체</text>
+              <text x="12" y="56" font-size="10" fill="var(--ink-2)">가지 = 질문</text>
+              <text x="98" y="116" font-size="10" fill="var(--ink-2)">잎 = 결과</text>
+            </svg>
+          </div>
+          <dl class="ana-parts">
+            <div class="ana-row"><dt>뿌리</dt><dd>전체 데이터에서 출발하는 맨 위 노드예요.</dd></div>
+            <div class="ana-row"><dt>가지(분기)</dt><dd>“꽃잎 길이 > 2.5cm?” 같은 질문. 가장 잘 나누는 질문을 골라 데이터를 둘로 갈라요.</dd></div>
+            <div class="ana-row"><dt>잎</dt><dd>더 이상 나누지 않는 끝 노드 = 분류 결과(품종 등).</dd></div>
+            <div class="ana-row"><dt>깊이</dt><dd>질문을 거친 횟수. 깊을수록 규칙이 복잡해지고, 외우기보다 이해가 필요해요.</dd></div>
+            <div class="ana-row"><dt>읽기</dt><dd>위에서 아래로 따라 내려가며 “왜 이 결과인지”를 설명할 수 있는 게 트리의 힘이에요.</dd></div>
+          </dl>
+        </div>
+      </div>
+    </details>
+    <details class="ana-item">
+      <summary><span class="ana-name">바이올린</span><span class="ana-en">Violin Plot</span><span class="ana-go">해부 보기 ▾</span></summary>
+      <div class="ana-body">
+        <div class="ana-grid">
+          <div class="ana-fig">
+            <svg viewBox="0 0 220 120" aria-hidden="true">
+              <path d="M60 18 C74 32 80 48 80 62 C80 78 70 94 60 100 C50 94 40 78 40 62 C40 48 46 32 60 18 Z" fill="var(--accent)" fill-opacity=".4" stroke="var(--accent)"/>
+              <line x1="47" y1="62" x2="73" y2="62" stroke="var(--ink)" stroke-width="2"/>
+              <path d="M140 10 C150 26 154 44 154 62 C154 80 148 96 140 106 C132 96 126 80 126 62 C126 44 130 26 140 10 Z" fill="var(--blue)" fill-opacity=".4" stroke="var(--blue)"/>
+              <line x1="130" y1="62" x2="150" y2="62" stroke="var(--ink)" stroke-width="2"/>
+              <text x="88" y="28" font-size="10" font-weight="700" fill="var(--ink)">넓은 곳 = 몰림</text>
+              <text x="154" y="56" font-size="10" fill="var(--ink-2)">← 중앙값</text>
+              <text x="110" y="116" font-size="10" fill="var(--ink-2)" text-anchor="middle">집단별로 나란히 세워 모양 비교</text>
+            </svg>
+          </div>
+          <dl class="ana-parts">
+            <div class="ana-row"><dt>몸통 윤곽</dt><dd>분포를 거울처럼 뒤집어 감싼 모양 — 히스토그램을 매끈하게 만든 그림이에요.</dd></div>
+            <div class="ana-row"><dt>넓은 부분</dt><dd>그 값대로 개체가 많다는 뜻이에요.</dd></div>
+            <div class="ana-row"><dt>좁은 부분</dt><dd>드문 값이에요.</dd></div>
+            <div class="ana-row"><dt>안의 선</dt><dd>중앙값·사분위수 표시(오렌지3에서 옵션으로 켤 수 있어요).</dd></div>
+            <div class="ana-row"><dt>여러 대</dt><dd>집단별 바이올린을 나란히 세우면 “모양 자체”를 비교할 수 있어요.</dd></div>
+          </dl>
+        </div>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ============ BOX PLOT ANATOMY ============ -->
+<section class="section container" id="boxanatomy">
+  <div class="section-head has-fold reveal">
+    <div>
+      <span class="eyebrow">박스플롯 해부</span>
+      <h2>중앙값 vs 평균값, 한 번에 정리하기</h2>
+      <p>아이들이 가장 헷갈리는 두 값을 그림 하나로 정리했습니다. 해부도의 각 부분을 눌러 뜻을 읽고, 아래 놀이터에서 점을 직접 끌어 보세요 — 평균은 끌려다니고 중앙값은 버팁니다.</p>
+    </div>
+    <button class="fold-btn" id="anatFold" type="button" aria-expanded="false" aria-controls="anatBody">펼치기 ▼</button>
+  </div>
+  <div id="anatBody">
+  <div class="anatomy-grid reveal">
+    <div class="panel">
+      <div class="panel-head">박스플롯 해부도 <span class="panel-sub">부분을 눌러 보세요</span></div>
+      <div class="anatomy-svgwrap" id="anatWrap"></div>
+    </div>
+    <div class="anat-info" id="anatInfo" aria-live="polite"></div>
+  </div>
+  <div class="panel reveal">
+    <div class="panel-head">평균 vs 중앙값 놀이터 <span class="panel-sub">점을 잡아 좌우로 끌어 보세요</span></div>
+    <div class="play-ctrl">
+      <button class="step-btn" id="presetBase" type="button">기본(9명)</button>
+      <button class="step-btn" id="presetRich" type="button">용돈 큰 친구 한 명</button>
+      <span class="demo-hint">큰 값을 오른쪽으로 끌면 평균 선이 따라가고, 중앙값 선은 버팁니다</span>
+    </div>
+    <canvas id="playCanvas" aria-label="평균과 중앙값 비교 놀이터"></canvas>
+    <div class="play-readout">
+      <span class="ro-mean">평균 <b id="meanVal">50.0</b><small>천원</small></span>
+      <span class="ro-med">중앙값 <b id="medVal">50</b><small>천원</small></span>
+      <span class="ro-note">평균 = 모두 더해 9로 나눈 값 · 중앙값 = 줄 세워 5번째 값 · 가운데 점 자체를 끌면 중앙값도 이동!</span>
+    </div>
+  </div>
+  </div>
+</section>
+
+<!-- ============ SCATTER ANATOMY ============ -->
+<section class="section container" id="scatteranatomy">
+  <div class="section-head has-fold reveal">
+    <div>
+      <span class="eyebrow">산점도 해부</span>
+      <h2>산점도 읽는 법 — 점 하나, 점 무리</h2>
+      <p>산점도는 “한 점 = 한 개체”에서 출발합니다. 해부도의 각 부분을 눌러 뜻을 읽고, 아래에서 관계를 직접 만들어 보세요.</p>
+    </div>
+    <button class="fold-btn" id="scatFold" type="button" aria-expanded="false" aria-controls="scatBody">펼치기 ▼</button>
+  </div>
+  <div id="scatBody">
+  <div class="anatomy-grid reveal">
+    <div class="panel">
+      <div class="panel-head">산점도 해부도 <span class="panel-sub">부분을 눌러 보세요</span></div>
+      <div class="anatomy-svgwrap" id="scatWrap"></div>
+    </div>
+    <div class="anat-info" id="scatInfo" aria-live="polite"></div>
+  </div>
+  <div class="panel reveal">
+    <div class="panel-head">관계 만들기 <span class="panel-sub">슬라이더를 움직여 보세요</span></div>
+    <div class="corr-ctrl">
+      <span class="cr-lbl">음의 관계</span>
+      <input type="range" id="corrSlider" min="-100" max="100" value="0" aria-label="관계의 세기와 방향">
+      <span class="cr-lbl">양의 관계</span>
+    </div>
+    <div class="anatomy-svgwrap" id="corrWrap"></div>
+    <div class="corr-readout">
+      <span>상관계수 r = <b id="corrVal">0.00</b></span>
+      <span id="corrDesc">관계 없음 — 점들이 사방으로 흩어져 있어요</span>
+    </div>
+  </div>
+  </div>
+</section>
+
+<!-- ============ BAR VS HISTOGRAM ============ -->
+<section class="section container" id="barvshist">
+  <div class="section-head has-fold reveal">
+    <div>
+      <span class="eyebrow">막대 vs 히스토그램 해부</span>
+      <h2>막대 그래프 vs 히스토그램 — 뭐가 다를까?</h2>
+      <p>둘 다 막대를 쓰지만 전혀 다른 질문에 답합니다. 두 해부도의 부분을 눌러 비교하고, 아래 표와 체크 퀴즈로 확실히 구분해 보세요.</p>
+    </div>
+    <button class="fold-btn" id="bvhFold" type="button" aria-expanded="false" aria-controls="bvhBody">펼치기 ▼</button>
+  </div>
+  <div id="bvhBody">
+  <div class="bvh-grid reveal">
+    <div class="panel">
+      <div class="panel-head">막대 그래프 해부도 <span class="panel-sub">부분을 눌러 보세요</span></div>
+      <div class="anatomy-svgwrap" id="bvhWrapBar"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">히스토그램 해부도 <span class="panel-sub">부분을 눌러 보세요</span></div>
+      <div class="anatomy-svgwrap" id="bvhWrapHist"></div>
+    </div>
+  </div>
+  <div class="anat-info bvh-wide reveal" id="bvhInfo" aria-live="polite"></div>
+  <div class="tbl-wrap reveal">
+    <table>
+      <thead>
+        <tr><th>질문</th><th>막대 그래프</th><th>히스토그램</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>가로줄(축)은?</td><td>범주 — 종류의 이름 (1반·2반·3반)</td><td>연속된 값 — 눈금 있는 수직선 (0→10)</td></tr>
+        <tr><td>막대 사이는?</td><td>간격이 있어요 — 종류가 다르니까</td><td>딱 붙어요 — 구간(bin)이 이어지니까</td></tr>
+        <tr><td>막대 하나는?</td><td>범주 하나의 값 (개수·평균)</td><td>값 구간 하나에 들어간 개수</td></tr>
+        <tr><td>순서는?</td><td>바꿔도 돼요</td><td>작은 값 → 큰 값, 고정!</td></tr>
+        <tr><td>답하는 질문은?</td><td>“어느 범주가 더 큰가?”</td><td>“값이 어디에 몰려 있는가?”</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="panel reveal">
+    <div class="panel-head">어느 쪽일까? 체크 퀴즈 <span class="panel-sub">골라 보고 이유를 확인하세요</span></div>
+    <div class="bvh-quiz" id="bvhQuiz"></div>
+  </div>
+  </div>
+</section>
+<!-- ============ WORKFLOW STEPPER ============ -->
+<section class="section container" id="workflow">
+  <div class="section-head reveal">
+    <span class="eyebrow">따라하기</span>
+    <h2>첫 워크플로우, 5분이면 됩니다</h2>
+    <p>오렌지3를 옆에 두고 그대로 따라 해 보세요. 아래 단계판이 진행 상황을 그림으로 보여 줍니다.</p>
+  </div>
+  <div class="step-wrap reveal">
+    <div class="step-text">
+      <div class="step-num" id="stepNum">STEP 1 / 5</div>
+      <div class="step-title" id="stepTitle"></div>
+      <div class="step-body" id="stepBody"></div>
+      <div class="step-tip" id="stepTip"></div>
+      <div class="step-ctrl">
+        <button class="step-btn" id="prevBtn" type="button">← 이전</button>
+        <div class="step-dots" id="stepDots" aria-label="단계 선택"></div>
+        <button class="step-btn" id="nextBtn" type="button">다음 →</button>
+      </div>
+    </div>
+    <div class="step-stage">
+      <div class="panel-head">
+        <span class="dots"><i></i><i></i><i></i></span>
+        워크플로우 진행 상황
+      </div>
+      <div class="canvas-bg">
+        <svg id="stepSvg" class="wf-svg" viewBox="0 0 520 320" role="img" aria-label="단계별 워크플로우 상태"></svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ IRIS DEMO ============ -->
+<section class="section container" id="demo">
+  <div class="section-head reveal">
+    <span class="eyebrow">실습 데모</span>
+    <h2>오렌지3 그래프를 지금, 여기서</h2>
+    <p>실제 iris(붓꽃) 150송이 데이터로 오렌지3의 대표 그래프 다섯 가지를 그대로 옮겼습니다. 종류를 바꿔 가며 보고, 그래프 위에서 직접 데이터를 골라내 보세요 — 선택은 그래프를 바꿔도 유지됩니다.</p>
+  </div>
+  <div class="panel reveal">
+    <div class="demo-ctrl">
+      <label>종류 <select id="selType" aria-label="그래프 종류">
+        <option value="scatter">산점도</option>
+        <option value="bar">막대 차트 · 품종별 평균</option>
+        <option value="line">선 그래프 · 행 순서</option>
+        <option value="box">상자 그림</option>
+        <option value="hist">히스토그램</option>
+      </select></label>
+      <label id="wrapX"><span id="lblX">X축</span> <select id="selX" aria-label="X축 또는 변수"></select></label>
+      <label id="wrapY"><span id="lblY">Y축</span> <select id="selY" aria-label="Y축 변수"></select></label>
+      <label>색 <span class="mono" style="font-size:12.5px">품종(고정)</span></label>
+      <button class="step-btn" id="selClear" type="button">선택 해제</button>
+      <span class="demo-hint" id="demoHint"></span>
+    </div>
+    <canvas id="irisCanvas" aria-label="아이리스 데이터 그래프"></canvas>
+    <div class="demo-legend" id="demoLegend"></div>
+    <div class="demo-sel" id="selInfo" aria-live="polite"></div>
+  </div>
+</section>
+<!-- ============ DATASETS ============ -->
+<section class="section container" id="datasets">
+  <div class="section-head reveal">
+    <span class="eyebrow">내장 데이터셋</span>
+    <h2>설치만 하면 바로 쓰는 예시 데이터</h2>
+    <p>오렌지3에는 수업용 예시 데이터가 함께 들어 있습니다. File 위젯의 데이터셋 목록에서 이름을 고르면 끝입니다.</p>
+  </div>
+  <div class="tbl-wrap reveal">
+    <table>
+      <thead>
+        <tr><th>데이터셋</th><th>행</th><th>변수</th><th>예측 목표</th><th>이런 데모에 좋아요</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="ds-name mono">iris</span><span class="ds-ko">붓꽃 꽃잎·꽃받침 측정값</span></td>
+          <td class="mono">150</td><td class="mono">수치 4개</td>
+          <td><span class="tag tag-c">분류 · 3 품종</span></td>
+          <td>산점도·분포의 첫 실습 (이 페이지 데모)</td>
+        </tr>
+        <tr>
+          <td><span class="ds-name mono">titanic</span><span class="ds-ko">타이타닉 승객 명단</span></td>
+          <td class="mono">2,201</td><td class="mono">범주형 위주</td>
+          <td><span class="tag tag-c">분류 · 생존 여부</span></td>
+          <td>모자이크·트리 뷰어로 “생존을 가른 것은?”</td>
+        </tr>
+        <tr>
+          <td><span class="ds-name mono">heart_disease</span><span class="ds-ko">심장 질환 검사 기록</span></td>
+          <td class="mono">303</td><td class="mono">혼합</td>
+          <td><span class="tag tag-c">분류 · 유무</span></td>
+          <td>상자 그림 비교 → 모델 평가로 이어가기</td>
+        </tr>
+        <tr>
+          <td><span class="ds-name mono">housing</span><span class="ds-ko">주택 가격 데이터</span></td>
+          <td class="mono">506</td><td class="mono">수치 13개</td>
+          <td><span class="tag tag-r">회귀 · 가격</span></td>
+          <td>산점도로 방 개수와 가격의 관계 보기</td>
+        </tr>
+        <tr>
+          <td><span class="ds-name mono">zoo</span><span class="ds-ko">동물 특징 표</span></td>
+          <td class="mono">101</td><td class="mono">범주형 16개</td>
+          <td><span class="tag tag-c">분류 · 7 종류</span></td>
+          <td>열 지도·트리로 특징과 종류의 관계 보기</td>
+        </tr>
+        <tr>
+          <td><span class="ds-name mono">wine</span><span class="ds-ko">와인 성분 분석</span></td>
+          <td class="mono">178</td><td class="mono">수치 13개</td>
+          <td><span class="tag tag-c">분류 · 3 품종</span></td>
+          <td>산점도·열 지도로 성분 갈래 찾기</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tbl-note reveal">행 수는 오렌지3 기본 제공 버전 기준이며, 같은 이름의 유명 공개 데이터셋(UCI 등)을 정제해 넣은 것입니다.</p>
+</section>
+
+<!-- ============ START ============ -->
+<section class="section container" id="start">
+  <div class="section-head reveal">
+    <span class="eyebrow">시작하기</span>
+    <h2>설치부터 수업 활용까지</h2>
+    <p>설치는 5분, 첫 산점도는 그 다음 5분이면 충분합니다.</p>
+  </div>
+  <div class="start-grid">
+    <ol class="start-steps reveal">
+      <li>
+        <b>설치 프로그램 내려받기</b>
+        <p>공식 사이트 <span class="code">orange.biolab.si</span>에서 Windows·macOS·Linux용 설치 프로그램을 받거나, Python 환경이라면 <span class="code">pip install orange3</span>으로 설치합니다.</p>
+      </li>
+      <li>
+        <b>캔버스 열기</b>
+        <p>실행하면 곧바로 캔버스가 열립니다. 화면 왼쪽 도구 상자가 위젯 목록 — 원하는 위젯을 끌어다 놓으면 됩니다.</p>
+      </li>
+      <li>
+        <b>iris 열고 산점도 그리기</b>
+        <p><strong>File</strong> 위젯을 놓고 더블클릭 → 데이터셋 목록에서 <span class="code">iris</span> 선택 → <strong>Scatter Plot</strong>을 연결합니다. X축·Y축·색을 바꿔 가며 보세요.</p>
+      </li>
+    </ol>
+    <div class="tip-grid reveal">
+      <div class="tip-card">
+        <span class="t-tag">수업 팁 ①</span>
+        <b>도입 10분 — 질문 한 개</b>
+        <p>“타이타닉에서 누가 살아남았을까?” titanic 데이터를 Mosaic Display와 Tree Viewer로 열고, 답을 데이터에서 찾게 합니다.</p>
+      </div>
+      <div class="tip-card">
+        <span class="t-tag">수업 팁 ②</span>
+        <b>실습 한 판 — 우리 데이터</b>
+        <p>모둠 설문·체육 기록·독서량 등을 CSV로 만들어 File에 넣고 산점도로 그리게 합니다. 내 데이터가 그림이 되는 경험이 핵심입니다.</p>
+      </div>
+      <div class="tip-card">
+        <span class="t-tag">수업 팁 ③</span>
+        <b>심화 — 그림에서 모델로</b>
+        <p>산점도에서 고른 점을 Tree로 보내 학습하고, Test &amp; Score로 정확도를 확인합니다. 시각화가 분석의 출발점이 됩니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="container f-in">
+    <span>오렌지3 시각화 교실 — 데이터 시각화 학습용 안내 자료</span>
+    <span>실습 데이터: Fisher iris(150 rows) · Anscombe quartet(1973) · Orange 내장 데이터셋</span>
+  </div>
+</footer>
+<script>
+(function(){
+'use strict';
+
+/* ---------- helpers ---------- */
+var RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var SVGNS = 'http://www.w3.org/2000/svg';
+var irisInited = false;
+
+function el(id){ return document.getElementById(id); }
+function txt(node, s){ node.textContent = s; return node; }
+function fmt(v, d){ return v.toFixed(d === undefined ? 2 : d); }
+function cssv(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function svgEl(tag, attrs, parent){
+  var e = document.createElementNS(SVGNS, tag);
+  for(var k in attrs){ e.setAttribute(k, attrs[k]); }
+  if(parent){ parent.appendChild(e); }
+  return e;
+}
+var playInited = false;
+function redrawCharts(){
+  if(irisInited){ drawIris(); }
+  if(playInited){ drawPlay(); }
+}
+
+/* ---------- theme ---------- */
+var THEME_ORDER = ['system','light','dark'];
+var THEME_LABEL = {system:'테마: 시스템', light:'테마: 라이트', dark:'테마: 다크'};
+var themeMode = 'system';
+var themeBtn = el('themeBtn');
+function applyTheme(m){
+  themeMode = m;
+  if(m === 'system'){ document.documentElement.removeAttribute('data-theme'); }
+  else{ document.documentElement.setAttribute('data-theme', m); }
+  themeBtn.textContent = THEME_LABEL[m];
+}
+themeBtn.addEventListener('click', function(){
+  applyTheme(THEME_ORDER[(THEME_ORDER.indexOf(themeMode) + 1) % 3]);
+});
+window.addEventListener('message', e => {
+  const t = e.data && e.data.elicecodeTheme;
+  if (t === 'system') document.documentElement.removeAttribute('data-theme');
+  else if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+});
+new MutationObserver(function(){ redrawCharts(); })
+  .observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+if(window.matchMedia){
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
+  var onScheme = function(){ if(!document.documentElement.hasAttribute('data-theme')){ redrawCharts(); } };
+  if(mq.addEventListener){ mq.addEventListener('change', onScheme); }
+  else if(mq.addListener){ mq.addListener(onScheme); }
+}
+
+/* ---------- workflow canvas ---------- */
+var CAT = {
+  data:{label:'데이터', color:'var(--blue)'},
+  vis:{label:'시각화', color:'var(--accent)'},
+  model:{label:'모델', color:'var(--violet)'}
+};
+function buildWorkflow(svg, spec){
+  var NW = spec.nw, NH = spec.nh;
+  var byId = {};
+  spec.nodes.forEach(function(n){ byId[n.id] = n; });
+  spec.links.forEach(function(L){
+    var A = byId[L.a], B = byId[L.b];
+    var x1 = (L.from ? L.from[0] : A.x + NW), y1 = (L.from ? L.from[1] : A.y + NH/2);
+    var x2 = (L.to ? L.to[0] : B.x), y2 = (L.to ? L.to[1] : B.y + NH/2);
+    var mx = (x1 + x2) / 2;
+    var d = 'M' + x1 + ' ' + y1 + ' C' + mx + ' ' + y1 + ', ' + mx + ' ' + y2 + ', ' + x2 + ' ' + y2;
+    L.base = svgEl('path', {d:d, 'class':'linkpath'}, svg);
+    L.flow = svgEl('path', {d:d, 'class':'linkflow' + (L.on ? ' on' : '')}, svg);
+    if(L.tag){
+      var t = L.tagPos || [mx, (y1 + y2)/2 - 7];
+      txt(svgEl('text', {x:t[0], y:t[1], 'text-anchor':(L.tagAnchor || 'middle'), 'class':'linktag'}, svg), L.tag);
+    }
+  });
+  var nodes = {};
+  spec.nodes.forEach(function(n){
+    var g = svgEl('g', {'class':'node' + (n.state ? ' ' + n.state : ''), transform:'translate(' + n.x + ',' + n.y + ')'}, svg);
+    if(spec.clickable){
+      g.setAttribute('tabindex', '0');
+      g.setAttribute('role', 'button');
+      g.setAttribute('aria-label', n.name);
+    }
+    svgEl('rect', {'class':'card', x:0, y:0, width:NW, height:NH, rx:12}, g);
+    svgEl('circle', {'class':'catdot', cx:17, cy:NH/2, r:5, fill:CAT[n.cat].color}, g);
+    txt(svgEl('text', {x:31, y:NH/2 - 3, 'class':'nlabel'}, g), n.name);
+    txt(svgEl('text', {x:31, y:NH/2 + 15, 'class':'nsub'}, g), n.ko);
+    n.el = g;
+    nodes[n.id] = n;
+  });
+  var chips = {};
+  (spec.chips || []).forEach(function(c){
+    var g = svgEl('g', {'class':'chip-g'}, svg);
+    svgEl('rect', {'class':'chip-r', x:c.x, y:c.y, width:c.w, height:c.h, rx:c.h/2}, g);
+    txt(svgEl('text', {'class':'chip-t', x:c.x + c.w/2, y:c.y + c.h/2 + 4, 'text-anchor':'middle'}, g), c.text);
+    chips[c.id] = g;
+  });
+  return {nodes:nodes, links:spec.links, chips:chips};
+}
+function startPulses(svg, wf, count){
+  if(RM){ return; }
+  var pulses = [];
+  wf.links.forEach(function(L, i){
+    var len = L.base.getTotalLength();
+    for(var j = 0; j < count; j++){
+      var c = svgEl('circle', {r:3.2, 'class':'pulse'}, svg);
+      pulses.push({c:c, path:L.base, len:len, off:(i * 0.37 + j * 0.5) % 1});
+    }
+  });
+  (function frame(ts){
+    for(var i = 0; i < pulses.length; i++){
+      var p = pulses[i];
+      var t = ((ts || 0) / 2600 + p.off) % 1;
+      var pt = p.path.getPointAtLength(t * p.len);
+      p.c.setAttribute('cx', pt.x);
+      p.c.setAttribute('cy', pt.y);
+    }
+    requestAnimationFrame(frame);
+  })(0);
+}
+
+/* ---------- hero workflow ---------- */
+var WF = buildWorkflow(el('wfSvg'), {
+  nw:144, nh:56, clickable:true,
+  nodes:[
+    {id:'file',    name:'File',         ko:'데이터 불러오기', cat:'data', x:22,  y:120},
+    {id:'scatter', name:'Scatter Plot', ko:'산점도',          cat:'vis',  x:252, y:198},
+    {id:'table',   name:'Data Table',   ko:'데이터 표',       cat:'data', x:252, y:36}
+  ],
+  links:[
+    {a:'file',    b:'scatter', tag:'데이터',        on:true},
+    {a:'file',    b:'table',   tag:'데이터',        on:true},
+    {a:'scatter', b:'table',   tag:'선택된 데이터', on:true, from:[324,254], to:[324,36], tagPos:[316,145], tagAnchor:'end'}
+  ],
+  chips:[]
+});
+var WF_INFO = {
+  file:{
+    desc:'데이터가 들어오는 문입니다. CSV·Excel뿐 아니라 오렌지3에 내장된 예시 데이터셋(iris, titanic 등)도 여기서 바로 불러옵니다.',
+    io:'입력 없음 → 출력: 데이터'
+  },
+  scatter:{
+    desc:'두 변수를 X·Y축에 놓고 한 행을 점 하나로 그립니다. 색·크기·모양으로 다른 변수를 겹쳐 표현하고, 드래그(브러시)로 점을 직접 고를 수 있습니다.',
+    io:'입력: 데이터 → 출력: 데이터, 선택된 데이터'
+  },
+  table:{
+    desc:'지금 흐르는 데이터를 표로 보여 주는 위젯입니다. 선택된 데이터 신호가 들어오면 선택한 행만 따로 보여 줍니다.',
+    io:'입력: 데이터, 선택된 데이터 → 출력: 데이터'
+  }
+};
+function showWfInfo(id){
+  var n = WF.nodes[id], info = WF_INFO[id];
+  el('wfInfo').innerHTML =
+    '<div class="wi-name">' + n.name +
+    ' <span class="wi-cat" style="background:' + CAT[n.cat].color + '">' + CAT[n.cat].label + '</span></div>' +
+    '<div class="wi-desc">' + info.desc + '</div>' +
+    '<div class="wi-io">' + info.io + '</div>';
+  Object.keys(WF.nodes).forEach(function(k){
+    WF.nodes[k].el.classList.toggle('active', k === id);
+  });
+}
+Object.keys(WF.nodes).forEach(function(k){
+  var n = WF.nodes[k];
+  n.el.addEventListener('click', function(){ showWfInfo(k); });
+  n.el.addEventListener('keydown', function(e){
+    if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); showWfInfo(k); }
+  });
+});
+startPulses(el('wfSvg'), WF, 2);
+
+/* ---------- anscombe quartet ---------- */
+var ANS_X = [10,8,13,9,11,14,6,4,12,7,5];
+var ANS = [
+  {n:'데이터 Ⅰ', y:[8.04,6.95,7.58,8.81,8.33,9.96,7.24,4.26,10.84,4.82,5.68]},
+  {n:'데이터 Ⅱ', y:[9.14,8.14,8.74,8.77,9.26,8.10,6.13,3.10,9.13,7.26,4.74]},
+  {n:'데이터 Ⅲ', y:[7.46,6.77,12.74,7.11,7.81,8.84,6.08,5.39,8.15,6.42,5.73]},
+  {n:'데이터 Ⅳ', x:[8,8,8,8,8,8,8,19,8,8,8], y:[6.58,5.76,7.71,8.84,8.47,7.04,5.25,12.50,5.56,7.91,6.89]}
+];
+function mean(a){ var s = 0, i; for(i = 0; i < a.length; i++){ s += a[i]; } return s / a.length; }
+function pearson(xs, ys){
+  var mx = mean(xs), my = mean(ys), cov = 0, vx = 0, vy = 0, i;
+  for(i = 0; i < xs.length; i++){
+    cov += (xs[i]-mx)*(ys[i]-my);
+    vx += (xs[i]-mx)*(xs[i]-mx);
+    vy += (ys[i]-my)*(ys[i]-my);
+  }
+  return cov / Math.sqrt(vx*vy);
+}
+function ansSvg(data){
+  var svg = svgEl('svg', {viewBox:'0 0 150 118'}, null);
+  var L = 20, T = 8, R = 8, B = 20, W = 150, H = 118;
+  var iw = W-L-R, ih = H-T-B;
+  var xmin = 2, xmax = 20, ymin = 2, ymax = 13.5;
+  function sx(v){ return L + (v-xmin)/(xmax-xmin)*iw; }
+  function sy(v){ return T + ih - (v-ymin)/(ymax-ymin)*ih; }
+  svgEl('line', {x1:L, y1:T, x2:L, y2:T+ih, stroke:'var(--line-strong)'}, svg);
+  svgEl('line', {x1:L, y1:T+ih, x2:L+iw, y2:T+ih, stroke:'var(--line-strong)'}, svg);
+  [5,10,15].forEach(function(v){
+    svgEl('line', {x1:sx(v), y1:T+ih, x2:sx(v), y2:T+ih+3, stroke:'var(--line-strong)'}, svg);
+    txt(svgEl('text', {x:sx(v), y:H-6, 'text-anchor':'middle', 'font-size':'8px', fill:'var(--muted)'}, svg), v);
+  });
+  [4,8,12].forEach(function(v){
+    svgEl('line', {x1:L-3, y1:sy(v), x2:L, y2:sy(v), stroke:'var(--line-strong)'}, svg);
+    txt(svgEl('text', {x:L-5, y:sy(v)+3, 'text-anchor':'end', 'font-size':'8px', fill:'var(--muted)'}, svg), v);
+  });
+  svgEl('line', {x1:sx(3), y1:sy(4.5), x2:sx(19.5), y2:sy(12.75), stroke:'var(--muted)', 'stroke-dasharray':'4 3'}, svg);
+  var xs = data.x || ANS_X, i;
+  for(i = 0; i < xs.length; i++){
+    svgEl('circle', {cx:sx(xs[i]), cy:sy(data.y[i]), r:2.8, fill:'var(--accent)'}, svg);
+  }
+  return svg;
+}
+(function initAnscombe(){
+  var grid = el('ansGrid');
+  ANS.forEach(function(d){
+    var cell = document.createElement('div');
+    cell.className = 'ans-cell';
+    cell.appendChild(ansSvg(d));
+    var cap = document.createElement('div');
+    cap.className = 'cap';
+    txt(cap, d.n);
+    cell.appendChild(cap);
+    grid.appendChild(cell);
+  });
+  var r = pearson(ANS_X, ANS[0].y);
+  var mx = mean(ANS_X), my = mean(ANS[0].y), cov = 0, vx = 0, i;
+  for(i = 0; i < ANS_X.length; i++){
+    cov += (ANS_X[i]-mx)*(ANS[0].y[i]-my);
+    vx += (ANS_X[i]-mx)*(ANS_X[i]-mx);
+  }
+  var slope = cov/vx, b = my - slope*mx;
+  el('stMx').textContent = fmt(mx);
+  el('stMy').textContent = fmt(my);
+  el('stR').textContent = fmt(r, 3);
+  el('stFit').textContent = 'y = ' + fmt(b) + ' + ' + fmt(slope, 3) + 'x';
+  var open = false, btn = el('ansBtn');
+  btn.addEventListener('click', function(){
+    open = !open;
+    el('ansGrid').hidden = !open;
+    el('ansTakeaway').hidden = !open;
+    btn.textContent = open ? '숫자로만 보기 ↑' : '그림으로 보기 ↓';
+    btn.setAttribute('aria-expanded', String(open));
+  });
+})();
+/* ---------- workflow stepper ---------- */
+var STEPS = [
+  {t:'데이터 불러오기',
+   b:'File 위젯을 캔버스에 끌어 놓고 더블클릭하세요. 데이터셋 목록에서 iris(아이리스)를 고르면 끝 — 붓꽃 3품종 150송이의 측정값이 캔버스로 흘러 들어옵니다.',
+   tip:'더블클릭으로 열리는 설정 창에서 대부분의 일을 합니다. 위젯 = 기능 + 설정 창이라고 기억하세요.',
+   state:{file:'active', scatter:'ghost', table:'ghost'}, fs:false, st:false, chip:null},
+  {t:'시각화 위젯 연결',
+   b:'Scatter Plot(산점도) 위젯을 캔버스에 놓고, File 위젯 가장자리에서 선을 당겨 연결합니다. 연결되는 순간 데이터 신호가 흐르기 시작합니다.',
+   tip:'선은 언제든 끊었다가 다시 연결할 수 있습니다. 워크플로우는 고칠 수 있는 살아 있는 그림입니다.',
+   state:{file:'', scatter:'active', table:'ghost'}, fs:true, st:false, chip:null},
+  {t:'축과 색 정하기',
+   b:'Scatter Plot 설정에서 X축은 꽃잎 길이, Y축은 꽃잎 너비, 색은 품종으로 지정해 보세요. 세 품종이 평면 위에서 갈라져 보이기 시작합니다.',
+   tip:'색·크기·모양에는 서로 다른 변수를 얹을 수 있습니다. 한 그림에 변수를 넷까지 겹칠 수도 있습니다.',
+   state:{file:'', scatter:'active', table:'ghost'}, fs:true, st:false, chip:'set'},
+  {t:'마우스로 선택하기',
+   b:'관심 있는 점들을 그래프 위에서 드래그하세요(브러시). 선택된 점은 곧 데이터 필터가 됩니다.',
+   tip:'“꽃잎이 긴 붓꽃만 골라 내기” 같은 질문을 마우스로 그대로 실행하는 셈입니다.',
+   state:{file:'', scatter:'active', table:'ghost'}, fs:true, st:false, chip:'brush'},
+  {t:'결과 전달하기',
+   b:'선택된 데이터를 Data Table에 연결해 확인합니다. 선택을 바꾸면 표의 내용도 실시간으로 따라 바뀝니다.',
+   tip:'이 선택을 Tree(의사결정나무) 같은 모델 위젯으로 보내면, 고른 데이터로 분류 규칙을 학습할 수 있습니다.',
+   state:{file:'', scatter:'active', table:'active'}, fs:true, st:true, chip:'rows'}
+];
+var STEP_WF = buildWorkflow(el('stepSvg'), {
+  nw:150, nh:58, clickable:false,
+  nodes:[
+    {id:'file',    name:'File',         ko:'데이터 불러오기', cat:'data', x:30,  y:130, state:'active'},
+    {id:'scatter', name:'Scatter Plot', ko:'산점도',          cat:'vis',  x:330, y:44,  state:'ghost'},
+    {id:'table',   name:'Data Table',   ko:'데이터 표',       cat:'data', x:330, y:214, state:'ghost'}
+  ],
+  links:[
+    {a:'file',    b:'scatter', tag:'데이터'},
+    {a:'scatter', b:'table',   tag:'선택된 데이터', from:[405,102], to:[405,214], tagPos:[397,158], tagAnchor:'end'}
+  ],
+  chips:[
+    {id:'set',   x:36,  y:40,  w:196, h:24, text:'X 꽃잎 길이 · Y 꽃잎 너비 · 색 품종'},
+    {id:'brush', x:36,  y:72,  w:196, h:24, text:'브러시 — 드래그한 점이 선택됩니다'},
+    {id:'rows',  x:318, y:288, w:174, h:24, text:'선택된 행만 표시됩니다'}
+  ]
+});
+var cur = 0;
+var stepNum = el('stepNum'), stepTitle = el('stepTitle'), stepBody = el('stepBody'), stepTip = el('stepTip');
+var prevBtn = el('prevBtn'), nextBtn = el('nextBtn'), dotsBox = el('stepDots');
+var dots = [];
+for(var di = 0; di < STEPS.length; di++){
+  (function(idx){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-label', '단계 ' + (idx+1) + '로 이동');
+    b.addEventListener('click', function(){ cur = idx; renderStep(); });
+    dotsBox.appendChild(b);
+    dots.push(b);
+  })(di);
+}
+function renderStep(){
+  var S = STEPS[cur];
+  stepNum.textContent = 'STEP ' + (cur+1) + ' / ' + STEPS.length;
+  stepTitle.textContent = S.t;
+  stepBody.textContent = S.b;
+  stepTip.innerHTML = '<b>팁</b> — ' + S.tip;
+  Object.keys(STEP_WF.nodes).forEach(function(k){
+    var n = STEP_WF.nodes[k];
+    n.el.classList.remove('active', 'ghost');
+    if(S.state[k]){ n.el.classList.add(S.state[k]); }
+  });
+  STEP_WF.links[0].flow.classList.toggle('on', !!S.fs);
+  STEP_WF.links[1].flow.classList.toggle('on', !!S.st);
+  ['set','brush','rows'].forEach(function(id){
+    STEP_WF.chips[id].classList.toggle('show', id === S.chip);
+  });
+  dots.forEach(function(d, i){ d.classList.toggle('cur', i === cur); });
+  prevBtn.disabled = cur === 0;
+  nextBtn.disabled = cur === STEPS.length - 1;
+}
+prevBtn.addEventListener('click', function(){ if(cur > 0){ cur--; renderStep(); } });
+nextBtn.addEventListener('click', function(){ if(cur < STEPS.length - 1){ cur++; renderStep(); } });
+renderStep();
+
+/* ---------- iris scatter demo ---------- */
+var IRIS=[
+[5.1,3.5,1.4,0.2,0],
+[4.9,3,1.4,0.2,0],
+[4.7,3.2,1.3,0.2,0],
+[4.6,3.1,1.5,0.2,0],
+[5,3.6,1.4,0.2,0],
+[5.4,3.9,1.7,0.4,0],
+[4.6,3.4,1.4,0.3,0],
+[5,3.4,1.5,0.2,0],
+[4.4,2.9,1.4,0.2,0],
+[4.9,3.1,1.5,0.1,0],
+[5.4,3.7,1.5,0.2,0],
+[4.8,3.4,1.6,0.2,0],
+[4.8,3,1.4,0.1,0],
+[4.3,3,1.1,0.1,0],
+[5.8,4,1.2,0.2,0],
+[5.7,4.4,1.5,0.4,0],
+[5.4,3.9,1.3,0.4,0],
+[5.1,3.5,1.4,0.3,0],
+[5.7,3.8,1.7,0.3,0],
+[5.1,3.8,1.5,0.3,0],
+[5.4,3.4,1.7,0.2,0],
+[5.1,3.7,1.5,0.4,0],
+[4.6,3.6,1,0.2,0],
+[5.1,3.3,1.7,0.5,0],
+[4.8,3.4,1.9,0.2,0],
+[5,3,1.6,0.2,0],
+[5,3.4,1.6,0.4,0],
+[5.2,3.5,1.5,0.2,0],
+[5.2,3.4,1.4,0.2,0],
+[4.7,3.2,1.6,0.2,0],
+[4.8,3.1,1.6,0.2,0],
+[5.4,3.4,1.5,0.4,0],
+[5.2,4.1,1.5,0.1,0],
+[5.5,4.2,1.4,0.2,0],
+[4.9,3.1,1.5,0.2,0],
+[5,3.2,1.2,0.2,0],
+[5.5,3.5,1.3,0.2,0],
+[4.9,3.6,1.4,0.1,0],
+[4.4,3,1.3,0.2,0],
+[5.1,3.4,1.5,0.2,0],
+[5,3.5,1.3,0.3,0],
+[4.5,2.3,1.3,0.3,0],
+[4.4,3.2,1.3,0.2,0],
+[5,3.5,1.6,0.6,0],
+[5.1,3.8,1.9,0.4,0],
+[4.8,3,1.4,0.3,0],
+[5.1,3.8,1.6,0.2,0],
+[4.6,3.2,1.4,0.2,0],
+[5.3,3.7,1.5,0.2,0],
+[5,3.3,1.4,0.2,0],
+[7,3.2,4.7,1.4,1],
+[6.4,3.2,4.5,1.5,1],
+[6.9,3.1,4.9,1.5,1],
+[5.5,2.3,4,1.3,1],
+[6.5,2.8,4.6,1.5,1],
+[5.7,2.8,4.5,1.3,1],
+[6.3,3.3,4.7,1.6,1],
+[4.9,2.4,3.3,1,1],
+[6.6,2.9,4.6,1.3,1],
+[5.2,2.7,3.9,1.4,1],
+[5,2,3.5,1,1],
+[5.9,3,4.2,1.5,1],
+[6,2.2,4,1,1],
+[6.1,2.9,4.7,1.4,1],
+[5.6,2.9,3.6,1.3,1],
+[6.7,3.1,4.4,1.4,1],
+[5.6,3,4.5,1.5,1],
+[5.8,2.7,4.1,1,1],
+[6.2,2.2,4.5,1.5,1],
+[5.6,2.5,3.9,1.1,1],
+[5.9,3.2,4.8,1.8,1],
+[6.1,2.8,4,1.3,1],
+[6.3,2.5,4.9,1.5,1],
+[6.1,2.8,4.7,1.2,1],
+[6.4,2.9,4.3,1.3,1],
+[6.6,3,4.4,1.4,1],
+[6.8,2.8,4.8,1.4,1],
+[6.7,3,5,1.7,1],
+[6,2.9,4.5,1.5,1],
+[5.7,2.6,3.5,1,1],
+[5.5,2.4,3.8,1.1,1],
+[5.5,2.4,3.7,1,1],
+[5.8,2.7,3.9,1.2,1],
+[6,2.7,5.1,1.6,1],
+[5.4,3,4.5,1.5,1],
+[6,3.4,4.5,1.6,1],
+[6.7,3.1,4.7,1.5,1],
+[6.3,2.3,4.4,1.3,1],
+[5.6,3,4.1,1.3,1],
+[5.5,2.5,4,1.3,1],
+[5.5,2.6,4.4,1.2,1],
+[6.1,3,4.6,1.4,1],
+[5.8,2.6,4,1.2,1],
+[5,2.3,3.3,1,1],
+[5.6,2.7,4.2,1.3,1],
+[5.7,3,4.2,1.2,1],
+[5.7,2.9,4.2,1.3,1],
+[6.2,2.9,4.3,1.3,1],
+[5.1,2.5,3,1.1,1],
+[5.7,2.8,4.1,1.3,1],
+[6.3,3.3,6,2.5,2],
+[5.8,2.7,5.1,1.9,2],
+[7.1,3,5.9,2.1,2],
+[6.3,2.9,5.6,1.8,2],
+[6.5,3,5.8,2.2,2],
+[7.6,3,6.6,2.1,2],
+[4.9,2.5,4.5,1.7,2],
+[7.3,2.9,6.3,1.8,2],
+[6.7,2.5,5.8,1.8,2],
+[7.2,3.6,6.1,2.5,2],
+[6.5,3.2,5.1,2,2],
+[6.4,2.7,5.3,1.9,2],
+[6.8,3,5.5,2.1,2],
+[5.7,2.5,5,2,2],
+[5.8,2.8,5.1,2.4,2],
+[6.4,3.2,5.3,2.3,2],
+[6.5,3,5.5,1.8,2],
+[7.7,3.8,6.7,2.2,2],
+[7.7,2.6,6.9,2.3,2],
+[6,2.2,5,1.5,2],
+[6.9,3.2,5.7,2.3,2],
+[5.6,2.8,4.9,2,2],
+[7.7,2.8,6.7,2,2],
+[6.3,2.7,4.9,1.8,2],
+[6.7,3.3,5.7,2.1,2],
+[7.2,3.2,6,1.8,2],
+[6.2,2.8,4.8,1.8,2],
+[6.1,3,4.9,1.8,2],
+[6.4,2.8,5.6,2.1,2],
+[7.2,3,5.8,1.6,2],
+[7.4,2.8,6.1,1.9,2],
+[7.9,3.8,6.4,2,2],
+[6.4,2.8,5.6,2.2,2],
+[6.3,2.8,5.1,1.5,2],
+[6.1,2.6,5.6,1.4,2],
+[7.7,3,6.1,2.3,2],
+[6.3,3.4,5.6,2.4,2],
+[6.4,3.1,5.5,1.8,2],
+[6,3,4.8,1.8,2],
+[6.9,3.1,5.4,2.1,2],
+[6.7,3.1,5.6,2.4,2],
+[6.9,3.1,5.1,2.3,2],
+[5.8,2.7,5.1,1.9,2],
+[6.8,3.2,5.9,2.3,2],
+[6.7,3.3,5.7,2.5,2],
+[6.7,3,5.2,2.3,2],
+[6.3,2.5,5,1.9,2],
+[6.5,3,5.2,2,2],
+[6.2,3.4,5.4,2.3,2],
+[5.9,3,5.1,1.8,2]
+];
+var ATTRS = ['꽃받침 길이', '꽃받침 너비', '꽃잎 길이', '꽃잎 너비'];
+var CLS = [
+  {name:'세토사',   colorVar:'--ds-a'},
+  {name:'버시컬러', colorVar:'--ds-b'},
+  {name:'버지니카', colorVar:'--ds-c'}
+];
+var clsCount = [0,0,0], ci;
+for(ci = 0; ci < IRIS.length; ci++){ clsCount[IRIS[ci][4]]++; }
+
+var cv = el('irisCanvas'), ctx = cv.getContext('2d');
+var xi = 2, yi = 3;
+var chartType = 'scatter';
+var sel = new Set();
+var drag = null;
+var scaleInfo = null;
+var histInfo = null;
+var hitZones = [];
+var M = {L:54, R:16, T:18, B:46};
+var SOFT = ['--blue-soft', '--accent-soft', '--green-soft'];
+
+function extent(i){
+  var mn = Infinity, mx = -Infinity, k, v;
+  for(k = 0; k < IRIS.length; k++){
+    v = IRIS[k][i];
+    if(v < mn){ mn = v; }
+    if(v > mx){ mx = v; }
+  }
+  var pad = (mx - mn) * 0.08 || 0.5;
+  return {min:mn - pad, max:mx + pad};
+}
+function niceStep(raw){
+  var p = Math.pow(10, Math.floor(Math.log10(raw)));
+  var f = raw / p;
+  var m = f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10;
+  return m * p;
+}
+function ticksFor(ext){
+  var step = niceStep((ext.max - ext.min) / 5);
+  var out = [], v;
+  for(v = Math.ceil(ext.min/step)*step; v <= ext.max + 1e-9; v += step){
+    out.push(Math.round(v*100)/100);
+  }
+  return out;
+}
+function canvasFrame(){
+  var dpr = window.devicePixelRatio || 1;
+  var W = cv.clientWidth, H = cv.clientHeight;
+  if(W < 10 || H < 10){ return null; }
+  if(cv.width !== Math.round(W*dpr) || cv.height !== Math.round(H*dpr)){
+    cv.width = Math.round(W*dpr);
+    cv.height = Math.round(H*dpr);
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  return {W:W, H:H, iw:W - M.L - M.R, ih:H - M.T - M.B};
+}
+function drawAxesXY(f, ex, ey, xTitle, yTitle, noX){
+  var L = M.L, T = M.T, iw = f.iw, ih = f.ih, W = f.W, H = f.H;
+  function sx(v){ return L + (v - ex.min)/(ex.max - ex.min)*iw; }
+  function sy(v){ return T + ih - (v - ey.min)/(ey.max - ey.min)*ih; }
+  var ink = cssv('--ink'), mut = cssv('--muted'), ln = cssv('--line');
+  var xt = ticksFor(ex), yt = ticksFor(ey), v;
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = ln;
+  if(!noX){
+    for(v = 0; v < xt.length; v++){ ctx.beginPath(); ctx.moveTo(sx(xt[v]), T); ctx.lineTo(sx(xt[v]), T+ih); ctx.stroke(); }
+  }
+  for(v = 0; v < yt.length; v++){ ctx.beginPath(); ctx.moveTo(L, sy(yt[v])); ctx.lineTo(L+iw, sy(yt[v])); ctx.stroke(); }
+  ctx.fillStyle = mut;
+  ctx.font = '11px ui-monospace, Consolas, monospace';
+  if(!noX){
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for(v = 0; v < xt.length; v++){ ctx.fillText(String(xt[v]), sx(xt[v]), T + ih + 8); }
+  }
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for(v = 0; v < yt.length; v++){ ctx.fillText(String(yt[v]), L - 8, sy(yt[v])); }
+  ctx.fillStyle = ink;
+  ctx.font = '600 12px system-ui, sans-serif';
+  ctx.textBaseline = 'top';
+  if(xTitle){ ctx.textAlign = 'center'; ctx.fillText(xTitle, L + iw/2, H - 16); }
+  if(yTitle){ ctx.textAlign = 'left'; ctx.fillText(yTitle, 8, 4); }
+  return {sx:sx, sy:sy};
+}
+function drawDragRect(){
+  if(!drag){ return; }
+  var acc = cssv('--accent'), accSoft = cssv('--accent-soft');
+  var rx = Math.min(drag.x1, drag.x2), ry = Math.min(drag.y1, drag.y2);
+  var rw = Math.abs(drag.x2 - drag.x1), rh = Math.abs(drag.y2 - drag.y1);
+  ctx.fillStyle = accSoft;
+  ctx.globalAlpha = .45;
+  ctx.fillRect(rx, ry, rw, rh);
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = acc;
+  ctx.setLineDash([5, 4]);
+  ctx.lineWidth = 1.4;
+  ctx.strokeRect(rx, ry, rw, rh);
+  ctx.setLineDash([]);
+}
+function classColors(){ return CLS.map(function(c){ return cssv(c.colorVar); }); }
+function countSelInClass(c){
+  var n = 0;
+  sel.forEach(function(i){ if(IRIS[i][4] === c){ n++; } });
+  return n;
+}
+function drawIris(){
+  if(!ctx){ return; }
+  scaleInfo = null;
+  histInfo = null;
+  hitZones = [];
+  if(chartType === 'bar'){ drawBar(); }
+  else if(chartType === 'line'){ drawLine(); }
+  else if(chartType === 'box'){ drawBox(); }
+  else if(chartType === 'hist'){ drawHist(); }
+  else{ drawScatter(); }
+  drawDragRect();
+}
+function drawScatter(){
+  var f = canvasFrame();
+  if(!f){ return; }
+  var ex = extent(xi), ey = extent(yi);
+  var m = drawAxesXY(f, ex, ey, ATTRS[xi] + ' (cm) →', '↑ ' + ATTRS[yi] + ' (cm)', false);
+  scaleInfo = {
+    px:function(i){ return m.sx(IRIS[i][xi]); },
+    py:function(i){ return m.sy(IRIS[i][yi]); }
+  };
+  var ink = cssv('--ink');
+  var clsColors = classColors();
+  var i, r, px, py, picked;
+  for(i = 0; i < IRIS.length; i++){
+    r = IRIS[i];
+    px = m.sx(r[xi]); py = m.sy(r[yi]);
+    picked = sel.has(i);
+    ctx.globalAlpha = (sel.size > 0 && !picked) ? 0.16 : 1;
+    ctx.beginPath();
+    ctx.arc(px, py, picked ? 5.2 : 3.8, 0, 6.2832);
+    ctx.fillStyle = clsColors[r[4]];
+    ctx.fill();
+    if(picked){
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = ink;
+      ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+function drawBar(){
+  var f = canvasFrame();
+  if(!f){ return; }
+  var iw = f.iw, ih = f.ih, L = M.L, T = M.T;
+  var sums = [0, 0, 0], cnts = [0, 0, 0], i, c;
+  for(i = 0; i < IRIS.length; i++){
+    sums[IRIS[i][4]] += IRIS[i][xi];
+    cnts[IRIS[i][4]]++;
+  }
+  var means = [0, 0, 0];
+  for(c = 0; c < 3; c++){ means[c] = sums[c] / cnts[c]; }
+  var vmax = Math.max(means[0], means[1], means[2]) * 1.2;
+  var m = drawAxesXY(f, {min:0, max:1}, {min:0, max:vmax}, '', '↑ ' + ATTRS[xi] + ' 평균 (cm)', true);
+  var slot = iw / 3, bw = Math.min(slot * 0.52, 96);
+  var clsColors = classColors();
+  var ink = cssv('--ink'), mut = cssv('--muted');
+  for(c = 0; c < 3; c++){
+    var cx = L + slot*c + slot/2;
+    var h = means[c] / vmax * ih;
+    var bx = cx - bw/2, by = T + ih - h;
+    ctx.fillStyle = clsColors[c];
+    ctx.globalAlpha = (sel.size > 0 && countSelInClass(c) === 0) ? 0.3 : 0.95;
+    ctx.fillRect(bx, by, bw, h);
+    ctx.globalAlpha = 1;
+    hitZones.push({cls:c, x:L + slot*c, y:T, w:slot, h:ih});
+    ctx.fillStyle = ink;
+    ctx.font = '700 13px ui-monospace, Consolas, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText(means[c].toFixed(2), cx, by - 5);
+    ctx.fillStyle = mut;
+    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.textBaseline = 'top';
+    ctx.fillText(CLS[c].name, cx, T + ih + 8);
+  }
+}
+function rrect(x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+function quantile(sorted, q){
+  var pos = (sorted.length - 1) * q;
+  var base = Math.floor(pos), rest = pos - base;
+  if(base + 1 < sorted.length){ return sorted[base] + rest * (sorted[base+1] - sorted[base]); }
+  return sorted[base];
+}
+function drawBox(){
+  var f = canvasFrame();
+  if(!f){ return; }
+  var iw = f.iw, ih = f.ih, L = M.L, T = M.T;
+  var ex = extent(xi);
+  var m = drawAxesXY(f, ex, ex, '', '↑ ' + ATTRS[xi] + ' (cm)', true);
+  var slot = iw / 3, bw = Math.min(slot * 0.4, 64);
+  var clsColors = classColors();
+  var mut = cssv('--muted');
+  function seg(x1, y1, x2, y2){
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  }
+  var c, i, k;
+  for(c = 0; c < 3; c++){
+    var vs = [];
+    for(i = 0; i < IRIS.length; i++){ if(IRIS[i][4] === c){ vs.push(IRIS[i][xi]); } }
+    vs.sort(function(a, b){ return a - b; });
+    var q1 = quantile(vs, 0.25), med = quantile(vs, 0.5), q3 = quantile(vs, 0.75);
+    var iqr = q3 - q1, lo = q1 - 1.5*iqr, hi = q3 + 1.5*iqr;
+    var wLo = q1, wHi = q3;
+    for(k = 0; k < vs.length; k++){ if(vs[k] >= lo){ wLo = vs[k]; break; } }
+    for(k = vs.length - 1; k >= 0; k--){ if(vs[k] <= hi){ wHi = vs[k]; break; } }
+    var cx = L + slot*c + slot/2;
+    var yTop = m.sy(q3), yBot = m.sy(q1);
+    ctx.strokeStyle = mut;
+    ctx.lineWidth = 1.2;
+    seg(cx, m.sy(wLo), cx, yBot);
+    seg(cx, yTop, cx, m.sy(wHi));
+    seg(cx - 9, m.sy(wLo), cx + 9, m.sy(wLo));
+    seg(cx - 9, m.sy(wHi), cx + 9, m.sy(wHi));
+    ctx.globalAlpha = (sel.size > 0 && countSelInClass(c) === 0) ? 0.3 : 1;
+    ctx.fillStyle = cssv(SOFT[c]);
+    ctx.strokeStyle = clsColors[c];
+    ctx.lineWidth = 1.4;
+    rrect(cx - bw/2, yTop, bw, yBot - yTop, 4);
+    ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 2.4;
+    seg(cx - bw/2, m.sy(med), cx + bw/2, m.sy(med));
+    var mv = 0;
+    for(k = 0; k < vs.length; k++){ mv += vs[k]; }
+    mv /= vs.length;
+    ctx.strokeStyle = cssv('--violet');
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([5, 3]);
+    seg(cx - bw/2 - 5, m.sy(mv), cx + bw/2 + 5, m.sy(mv));
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+    for(k = 0; k < vs.length; k++){
+      if(vs[k] < lo || vs[k] > hi){
+        ctx.beginPath();
+        ctx.arc(cx, m.sy(vs[k]), 3, 0, 6.2832);
+        ctx.fillStyle = clsColors[c];
+        ctx.fill();
+      }
+    }
+    hitZones.push({cls:c, x:L + slot*c, y:T, w:slot, h:ih});
+    ctx.fillStyle = mut;
+    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(CLS[c].name, cx, T + ih + 8);
+    ctx.font = '600 11px ui-monospace, Consolas, monospace';
+    ctx.fillText('중앙값 ' + med.toFixed(2), cx, T + ih + 24);
+  }
+}
+function drawHist(){
+  var f = canvasFrame();
+  if(!f){ return; }
+  var iw = f.iw, ih = f.ih, L = M.L, T = M.T;
+  var ex = extent(xi);
+  var NB = 12, bwidth = (ex.max - ex.min) / NB;
+  var counts = [], c, bi;
+  for(c = 0; c < 3; c++){
+    counts.push([]);
+    for(bi = 0; bi < NB; bi++){ counts[c].push(0); }
+  }
+  var i;
+  for(i = 0; i < IRIS.length; i++){
+    bi = Math.min(NB - 1, Math.max(0, Math.floor((IRIS[i][xi] - ex.min) / bwidth)));
+    counts[IRIS[i][4]][bi]++;
+  }
+  var cmax = 0;
+  for(c = 0; c < 3; c++){
+    for(bi = 0; bi < NB; bi++){ if(counts[c][bi] > cmax){ cmax = counts[c][bi]; } }
+  }
+  var m = drawAxesXY(f, ex, {min:0, max:cmax + 2}, ATTRS[xi] + ' (cm) →', '↑ 개수(행)', false);
+  histInfo = {
+    valFromPx:function(px){ return ex.min + (px - L) / iw * (ex.max - ex.min); }
+  };
+  var slot = iw / NB, sub = slot / 3;
+  var clsColors = classColors();
+  for(c = 0; c < 3; c++){
+    for(bi = 0; bi < NB; bi++){
+      if(!counts[c][bi]){ continue; }
+      var h = counts[c][bi] / (cmax + 2) * ih;
+      var x0 = L + slot*bi + sub*c;
+      ctx.fillStyle = clsColors[c];
+      ctx.globalAlpha = 0.92;
+      ctx.fillRect(x0 + 0.5, T + ih - h, sub - 1, h);
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+function drawLine(){
+  var f = canvasFrame();
+  if(!f){ return; }
+  var iw = f.iw, ih = f.ih, L = M.L, T = M.T;
+  var ex = {min:1, max:IRIS.length};
+  var ey = extent(yi);
+  var m = drawAxesXY(f, ex, ey, '행 번호 → (품종순으로 정렬된 iris)', '↑ ' + ATTRS[yi] + ' (cm)', false);
+  var clsColors = classColors();
+  var mut = cssv('--muted'), ink = cssv('--ink'), vio = cssv('--violet');
+  var mean = 0, i, c;
+  for(i = 0; i < IRIS.length; i++){ mean += IRIS[i][yi]; }
+  mean /= IRIS.length;
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = cssv('--line-strong');
+  ctx.lineWidth = 1;
+  [50.5, 100.5].forEach(function(b){
+    ctx.beginPath(); ctx.moveTo(m.sx(b), T); ctx.lineTo(m.sx(b), T + ih); ctx.stroke();
+  });
+  ctx.setLineDash([]);
+  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = vio;
+  ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(L, m.sy(mean)); ctx.lineTo(L + iw, m.sy(mean)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = vio;
+  ctx.font = '600 11px ui-monospace, Consolas, monospace';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  ctx.fillText('전체 평균 ' + mean.toFixed(2), L + 6, m.sy(mean) - 3);
+  ctx.fillStyle = mut;
+  ctx.font = '600 11px system-ui, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText(CLS[0].name, m.sx(25), T + 3);
+  ctx.fillText(CLS[1].name, m.sx(75), T + 3);
+  ctx.fillText(CLS[2].name, m.sx(125), T + 3);
+  ctx.lineWidth = 1.6;
+  ctx.globalAlpha = 0.85;
+  for(c = 0; c < 3; c++){
+    ctx.strokeStyle = clsColors[c];
+    ctx.beginPath();
+    for(i = c*50; i < (c+1)*50; i++){
+      var px = m.sx(i + 1), py = m.sy(IRIS[i][yi]);
+      if(i === c*50){ ctx.moveTo(px, py); } else { ctx.lineTo(px, py); }
+    }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  scaleInfo = {
+    px:function(i){ return m.sx(i + 1); },
+    py:function(i){ return m.sy(IRIS[i][yi]); }
+  };
+  for(i = 0; i < IRIS.length; i++){
+    var px2 = m.sx(i + 1), py2 = m.sy(IRIS[i][yi]);
+    var picked = sel.has(i);
+    ctx.globalAlpha = (sel.size > 0 && !picked) ? 0.14 : 0.9;
+    ctx.beginPath();
+    ctx.arc(px2, py2, picked ? 4.2 : 2.2, 0, 6.2832);
+    ctx.fillStyle = clsColors[IRIS[i][4]];
+    ctx.fill();
+    if(picked){
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 1.3;
+      ctx.strokeStyle = ink;
+      ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+function canvasPos(e){
+  var r = cv.getBoundingClientRect();
+  return {x:e.clientX - r.left, y:e.clientY - r.top};
+}
+function selectRect(){
+  if(!scaleInfo){ return; }
+  var x1 = Math.min(drag.x1, drag.x2), x2 = Math.max(drag.x1, drag.x2);
+  var y1 = Math.min(drag.y1, drag.y2), y2 = Math.max(drag.y1, drag.y2);
+  sel.clear();
+  for(var i = 0; i < IRIS.length; i++){
+    var px = scaleInfo.px(i), py = scaleInfo.py(i);
+    if(px >= x1 && px <= x2 && py >= y1 && py <= y2){ sel.add(i); }
+  }
+}
+function zoneAt(px, py){
+  for(var i = 0; i < hitZones.length; i++){
+    var z = hitZones[i];
+    if(px >= z.x && px <= z.x + z.w && py >= z.y && py <= z.y + z.h){ return z; }
+  }
+  return null;
+}
+function selectClass(c){
+  sel.clear();
+  for(var i = 0; i < IRIS.length; i++){ if(IRIS[i][4] === c){ sel.add(i); } }
+}
+function applySelection(isClick){
+  var i, z;
+  if(chartType === 'bar' || chartType === 'box'){
+    if(isClick){
+      z = zoneAt(drag.x2, drag.y2);
+      if(z){ selectClass(z.cls); } else { sel.clear(); }
+      return;
+    }
+    var x1 = Math.min(drag.x1, drag.x2), x2 = Math.max(drag.x1, drag.x2);
+    var y1 = Math.min(drag.y1, drag.y2), y2 = Math.max(drag.y1, drag.y2);
+    var classes = {};
+    for(i = 0; i < hitZones.length; i++){
+      z = hitZones[i];
+      if(z.x <= x2 && z.x + z.w >= x1 && z.y <= y2 && z.y + z.h >= y1){ classes[z.cls] = true; }
+    }
+    sel.clear();
+    for(i = 0; i < IRIS.length; i++){ if(classes[IRIS[i][4]]){ sel.add(i); } }
+    return;
+  }
+  if(chartType === 'hist'){
+    if(isClick || !histInfo){ sel.clear(); return; }
+    var v1 = histInfo.valFromPx(Math.min(drag.x1, drag.x2));
+    var v2 = histInfo.valFromPx(Math.max(drag.x1, drag.x2));
+    sel.clear();
+    for(i = 0; i < IRIS.length; i++){
+      if(IRIS[i][xi] >= v1 && IRIS[i][xi] <= v2){ sel.add(i); }
+    }
+    return;
+  }
+  if(isClick){ sel.clear(); return; }
+  selectRect();
+}
+function updateSelInfo(){
+  var box = el('selInfo');
+  if(sel.size === 0){
+    box.innerHTML = '<span class="sel-null">아직 선택 없음 — 그래프를 드래그해 보세요. 선택된 데이터는 다른 그래프에도 함께 반영됩니다.</span>';
+    return;
+  }
+  var vIdx = (chartType === 'line') ? yi : xi;
+  var cnt = [0, 0, 0], sum = 0;
+  sel.forEach(function(i){
+    cnt[IRIS[i][4]]++;
+    sum += IRIS[i][vIdx];
+  });
+  box.innerHTML = '선택 <b>' + sel.size + '</b>개' +
+    ' · ' + CLS[0].name + ' <b>' + cnt[0] + '</b>' +
+    ' · ' + CLS[1].name + ' <b>' + cnt[1] + '</b>' +
+    ' · ' + CLS[2].name + ' <b>' + cnt[2] + '</b>' +
+    ' · ' + ATTRS[vIdx] + ' 평균 <b>' + (sum/sel.size).toFixed(2) + '</b>' +
+    ' <span class="chip">→ 선택된 데이터가 다음 위젯으로 전달됩니다</span>';
+}
+cv.addEventListener('pointerdown', function(e){
+  var p = canvasPos(e);
+  drag = {x1:p.x, y1:p.y, x2:p.x, y2:p.y, moved:false};
+  if(cv.setPointerCapture){
+    try{ cv.setPointerCapture(e.pointerId); }catch(err){}
+  }
+  e.preventDefault();
+});
+cv.addEventListener('pointermove', function(e){
+  if(!drag){ return; }
+  var p = canvasPos(e);
+  if(Math.abs(p.x - drag.x1) > 4 || Math.abs(p.y - drag.y1) > 4){ drag.moved = true; }
+  drag.x2 = p.x; drag.y2 = p.y;
+  drawIris();
+});
+cv.addEventListener('pointerup', function(e){
+  if(!drag){ return; }
+  var p = canvasPos(e);
+  drag.x2 = p.x; drag.y2 = p.y;
+  applySelection(!drag.moved);
+  drag = null;
+  drawIris();
+  updateSelInfo();
+});
+el('selClear').addEventListener('click', function(){
+  sel.clear();
+  drawIris();
+  updateSelInfo();
+});
+var selX = el('selX'), selY = el('selY'), selType = el('selType'), ai;
+for(ai = 0; ai < ATTRS.length; ai++){
+  var o1 = document.createElement('option'); o1.value = String(ai); txt(o1, ATTRS[ai]);
+  var o2 = document.createElement('option'); o2.value = String(ai); txt(o2, ATTRS[ai]);
+  selX.appendChild(o1);
+  selY.appendChild(o2);
+}
+selX.value = '2';
+selY.value = '3';
+var HINTS = {
+  scatter:'드래그 = 오렌지3의 브러시 선택 · 한 점 클릭 = 선택 해제',
+  bar:'막대를 클릭하면 그 품종 전체가 선택됩니다',
+  line:'행 순서로 값을 잇는 선 — 드래그로 구간의 행을 선택',
+  box:'상자를 클릭하면 그 품종 전체가 선택됩니다 · 굵은 선 = 중앙값, 점선 = 평균값',
+  hist:'드래그로 값 구간을 선택 · 클릭 = 선택 해제'
+};
+function updateHint(){
+  el('demoHint').textContent = HINTS[chartType] || '';
+}
+function setType(t){
+  chartType = t;
+  var isScatter = (t === 'scatter');
+  el('wrapY').style.display = isScatter ? '' : 'none';
+  el('lblX').textContent = isScatter ? 'X축' : (t === 'line' ? '변수(세로)' : '변수');
+  if(t === 'line'){ yi = +selX.value; }
+  updateHint();
+  drawIris();
+  updateSelInfo();
+}
+selX.addEventListener('change', function(){
+  var v = +selX.value;
+  if(chartType === 'line'){ yi = v; } else { xi = v; }
+  drawIris();
+  updateSelInfo();
+});
+selY.addEventListener('change', function(){ yi = +selY.value; drawIris(); updateSelInfo(); });
+selType.addEventListener('change', function(){ setType(selType.value); });
+(function initLegend(){
+  var box = el('demoLegend'), i;
+  for(i = 0; i < CLS.length; i++){
+    var s = document.createElement('span');
+    s.className = 'lg-item';
+    s.innerHTML = '<span class="lg-dot" style="background:var(' + CLS[i].colorVar + ')"></span>' +
+      CLS[i].name + ' <span class="lg-n">n=' + clsCount[i] + '</span>';
+    box.appendChild(s);
+  }
+  var note = document.createElement('span');
+  note.className = 'lg-n';
+  txt(note, '· Fisher(1936) iris — 붓꽃 3품종 × 50송이, 측정값 4개');
+  box.appendChild(note);
+})();
+window.addEventListener('resize', function(){ drawIris(); });
+window.addEventListener('load', function(){ drawIris(); });
+irisInited = true;
+setType('scatter');
+
+/* ---------- box plot anatomy ---------- */
+var ANAT = [
+  {id:'min',  name:'최솟값 — 왼쪽 수염 끝', dot:'--blue',
+   body:'이상점을 뺀 나머지 값 중 가장 작은 값이에요. “제일 작은 친구”가 아니라, 유난히 떨어진 값을 제외한 나머지들의 꼴찌입니다.',
+   math:'수염 끝 = 10분'},
+  {id:'q1',   name:'Q1 — 아래 25% 경계', dot:'--blue',
+   body:'작은 값부터 줄 세웠을 때 아래에서 1/4 지점. 상자의 왼쪽 문이에요. “하위 25%는 여기까지”라는 뜻입니다.',
+   math:'25명 기준 아래 6~7명째쯤의 경계 = 25분'},
+  {id:'med',  name:'중앙값 — 줄 세워 딱 가운데', dot:'--ink',
+   body:'줄 세운 뒤 정확히 가운데 값. 25명이면 13번째 친구의 값이에요. 가장 큰 값이 얼마나 더 커져도, 중앙값은 그 자리를 지킵니다.',
+   math:'13번째 값 = 40분'},
+  {id:'mean', name:'평균값 — 상자 안 점선', dot:'--violet',
+   body:'모두 더해서 25로 나눈 값. 오른쪽 이상점(130·150분)에 끌려서 중앙값보다 오른쪽으로 밀렸어요. 점선이 굵은 선보다 오른쪽에 있으면 “큰 값이 평균을 끌어 올렸다”고 읽습니다.',
+   math:'평균 ≈ 45분 > 중앙값 40분'},
+  {id:'q3',   name:'Q3 — 위 25% 경계', dot:'--blue',
+   body:'아래에서 3/4(75%) 지점. 상자의 오른쪽 문이에요. “위에서 1/4 경계”라고도 합니다.',
+   math:'= 60분'},
+  {id:'max',  name:'최댓값 — 오른쪽 수염 끝', dot:'--blue',
+   body:'이상점을 뺀 나머지 값 중 가장 큰 값이에요.',
+   math:'= 90분'},
+  {id:'out',  name:'이상점 — 동그라미', dot:'--blue',
+   body:'수염 바깥으로 유난히 떨어진 값. 상자 그림은 이런 값을 점으로 따로 찍어 줘서, “몇 명이 이상하게 큰가”를 바로 보여 줘요.',
+   math:'130분 · 150분, 두 개'},
+  {id:'box',  name:'상자 — 가운데 50%', dot:'--blue',
+   body:'Q1부터 Q3까지, 데이터의 가운데 절반이 사는 상자예요. 상자가 좁으면 대부분 비슷한 값, 넓으면 제각각이라는 뜻입니다.',
+   math:'상자 = 25분 ~ 60분'}
+];
+var anatById = {}, anatGroups = {}, anatCur = 'med';
+ANAT.forEach(function(p){ anatById[p.id] = p; });
+function ax_(v){ return 50 + v / 160 * 470; }
+function buildAnatomy(){
+  var svg = svgEl('svg', {viewBox:'0 0 560 188', role:'img', 'aria-label':'박스플롯 해부도'}, null);
+  var mut = 'var(--muted)', ln2 = 'var(--line-strong)';
+  function T(g, x, y, s, opts){
+    opts = opts || {};
+    var t = svgEl('text', {x:x, y:y, 'text-anchor':opts.a || 'middle', 'font-size':opts.fs || 11, fill:opts.fill || mut, 'font-weight':opts.fw || 500, 'class':opts.cls || ''}, g);
+    t.textContent = s;
+    return t;
+  }
+  function line(x1, y1, x2, y2, attrs){
+    var a = {x1:x1, y1:y1, x2:x2, y2:y2};
+    for(var k in attrs){ a[k] = attrs[k]; }
+    return svgEl('line', a, svg);
+  }
+  // axis (outside groups — never dims)
+  line(50, 152, 520, 152, {stroke:ln2});
+  [0, 25, 50, 75, 100, 125, 150].forEach(function(v){
+    line(ax_(v), 152, ax_(v), 157, {stroke:ln2});
+    T(svg, ax_(v), 169, String(v), {fs:10});
+  });
+  T(svg, 285, 183, '하루 숙제 시간 (분) — 25명 예시', {fs:11});
+  function partG(id, hit, drawFn){
+    var g = svgEl('g', {'class':'anat-part', tabindex:0, role:'button', 'aria-label':anatById[id].name}, svg);
+    drawFn(g);
+    svgEl('rect', {'class':'anat-hit', x:hit[0], y:hit[1], width:hit[2], height:hit[3], rx:8, fill:'transparent'}, g);
+    g.addEventListener('click', function(){ selectAnat(id); });
+    g.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); selectAnat(id); } });
+    anatGroups[id] = g;
+  }
+  // box (drawn first — other parts sit on top)
+  partG('box', [ax_(25) + 14, 22, ax_(60) - ax_(25) - 28, 108], function(g){
+    svgEl('rect', {x:ax_(25), y:74, width:ax_(60) - ax_(25), height:52, rx:6, fill:'var(--blue-soft)', stroke:'var(--blue)', 'stroke-width':1.6}, g);
+    T(g, (ax_(25) + ax_(60)) / 2, 30, '상자 = 가운데 50%', {fs:11.5, fw:700, fill:'var(--ink-2)', cls:'anat-lbl'});
+  });
+  partG('min', [ax_(10) - 18, 22, 36, 108], function(g){
+    line(ax_(10), 100, ax_(25), 100, {stroke:mut, 'stroke-width':2});
+    line(ax_(10), 92, ax_(10), 108, {stroke:mut, 'stroke-width':2});
+    T(g, ax_(10), 30, '최솟값', {fs:10.5, cls:'anat-lbl'});
+  });
+  partG('max', [ax_(90) - 18, 22, 36, 108], function(g){
+    line(ax_(60), 100, ax_(90), 100, {stroke:mut, 'stroke-width':2});
+    line(ax_(90), 92, ax_(90), 108, {stroke:mut, 'stroke-width':2});
+    T(g, ax_(90), 30, '최댓값', {fs:10.5, cls:'anat-lbl'});
+  });
+  partG('q1', [ax_(25) - 14, 60, 28, 70], function(g){
+    T(g, ax_(25), 64, 'Q1', {fs:11, fw:700, cls:'anat-lbl'});
+  });
+  partG('q3', [ax_(60) - 14, 60, 28, 70], function(g){
+    T(g, ax_(60), 64, 'Q3', {fs:11, fw:700, cls:'anat-lbl'});
+  });
+  partG('med', [ax_(40) - 10, 58, 20, 72], function(g){
+    line(ax_(40), 74, ax_(40), 126, {stroke:'var(--ink)', 'stroke-width':4});
+    T(g, ax_(40), 64, '중앙값', {fs:11.5, fw:800, fill:'var(--ink)', cls:'anat-lbl'});
+  });
+  partG('mean', [ax_(45) + 2, 40, 20, 90], function(g){
+    line(ax_(45), 74, ax_(45), 126, {stroke:'var(--violet)', 'stroke-width':2, 'stroke-dasharray':'6 4'});
+    T(g, ax_(45), 46, '평균(점선)', {fs:11, fw:700, fill:'var(--violet)', cls:'anat-lbl'});
+  });
+  partG('out', [ax_(130) - 14, 22, 104, 108], function(g){
+    svgEl('circle', {cx:ax_(130), cy:100, r:4.5, fill:'var(--blue)'}, g);
+    svgEl('circle', {cx:ax_(150), cy:100, r:4.5, fill:'var(--blue)'}, g);
+    T(g, (ax_(130) + ax_(150)) / 2, 30, '이상점', {fs:10.5, cls:'anat-lbl'});
+  });
+  el('anatWrap').appendChild(svg);
+}
+function selectAnat(id){
+  anatCur = id;
+  var p = anatById[id];
+  el('anatInfo').innerHTML =
+    '<div class="ai-title"><span class="ai-dot" style="background:var(' + p.dot + ')"></span>' + p.name + '</div>' +
+    '<div class="ai-body">' + p.body + '</div>' +
+    '<div class="ai-math">' + p.math + '</div>';
+  Object.keys(anatGroups).forEach(function(k){
+    anatGroups[k].classList.toggle('dim', k !== id);
+    anatGroups[k].classList.toggle('sel', k === id);
+  });
+}
+buildAnatomy();
+selectAnat(anatCur);
+
+/* ---------- anatomy fold toggle ---------- */
+var anatOpen = false;
+var anatFold = el('anatFold');
+function setAnatOpen(v){
+  anatOpen = v;
+  el('anatBody').hidden = !v;
+  anatFold.textContent = v ? '접기 ▲' : '펼치기 ▼';
+  anatFold.setAttribute('aria-expanded', String(v));
+  if(v && playInited){
+    requestAnimationFrame(function(){ drawPlay(); });
+  }
+}
+anatFold.addEventListener('click', function(){ setAnatOpen(!anatOpen); });
+window.addEventListener('hashchange', function(){
+  if(location.hash === '#boxanatomy' && !anatOpen){ setAnatOpen(true); }
+});
+setAnatOpen(location.hash === '#boxanatomy');
+
+/* ---------- scatter plot anatomy ---------- */
+var SCAT = [
+  {id:'pt',   name:'점 — 개체 하나', dot:'--blue',
+   body:'점 하나가 개체 하나예요. 붓꽈다면 한 송이, 학생이라면 한 명. 점의 위치가 두 값(가로·세로)을 동시에 말해 줍니다.',
+   math:'점 = (X값, Y값) 한 쌍'},
+  {id:'xax',  name:'X축 — 가로 방향', dot:'--ink',
+   body:'가로줄은 왼쪽에서 오른쪽으로 커지는 값이에요. 보통 “원인이 되는 변수(설명 변수)”를 놓습니다.',
+   math:'왼쪽 작게 → 오른쪽 크게'},
+  {id:'yax',  name:'Y축 — 세로 방향', dot:'--ink',
+   body:'세로줄은 아래에서 위로 커지는 값이에요. 보통 “결과가 되는 변수(반응 변수)”를 놓습니다.',
+   math:'아래 작게 → 위 크게'},
+  {id:'col',  name:'색 — 세 번째 변수 얹기', dot:'--blue',
+   body:'점의 색으로 또 다른 변수를 얹을 수 있어요. iris에서는 품종을 색으로 구분해, 점들이 세 무리로 갈라져 보입니다.',
+   math:'파랑·주황·초록 = 세토사·버시컬러·버지니카'},
+  {id:'trend',name:'추세선 — 함께 커지는 관계', dot:'--violet',
+   body:'점들이 전체적으로 오른쪽 위로 향하면 “X가 클수록 Y도 크다”는 양의 관계예요. 점들을 가로지르는 직선(추세선)이 이 흐름을 한눈에 보여 줍니다.',
+   math:'오른쪽 위로 ↑ = 양의 관계'},
+  {id:'neg',  name:'음의 관계 — 반대로 흐르면', dot:'--violet',
+   body:'X가 커질수록 Y가 작아지면 점들이 오른쪽 아래로 흐릅니다. “공부 시간이 늘면 게임 시간은 줄어든다” 같은 관계예요. 왼쪽 위 예시를 보세요.',
+   math:'오른쪽 아래로 ↓ = 음의 관계'},
+  {id:'clu',  name:'무리(군집) — 점들의 덩어리', dot:'--accent',
+   body:'비슷한 개체들은 점 무리로 뭉칩니다. 무리가 갈라져 보이면 “숨은 그룹이 있다”는 신호예요. iris에서는 품종이 무리를 만듭니다.',
+   math:'덩어리 = 비슷한 개체들의 모임'},
+  {id:'out',  name:'이상점 — 혼자 떨어진 점', dot:'--accent',
+   body:'무리에서 유난히 떨어진 점. 값이 잘못 기록되었을 수도, 특별한 사례일 수도 있어요. 상자 그림의 이상점과 같은 개념입니다.',
+   math:'오른쪽 아래에 혼자 떨어진 점'}
+];
+var scatById = {}, scatGroups = {}, scatCur = 'pt';
+SCAT.forEach(function(p){ scatById[p.id] = p; });
+function buildScatAnatomy(){
+  var svg = svgEl('svg', {viewBox:'0 0 560 300', role:'img', 'aria-label':'산점도 해부도'}, null);
+  var mut = 'var(--muted)', ln2 = 'var(--line-strong)';
+  var L = 64, R = 24, T = 26, B = 52, W = 560, H = 300;
+  var iw = W - L - R, ih = H - T - B;
+  function sx(v){ return L + v / 10 * iw; }
+  function sy(v){ return T + ih - v / 10 * ih; }
+  function T2(g, x, y, s, opts){
+    opts = opts || {};
+    var t = svgEl('text', {x:x, y:y, 'text-anchor':opts.a || 'middle', 'font-size':opts.fs || 11, fill:opts.fill || mut, 'font-weight':opts.fw || 500, 'class':opts.cls || ''}, g);
+    t.textContent = s;
+    return t;
+  }
+  function sline(x1, y1, x2, y2, attrs, parent){
+    var a = {x1:x1, y1:y1, x2:x2, y2:y2};
+    for(var k in attrs){ a[k] = attrs[k]; }
+    return svgEl('line', a, parent || svg);
+  }
+  // grid + axes (outside groups)
+  [2, 4, 6, 8].forEach(function(v){
+    sline(sx(v), T, sx(v), T + ih, {stroke:'var(--line)'});
+    sline(L, sy(v), L + iw, sy(v), {stroke:'var(--line)'});
+  });
+  sline(L, T, L, T + ih, {stroke:ln2});
+  sline(L, T + ih, L + iw, T + ih, {stroke:ln2});
+  [0, 2, 4, 6, 8, 10].forEach(function(v){
+    svgEl('text', {x:sx(v), y:T + ih + 16, 'text-anchor':'middle', 'font-size':10, fill:mut}, svg).textContent = String(v);
+    svgEl('text', {x:L - 8, y:sy(v) + 3, 'text-anchor':'end', 'font-size':10, fill:mut}, svg).textContent = String(v);
+  });
+  T2(svg, L + iw / 2, T + ih + 34, 'X: 꽃잎 길이 (cm) →', {fs:11.5, fw:600, fill:'var(--ink)'});
+  T2(svg, 10, T + 10, 'Y: 꽃잎 너비 (cm)', {fs:11.5, fw:600, fill:'var(--ink)', a:'start'});
+  function partG(id, hit, drawFn){
+    var g = svgEl('g', {'class':'anat-part', tabindex:0, role:'button', 'aria-label':scatById[id].name}, svg);
+    drawFn(g);
+    svgEl('rect', {'class':'anat-hit', x:hit[0], y:hit[1], width:hit[2], height:hit[3], rx:8, fill:'transparent'}, g);
+    g.addEventListener('click', function(){ selectScat(id); });
+    g.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); selectScat(id); } });
+    scatGroups[id] = g;
+  }
+  function cloudDot(g, vx, vy, colorVar, r){
+    svgEl('circle', {cx:sx(vx), cy:sy(vy), r:r || 4.2, fill:'var(' + colorVar + ')'}, g);
+  }
+  // cluster (drawn first — under other zones)
+  partG('clu', [sx(1.7) - 12, sy(9.3) - 4, sx(8.8) - sx(1.7) + 24, sy(3) - sy(9.3) + 8], function(g){
+    [[2.2,3.4],[2.8,3.9],[3.3,3.2],[2.5,4.6]].forEach(function(p){ cloudDot(g, p[0], p[1], '--ds-a'); });
+    [[4.6,5.0],[5.8,4.9],[4.9,6.0]].forEach(function(p){ cloudDot(g, p[0], p[1], '--ds-b'); });
+    [[7.2,7.4],[7.8,8.0],[8.4,7.2],[7.5,8.6]].forEach(function(p){ cloudDot(g, p[0], p[1], '--ds-c'); });
+    T2(g, sx(5.4), sy(4.1), '비슷한 점들이 무리를 이룹니다', {fs:11, cls:'anat-lbl', a:'start'});
+  });
+  // color legend
+  partG('col', [W - R - 186, 4, 186, 24], function(g){
+    [['세토사', '--ds-a'], ['버시컬러', '--ds-b'], ['버지니카', '--ds-c']].forEach(function(it, i){
+      var x = W - R - 178 + i * 62;
+      svgEl('circle', {cx:x, cy:15, r:4.5, fill:'var(' + it[1] + ')'}, g);
+      T2(g, x + 8, 19, it[0], {fs:10, a:'start', fw:600, fill:'var(--ink-2)', cls:'anat-lbl'});
+    });
+  });
+  // single point
+  partG('pt', [sx(5.2) - 14, sy(5.6) - 14, 28, 28], function(g){
+    svgEl('circle', {cx:sx(5.2), cy:sy(5.6), r:7, fill:'var(--ds-b)', stroke:'var(--ink)', 'stroke-width':2}, g);
+    T2(g, sx(5.2), sy(5.6) - 14, '점 = 개체 1개', {fs:11, fw:800, fill:'var(--ink)', cls:'anat-lbl'});
+  });
+  // outlier
+  partG('out', [sx(9.4) - 15, sy(2.2) - 15, 30, 30], function(g){
+    svgEl('circle', {cx:sx(9.4), cy:sy(2.2), r:4.2, fill:'var(--ds-b)'}, g);
+    T2(g, sx(9.4), sy(2.2) + 22, '이상점', {fs:11, fw:700, fill:'var(--ink-2)', cls:'anat-lbl'});
+  });
+  // trend line
+  partG('trend', [sx(1.3), sy(8.2) - 26, sx(9.1) - sx(1.3), 64], function(g){
+    sline(sx(1.4), sy(2.7), sx(9.2), sy(9.0), {stroke:'var(--violet)', 'stroke-width':2, 'stroke-dasharray':'7 5'}, g);
+    T2(g, sx(8.9), sy(9.0) - 12, '추세선', {fs:11, fw:700, fill:'var(--violet)', cls:'anat-lbl'});
+  });
+  // negative relation inset
+  partG('neg', [L + 2, T - 16, 118, 74], function(g){
+    svgEl('rect', {x:L + 4, y:T - 14, width:110, height:66, rx:8, fill:'var(--surface-2)', stroke:'var(--line-strong)'}, g);
+    [[8,14],[22,26],[36,34],[50,44],[64,50]].forEach(function(p){
+      svgEl('circle', {cx:L + 16 + p[0], cy:T + 4 + p[1], r:3, fill:'var(--violet)'}, g);
+    });
+    sline(L + 14, T + 10, L + 104, T + 44, {stroke:'var(--violet)', 'stroke-width':1.6, 'stroke-dasharray':'5 4'}, g);
+    T2(g, L + 59, T + 46, '음의 관계 예시', {fs:9.5, fw:600, cls:'anat-lbl'});
+  });
+  // axes strips
+  partG('xax', [L - 6, T + ih + 4, iw + 14, 44], function(g){});
+  partG('yax', [L - 46, T - 8, 44, ih + 16], function(g){});
+  el('scatWrap').appendChild(svg);
+}
+function selectScat(id){
+  scatCur = id;
+  var p = scatById[id];
+  el('scatInfo').innerHTML =
+    '<div class="ai-title"><span class="ai-dot" style="background:var(' + p.dot + ')"></span>' + p.name + '</div>' +
+    '<div class="ai-body">' + p.body + '</div>' +
+    '<div class="ai-math">' + p.math + '</div>';
+  Object.keys(scatGroups).forEach(function(k){
+    scatGroups[k].classList.toggle('dim', k !== id);
+    scatGroups[k].classList.toggle('sel', k === id);
+  });
+}
+buildScatAnatomy();
+selectScat(scatCur);
+var scatOpen = false;
+var scatFold = el('scatFold');
+function setScatOpen(v){
+  scatOpen = v;
+  el('scatBody').hidden = !v;
+  scatFold.textContent = v ? '접기 ▲' : '펼치기 ▼';
+  scatFold.setAttribute('aria-expanded', String(v));
+}
+scatFold.addEventListener('click', function(){ setScatOpen(!scatOpen); });
+window.addEventListener('hashchange', function(){
+  if(location.hash === '#scatteranatomy' && !scatOpen){ setScatOpen(true); }
+});
+setScatOpen(location.hash === '#scatteranatomy');
+
+/* ---------- correlation playground (scatter) ---------- */
+var corrSvg = null, corrPtsG = null, corrLineEl = null;
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    var z = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    z = (z + Math.imul(z ^ (z >>> 7), 61 | z)) ^ z;
+    return ((z ^ (z >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function buildCorr(){
+  corrSvg = svgEl('svg', {viewBox:'0 0 560 220', role:'img', 'aria-label':'관계 만들기 데모'}, null);
+  var mut = 'var(--muted)', ln2 = 'var(--line-strong)';
+  var L = 52, R = 20, T = 16, B = 44, W = 560, H = 220;
+  var iw = W - L - R, ih = H - T - B;
+  function sx(v){ return L + v / 10 * iw; }
+  function sy(v){ return T + ih - v / 10 * ih; }
+  corrSvg._sx = sx; corrSvg._sy = sy;
+  [2, 4, 6, 8].forEach(function(v){
+    svgEl('line', {x1:sx(v), y1:T, x2:sx(v), y2:T + ih, stroke:'var(--line)'}, corrSvg);
+    svgEl('line', {x1:L, y1:sy(v), x2:L + iw, y2:sy(v), stroke:'var(--line)'}, corrSvg);
+  });
+  svgEl('line', {x1:L, y1:T, x2:L, y2:T + ih, stroke:ln2}, corrSvg);
+  svgEl('line', {x1:L, y1:T + ih, x2:L + iw, y2:T + ih, stroke:ln2}, corrSvg);
+  [0, 2, 4, 6, 8, 10].forEach(function(v){
+    svgEl('text', {x:sx(v), y:T + ih + 16, 'text-anchor':'middle', 'font-size':10, fill:mut}, corrSvg).textContent = String(v);
+    svgEl('text', {x:L - 8, y:sy(v) + 3, 'text-anchor':'end', 'font-size':10, fill:mut}, corrSvg).textContent = String(v);
+  });
+  svgEl('text', {x:L + iw / 2, y:H - 8, 'text-anchor':'middle', 'font-size':11.5, 'font-weight':600, fill:'var(--ink)'}, corrSvg).textContent = 'X →';
+  svgEl('text', {x:10, y:T + 10, 'font-size':11.5, 'font-weight':600, fill:'var(--ink)'}, corrSvg).textContent = 'Y ↑';
+  corrPtsG = svgEl('g', {}, corrSvg);
+  corrLineEl = svgEl('line', {stroke:'var(--violet)', 'stroke-width':2, 'stroke-dasharray':'7 5', visibility:'hidden'}, corrSvg);
+  el('corrWrap').appendChild(corrSvg);
+}
+function drawCorr(t){
+  var rnd = mulberry32(1234);
+  var b = t * 0.62, noise = 1.7 * (1 - Math.abs(t) * 0.55);
+  var xs = [], ys = [], i;
+  for(i = 0; i < 30; i++){
+    var x = 0.5 + (i / 29) * 9 + (rnd() - 0.5) * 1.2;
+    var y = 5 + b * (x - 5) + (rnd() - 0.5) * 2 * noise;
+    y = Math.max(0.3, Math.min(9.7, y));
+    xs.push(x); ys.push(y);
+  }
+  var mx = 0, my = 0;
+  for(i = 0; i < 30; i++){ mx += xs[i]; my += ys[i]; }
+  mx /= 30; my /= 30;
+  var sxy = 0, sxx = 0, syy = 0;
+  for(i = 0; i < 30; i++){
+    sxy += (xs[i] - mx) * (ys[i] - my);
+    sxx += (xs[i] - mx) * (xs[i] - mx);
+    syy += (ys[i] - my) * (ys[i] - my);
+  }
+  var r = (sxx && syy) ? sxy / Math.sqrt(sxx * syy) : 0;
+  while(corrPtsG.firstChild){ corrPtsG.removeChild(corrPtsG.firstChild); }
+  for(i = 0; i < 30; i++){
+    svgEl('circle', {cx:corrSvg._sx(xs[i]), cy:corrSvg._sy(ys[i]), r:3.4, fill:'var(--accent)', 'fill-opacity':.85}, corrPtsG);
+  }
+  if(Math.abs(t) >= 0.15){
+    corrLineEl.setAttribute('x1', corrSvg._sx(0.3));
+    corrLineEl.setAttribute('y1', corrSvg._sy(5 + b * (0.3 - 5)));
+    corrLineEl.setAttribute('x2', corrSvg._sx(9.7));
+    corrLineEl.setAttribute('y2', corrSvg._sy(5 + b * (9.7 - 5)));
+    corrLineEl.setAttribute('visibility', 'visible');
+  } else {
+    corrLineEl.setAttribute('visibility', 'hidden');
+  }
+  el('corrVal').textContent = r.toFixed(2);
+  var a = Math.abs(r), dir = r >= 0 ? '양의 관계' : '음의 관계', s;
+  if(a < 0.2){ s = '관계 없음 — 점들이 사방으로 흩어져 있어요'; }
+  else if(a < 0.5){ s = '약한 ' + dir + ' — 흐름이 겨우 보이기 시작해요'; }
+  else if(a < 0.8){ s = '뚜렷한 ' + dir + ' — 점들이 줄을 따라 모여요'; }
+  else { s = '강한 ' + dir + ' — 거의 직선에 붙어 있어요'; }
+  el('corrDesc').textContent = s;
+}
+var corrSlider = el('corrSlider');
+corrSlider.addEventListener('input', function(){ drawCorr(+corrSlider.value / 100); });
+buildCorr();
+drawCorr(0);
+
+/* ---------- bar vs histogram anatomy ---------- */
+var BVH_CHART = {bar:'막대 그래프', hist:'히스토그램'};
+var BVH_PARTS = [
+  {id:'b-cat',  svg:'bar', name:'범주 — 가로줄의 이름', dot:'--blue',
+   body:'막대 아래 이름들은 서로 다른 종류(1반·2반·3반)예요. 이름을 나열한 것이라 값이 아니에요.',
+   math:'범주 = 종류(이름) · 크기가 아니라 이름'},
+  {id:'b-bar',  svg:'bar', name:'막대 — 범주 하나의 값', dot:'--blue',
+   body:'막대 하나가 범주 하나의 값(개수·평균)을 세워 보여 줘요. “어느 반이 더 많나?”를 비교하는 그림이에요.',
+   math:'막대 1개 = 범주 1개'},
+  {id:'b-gap',  svg:'bar', name:'간격 — 붙이지 않는 이유', dot:'--accent',
+   body:'범주는 서로 다른 종류라 사이를 비워요. 막대가 붙어 있으면 “이어지는 값”처럼 읽혀서 틀린 그림이 돼요.',
+   math:'간격 = 종류가 다르다는 신호'},
+  {id:'b-order', svg:'bar', name:'순서 자유', dot:'--accent',
+   body:'범주에는 크기 순서가 없어요. 1반-3반-2반 순으로 바꿔도 뜻이 같아요.',
+   math:'막대 순서 바꿔도 OK'},
+  {id:'h-num',  svg:'hist', name:'수직선 — 연속된 값', dot:'--blue',
+   body:'가로줄에 0, 2, 4… 숫자 눈금이 붙어 있어요. 범주가 아니라 이어지는 값(키·시간·점수)을 다루는 그림이에요.',
+   math:'축 = 눈금 있는 수직선'},
+  {id:'h-bin',  svg:'hist', name:'구간(bin) — 막대의 폭', dot:'--blue',
+   body:'값을 같은 폭의 칸으로 나눈 것이 구간이에요. 막대 하나 = 한 구간에 들어간 개체 수.',
+   math:'막대 1개 = 구간 1개'},
+  {id:'h-join', svg:'hist', name:'붙은 막대 — 이어진 구간', dot:'--accent',
+   body:'0~1, 1~2처럼 구간이 딱 이어지니 막대도 붙어요. 막대가 붙어 있고 축이 수직선이면 히스토그램!',
+   math:'붙음 = 구간이 이어진다는 표식'},
+  {id:'h-peak', svg:'hist', name:'봉우리 — 가장 몰린 구간', dot:'--violet',
+   body:'가장 높은 막대가 개체가 가장 많이 모인 값대로예요. “대부분 여기쯤!”을 한눈에 보여 줘요.',
+   math:'봉우리 = 최빈 구간'},
+  {id:'h-tail', svg:'hist', name:'꼬리 — 치우침', dot:'--violet',
+   body:'한쪽으로 길게 늘어진 모양. 오른쪽 꼬리가 길면 큰 값 몇 개가 평균을 끌어 올려요.',
+   math:'긴 꼬리 = 치우침'},
+  {id:'h-fix',  svg:'hist', name:'순서 고정', dot:'--accent',
+   body:'작은 값에서 큰 값으로, 축의 순서가 정해져 있어요. 막대를 멋대로 섞으면 분포가 망가져요.',
+   math:'작은 값 → 큰 값 고정'}
+];
+var bvhById = {}, bvhGroups = {}, bvhCur = 'b-gap';
+BVH_PARTS.forEach(function(p){ bvhById[p.id] = p; });
+function buildBvhSvg(kind){
+  var svg = svgEl('svg', {viewBox:'0 0 560 240', role:'img', 'aria-label':BVH_CHART[kind] + ' 해부도'}, null);
+  var mut = 'var(--muted)', ln2 = 'var(--line-strong)';
+  var L = 56, R = 24, T = 44, B = 52, W = 560, H = 240;
+  var iw = W - L - R, ih = H - T - B, axisY = T + ih;
+  function line(x1, y1, x2, y2, attrs){
+    var a = {x1:x1, y1:y1, x2:x2, y2:y2};
+    for(var k in attrs){ a[k] = attrs[k]; }
+    return svgEl('line', a, svg);
+  }
+  function T2(x, y, s, opts){
+    opts = opts || {};
+    var t = svgEl('text', {x:x, y:y, 'text-anchor':opts.a || 'middle', 'font-size':opts.fs || 11, fill:opts.fill || mut, 'font-weight':opts.fw || 500}, svg);
+    t.textContent = s;
+    return t;
+  }
+  function partG(id, hit, drawFn){
+    var g = svgEl('g', {'class':'anat-part', tabindex:0, role:'button', 'aria-label':bvhById[id].name}, svg);
+    drawFn(g);
+    svgEl('rect', {'class':'anat-hit', x:hit[0], y:hit[1], width:hit[2], height:hit[3], rx:8, fill:'transparent'}, g);
+    g.addEventListener('click', function(){ selectBvh(id); });
+    g.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); selectBvh(id); } });
+    bvhGroups[id] = g;
+  }
+  line(L, axisY, L + iw, axisY, {stroke:ln2});
+  if(kind === 'bar'){
+    T2(L + iw/2, axisY + 40, '가로줄 = 범주 (종류)', {fs:11, fw:700, fill:'var(--ink-2)'});
+    var vals = [50, 74, 32], names = ['1반', '2반', '3반'], cols = ['--blue', '--accent', '--green'];
+    var slot = iw / 3, bw = 64, i;
+    for(i = 0; i < 3; i++){
+      var cx = L + slot*i + slot/2, hh = vals[i] / 100 * ih;
+      svgEl('rect', {x:cx - bw/2, y:axisY - hh, width:bw, height:hh, rx:5, fill:'var(' + cols[i] + ')', 'fill-opacity':.88}, svg);
+      T2(cx, axisY + 16, names[i], {fs:12, fw:700, fill:'var(--ink-2)'});
+      T2(cx, axisY - hh - 8, vals[i] + '권', {fs:10.5, fw:700, fill:'var(--ink)'});
+    }
+    partG('b-cat', [L, axisY + 8, iw, 36], function(){});
+    partG('b-bar', [248, 74, 96, 114], function(){});
+    partG('b-gap', [164, 84, 64, 104], function(g){
+      line(176, 140, 232, 140, {stroke:'var(--accent)', 'stroke-width':2, 'stroke-dasharray':'4 3'});
+      T2(204, 128, '간격!', {fs:11.5, fw:800, fill:'var(--accent-strong)'});
+    });
+    partG('b-order', [346, 10, 190, 30], function(g){
+      T2(441, 30, '⇄ 순서 바꿔도 OK', {fs:11.5, fw:800, fill:'var(--accent-strong)'});
+    });
+  } else {
+    T2(L + iw/2, axisY + 40, '가로줄 = 연속된 값 (수직선)', {fs:11, fw:700, fill:'var(--ink-2)'});
+    var bw2 = iw / 8, pcts = [10, 22, 40, 62, 78, 58, 30, 14], j;
+    for(j = 0; j < 8; j++){
+      var hh2 = pcts[j] / 100 * ih;
+      svgEl('rect', {x:L + bw2*j, y:axisY - hh2, width:bw2, height:hh2, fill:'var(--blue)', 'fill-opacity':.85, stroke:'var(--surface)', 'stroke-width':1}, svg);
+    }
+    for(j = 0; j <= 8; j += 2){
+      T2(L + bw2*j, axisY + 16, String(j), {fs:11});
+    }
+    partG('h-num', [L, axisY + 8, iw, 36], function(){});
+    partG('h-bin', [168, 116, 76, 72], function(g){
+      T2(206, 110, '구간(bin)', {fs:11, fw:800, fill:'var(--ink)'});
+    });
+    partG('h-join', [216, 60, 40, 128], function(g){
+      line(236, 130, 236, 188, {stroke:'var(--ink)', 'stroke-width':2, 'stroke-dasharray':'4 3'});
+      T2(236, 56, '붙음!', {fs:11, fw:800, fill:'var(--ink)'});
+    });
+    partG('h-peak', [288, 58, 76, 130], function(g){
+      T2(326, 52, '봉우리', {fs:11.5, fw:800, fill:'var(--violet)'});
+    });
+    partG('h-tail', [408, 118, 128, 70], function(g){
+      T2(472, 112, '꼬리 →', {fs:11.5, fw:800, fill:'var(--violet)'});
+    });
+    partG('h-fix', [346, 10, 190, 30], function(g){
+      T2(441, 30, '작은 값 → 큰 값 고정!', {fs:11.5, fw:800, fill:'var(--accent-strong)'});
+    });
+  }
+  el((kind === 'bar') ? 'bvhWrapBar' : 'bvhWrapHist').appendChild(svg);
+}
+buildBvhSvg('bar');
+buildBvhSvg('hist');
+function selectBvh(id){
+  bvhCur = id;
+  var p = bvhById[id];
+  el('bvhInfo').innerHTML =
+    '<div class="ai-title"><span class="ai-dot" style="background:var(' + p.dot + ')"></span>' + p.name +
+    '<span class="bvh-badge">' + BVH_CHART[p.svg] + '</span></div>' +
+    '<div class="ai-body">' + p.body + '</div>' +
+    '<div class="ai-math">' + p.math + '</div>';
+  Object.keys(bvhGroups).forEach(function(k){
+    bvhGroups[k].classList.toggle('dim', k !== id);
+    bvhGroups[k].classList.toggle('sel', k === id);
+  });
+}
+selectBvh(bvhCur);
+var bvhOpen = false;
+var bvhFold = el('bvhFold');
+function setBvhOpen(v){
+  bvhOpen = v;
+  el('bvhBody').hidden = !v;
+  bvhFold.textContent = v ? '접기 ▲' : '펼치기 ▼';
+  bvhFold.setAttribute('aria-expanded', String(v));
+}
+bvhFold.addEventListener('click', function(){ setBvhOpen(!bvhOpen); });
+window.addEventListener('hashchange', function(){
+  if(location.hash === '#barvshist' && !bvhOpen){ setBvhOpen(true); }
+});
+setBvhOpen(location.hash === '#barvshist');
+
+/* ---------- bar vs histogram quiz ---------- */
+var bvhQuizData = [
+  {q:'1반·2반·3반의 도서 대출 권수를 비교하고 싶어요', a:'bar', why:'비교 대상이 범주(반) — 서로 다른 종류라 막대 그래프가 맞아요.'},
+  {q:'우리 반 친구들의 키가 어디에 몰려 있는지 보고 싶어요', a:'hist', why:'키는 연속된 값 — 구간별 개수로 보는 히스토그램이 맞아요.'},
+  {q:'하루 숙제 시간에 봉우리와 꼬리가 있는지 보고 싶어요', a:'hist', why:'분포의 모양(몰림·치우침)은 히스토그램이 보여 주는 거예요.'}
+];
+(function buildBvhQuiz(){
+  var box = el('bvhQuiz');
+  bvhQuizData.forEach(function(item){
+    var row = document.createElement('div');
+    row.className = 'bvh-q';
+    var q = document.createElement('span');
+    q.className = 'qq';
+    q.textContent = item.q;
+    row.appendChild(q);
+    var btnMap = {};
+    ['bar', 'hist'].forEach(function(key){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'bvh-btn';
+      b.textContent = (key === 'bar') ? '막대 그래프' : '히스토그램';
+      b.addEventListener('click', function(){
+        row.classList.add('done');
+        btnMap[item.a].classList.add('ok');
+        if(key !== item.a){ b.classList.add('no'); }
+        why.textContent = item.why;
+      });
+      btnMap[key] = b;
+      row.appendChild(b);
+    });
+    var why = document.createElement('span');
+    why.className = 'bvh-why';
+    row.appendChild(why);
+    box.appendChild(row);
+  });
+})();
+
+/* ---------- mean vs median playground ---------- */
+var playCv = el('playCanvas'), playCtx = playCv.getContext('2d');
+var PLAY_BASE = [30, 35, 40, 45, 50, 55, 60, 65, 70];
+var playDots = PLAY_BASE.slice();
+var playDrag = -1;
+var PLAY = {L:56, R:30, T:46, B:44};
+function playPx(v, W){ return PLAY.L + v / 120 * (W - PLAY.L - PLAY.R); }
+function playVal(px, W){ return (px - PLAY.L) / (W - PLAY.L - PLAY.R) * 120; }
+function playMean(){
+  var s = 0, i;
+  for(i = 0; i < playDots.length; i++){ s += playDots[i]; }
+  return s / playDots.length;
+}
+function playMedian(){
+  var a = playDots.slice().sort(function(x, y){ return x - y; });
+  return a[Math.floor(a.length / 2)];
+}
+function drawPlay(){
+  if(!playCtx){ return; }
+  var dpr = window.devicePixelRatio || 1;
+  var W = playCv.clientWidth, H = playCv.clientHeight;
+  if(W < 10 || H < 10){ return; }
+  if(playCv.width !== Math.round(W*dpr) || playCv.height !== Math.round(H*dpr)){
+    playCv.width = Math.round(W*dpr);
+    playCv.height = Math.round(H*dpr);
+  }
+  var c2 = playCtx;
+  c2.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c2.clearRect(0, 0, W, H);
+  var ink = cssv('--ink'), mut = cssv('--muted'), ln = cssv('--line'), acc = cssv('--accent'), vio = cssv('--violet');
+  var axisY = H - PLAY.B, baseY = axisY - 34;
+  var v, px;
+  // grid
+  c2.lineWidth = 1;
+  c2.strokeStyle = ln;
+  for(v = 0; v <= 120; v += 20){
+    px = playPx(v, W);
+    c2.beginPath(); c2.moveTo(px, PLAY.T - 8); c2.lineTo(px, axisY); c2.stroke();
+  }
+  c2.strokeStyle = cssv('--line-strong');
+  c2.beginPath(); c2.moveTo(PLAY.L - 10, axisY); c2.lineTo(W - PLAY.R + 8, axisY); c2.stroke();
+  c2.fillStyle = mut;
+  c2.font = '11px ui-monospace, Consolas, monospace';
+  c2.textAlign = 'center'; c2.textBaseline = 'top';
+  for(v = 0; v <= 120; v += 20){
+    c2.fillText(String(v), playPx(v, W), axisY + 9);
+  }
+  c2.font = '600 11px system-ui, sans-serif';
+  c2.textAlign = 'right'; c2.textBaseline = 'top';
+  c2.fillText('한 달 용돈 (천원)', W - PLAY.R + 8, axisY - 16);
+  // mean line (dashed violet)
+  var xm = playPx(playMean(), W);
+  c2.setLineDash([6, 4]);
+  c2.strokeStyle = vio;
+  c2.lineWidth = 2;
+  c2.beginPath(); c2.moveTo(xm, 14); c2.lineTo(xm, axisY); c2.stroke();
+  c2.setLineDash([]);
+  c2.fillStyle = vio;
+  c2.font = '700 12px ui-monospace, Consolas, monospace';
+  c2.textAlign = 'left'; c2.textBaseline = 'middle';
+  c2.fillText('평균 ' + playMean().toFixed(1), Math.min(xm + 8, W - 108), 22);
+  // median line (solid ink)
+  var xd = playPx(playMedian(), W);
+  c2.strokeStyle = ink;
+  c2.lineWidth = 3;
+  c2.beginPath(); c2.moveTo(xd, 14); c2.lineTo(xd, axisY); c2.stroke();
+  c2.fillStyle = ink;
+  c2.font = '800 12px ui-monospace, Consolas, monospace';
+  if(xd > W - 108){ c2.textAlign = 'right'; c2.fillText('중앙값 ' + String(playMedian()), xd - 8, 40); }
+  else{ c2.fillText('중앙값 ' + String(playMedian()), xd + 8, 40); }
+  // dots
+  var i;
+  for(i = 0; i < playDots.length; i++){
+    px = playPx(playDots[i], W);
+    var py = baseY + ((i % 3) - 1) * 11;
+    c2.globalAlpha = (playDrag >= 0 && playDrag !== i) ? 0.45 : 1;
+    c2.beginPath();
+    c2.arc(px, py, 7.5, 0, 6.2832);
+    c2.fillStyle = acc;
+    c2.fill();
+    if(playDrag === i){
+      c2.lineWidth = 2;
+      c2.strokeStyle = ink;
+      c2.stroke();
+    }
+  }
+  c2.globalAlpha = 1;
+}
+function playPos(e){
+  var r = playCv.getBoundingClientRect();
+  return {x:e.clientX - r.left, y:e.clientY - r.top};
+}
+playCv.addEventListener('pointerdown', function(e){
+  var p = playPos(e), W = playCv.clientWidth, H = playCv.clientHeight;
+  var baseY = H - PLAY.B - 34, best = -1, bd = 20, i;
+  for(i = 0; i < playDots.length; i++){
+    var dx = p.x - playPx(playDots[i], W);
+    var dy = p.y - (baseY + ((i % 3) - 1) * 11);
+    var d = Math.sqrt(dx*dx + dy*dy);
+    if(d < bd){ bd = d; best = i; }
+  }
+  if(best >= 0){
+    playDrag = best;
+    if(playCv.setPointerCapture){
+      try{ playCv.setPointerCapture(e.pointerId); }catch(err){}
+    }
+    e.preventDefault();
+    drawPlay();
+  }
+});
+playCv.addEventListener('pointermove', function(e){
+  if(playDrag < 0){ return; }
+  var p = playPos(e), W = playCv.clientWidth;
+  var v = playVal(p.x, W);
+  playDots[playDrag] = Math.round(Math.max(0, Math.min(120, v)));
+  e.preventDefault();
+  drawPlay();
+  updatePlayReadout();
+});
+playCv.addEventListener('pointerup', function(){
+  if(playDrag < 0){ return; }
+  playDrag = -1;
+  drawPlay();
+});
+el('presetBase').addEventListener('click', function(){
+  playDots = PLAY_BASE.slice();
+  playDrag = -1;
+  drawPlay();
+  updatePlayReadout();
+});
+el('presetRich').addEventListener('click', function(){
+  playDots = PLAY_BASE.slice();
+  playDots[8] = 120;
+  playDrag = -1;
+  drawPlay();
+  updatePlayReadout();
+});
+function updatePlayReadout(){
+  el('meanVal').textContent = playMean().toFixed(1);
+  el('medVal').textContent = String(playMedian());
+}
+window.addEventListener('resize', function(){ drawPlay(); });
+playInited = true;
+drawPlay();
+updatePlayReadout();
+
+/* ---------- reveal on scroll ---------- */
+(function initReveal(){
+  var reveals = document.querySelectorAll('.reveal');
+  var i;
+  if('IntersectionObserver' in window && !RM){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){
+          en.target.classList.add('in');
+          io.unobserve(en.target);
+        }
+      });
+    }, {threshold:0.1});
+    for(i = 0; i < reveals.length; i++){ io.observe(reveals[i]); }
+  } else {
+    for(i = 0; i < reveals.length; i++){ reveals[i].classList.add('in'); }
+  }
+})();
+})();
+</script>
+</body>
+</html>
