@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>사물 인터넷 실습 - 교실 IoT · 동작 원리 · 마이크로비트</title>
+<style>
+:root{
+  --bg:#f4f6fa; --panel:#fff; --line:#dfe4ec; --ink:#14213d; --sub:#5c636b;
+  --navy:#14213d; --teal:#2a9d8f; --teal-soft:#e8f4f2;
+  --orange:#f4a261; --orange-soft:#fdf0e4; --orange-ink:#b55a1e;
+  --red:#c0392b; --red-soft:#fbebe9;
+  --grey:#f2f4f6;
+  --radius:14px;
+  --mono:'Consolas','D2Coding','Courier New',monospace;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:'Pretendard','Malgun Gothic','맑은 고딕',system-ui,sans-serif;
+  line-height:1.6;
+}
+.wrap{max-width:1100px; margin:0 auto; padding:0 16px 72px}
+
+/* ===== 헤더 ===== */
+header{background:var(--navy); color:#fff; padding:22px 0 18px}
+header .wrap{padding-bottom:0}
+.badge-unit{display:inline-block; background:rgba(255,255,255,.16); border-radius:999px;
+  padding:4px 13px; font-size:13px; font-weight:700}
+h1{margin:10px 0 4px; font-size:26px; font-weight:800; letter-spacing:-.02em}
+.subtitle{margin:0; color:#c5cdd8; font-size:14.5px}
+.progress{display:flex; gap:8px; flex-wrap:wrap; margin-top:16px}
+.pbadge{background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.28);
+  border-radius:999px; padding:7px 14px; font-size:13.5px; font-weight:700;
+  display:flex; align-items:center; gap:7px}
+.pbadge .dot{width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,.45)}
+.pbadge.done{background:#fff; color:var(--navy); border-color:#fff}
+.pbadge.done .dot{background:var(--teal)}
+
+/* ===== 탭 ===== */
+nav.tabs{display:flex; gap:8px; flex-wrap:wrap; margin:20px 0}
+nav.tabs button{
+  border:1px solid var(--line); background:#fff; color:var(--sub);
+  padding:12px 18px; border-radius:999px; font-size:15px; font-weight:700;
+  font-family:inherit; min-height:46px; cursor:pointer
+}
+nav.tabs button.active{background:var(--navy); border-color:var(--navy); color:#fff}
+section.tab{display:none}
+section.tab.active{display:block}
+
+.card{background:var(--panel); border:1px solid var(--line);
+  border-radius:var(--radius); padding:20px; margin-bottom:16px}
+.card h2{margin:0 0 4px; font-size:20px; font-weight:800}
+.card .lead{margin:0 0 16px; color:var(--sub); font-size:14.5px}
+.card h3{margin:20px 0 10px; font-size:16.5px; font-weight:800}
+.note{background:var(--teal-soft); border-radius:10px; padding:13px 15px;
+  font-size:14.5px; margin:14px 0}
+.note b{color:var(--navy)}
+.note.warn{background:var(--orange-soft); color:#7a4a10}
+.note.warn b{color:var(--orange-ink)}
+.hr{height:1px; background:var(--line); margin:18px 0}
+.tag{display:inline-block; background:var(--grey); border-radius:6px;
+  padding:2px 8px; font-size:12.5px; color:var(--sub); font-weight:700}
+
+/* ===== 버튼 ===== */
+.btn{border:0; background:var(--teal); color:#fff; border-radius:10px;
+  padding:13px 22px; font-weight:800; font-size:15.5px; font-family:inherit;
+  min-height:46px; cursor:pointer}
+.btn.navy{background:var(--navy)}
+.btn.ghost{background:#fff; color:var(--sub); border:1px solid var(--line)}
+.btn:disabled{background:#c3ccd9; cursor:not-allowed}
+.btnrow{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px}
+
+/* ===== 활동 1 : 분류 ===== */
+.pool{display:flex; flex-wrap:wrap; gap:10px; min-height:56px;
+  background:var(--grey); border-radius:12px; padding:12px}
+.chip{border:1px solid #c9d2e0; background:#fff; border-radius:10px;
+  padding:11px 14px; font-size:15px; font-weight:700; color:var(--navy);
+  min-height:44px; display:flex; align-items:center; gap:7px;
+  font-family:inherit; cursor:pointer}
+.chip .n{color:var(--teal); font-weight:800}
+.chip.sel{background:var(--navy); color:#fff; border-color:var(--navy)}
+.chip.sel .n{color:#8ee0d6}
+.chip.ok{background:var(--teal-soft); border-color:var(--teal)}
+.chip.no{background:var(--red-soft); border-color:#e8a9a2}
+.chip .mark{font-size:15px; font-weight:800}
+.bins{display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:12px; margin-top:14px}
+.bin{border:2px dashed #c9d2e0; border-radius:12px; padding:12px; background:#fff; min-height:130px}
+.bin.target{border-color:var(--teal); background:var(--teal-soft)}
+.bin h4{margin:0 0 4px; font-size:15.5px; font-weight:800; color:var(--navy)}
+.bin .cnt{font-size:12.5px; color:var(--sub); margin-bottom:10px}
+.bin .items{display:flex; flex-direction:column; gap:8px}
+.hintline{margin-top:12px; font-size:14px; color:var(--sub); min-height:22px}
+.result{border-radius:12px; padding:14px 16px; font-size:14.5px; margin-top:14px; display:none}
+.result.show{display:block}
+.result.good{background:var(--teal-soft); border:1px solid #a9ddd6}
+.result.bad{background:var(--red-soft); border:1px solid #eec3be}
+.result ul{margin:8px 0 0; padding-left:20px}
+.result li{margin:4px 0}
+
+/* ===== 활동 2 : 4단계 ===== */
+.ctrls{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px}
+.ctrl{background:var(--grey); border-radius:12px; padding:14px}
+.ctrl label{display:block; font-size:14.5px; font-weight:700; margin-bottom:6px}
+.ctrl .val{font-family:var(--mono); font-size:20px; font-weight:800; color:var(--navy)}
+input[type=range]{width:100%; height:40px; accent-color:#2a9d8f}
+.stepper{display:flex; gap:8px; margin-top:8px}
+.stepper button{width:48px; height:44px; border-radius:10px; border:1px solid var(--line);
+  background:#fff; font-size:20px; font-weight:800; color:var(--navy); font-family:inherit; cursor:pointer}
+.flow{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:18px}
+@media(max-width:700px){.flow{grid-template-columns:repeat(2,1fr)}}
+.stage{border:1px solid var(--line); border-radius:12px; padding:12px; background:#fff; text-align:center}
+.stage.on{border-color:var(--teal); background:var(--teal-soft); box-shadow:0 0 0 3px rgba(42,157,143,.15)}
+.stage .k{font-size:13px; font-weight:800; color:var(--teal)}
+.stage .t{font-size:15.5px; font-weight:800; margin:4px 0 6px}
+.stage .d{font-size:13px; color:var(--sub); min-height:38px}
+.log{background:#101a2e; color:#dfe6f5; border-radius:12px; padding:14px;
+  font-family:var(--mono); font-size:14px; margin-top:16px; min-height:96px; white-space:pre-wrap}
+.device{display:flex; gap:14px; align-items:center; margin-top:16px; flex-wrap:wrap}
+.acbox{border:1px solid var(--line); border-radius:12px; padding:14px 18px; background:#fff;
+  font-weight:800; font-size:15.5px; display:flex; align-items:center; gap:10px}
+.lamp{width:14px; height:14px; border-radius:50%; background:#c9d2e0}
+.lamp.cool{background:#2f86f6}
+.lamp.heat{background:#e8663d}
+.mission{display:flex; flex-direction:column; gap:8px; margin-top:14px}
+.mission div{font-size:14.5px; font-weight:700; color:var(--sub)}
+.mission div.done{color:var(--teal)}
+
+/* ===== 활동 3 : 마이크로비트 ===== */
+.mbwrap{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px}
+.mb{border:1px solid var(--line); border-radius:14px; padding:16px; background:#fff}
+.mb h4{margin:0 0 2px; font-size:16.5px; font-weight:800}
+.mb .role{font-size:13px; color:var(--sub); margin-bottom:12px}
+.board{background:#0e1420; border-radius:12px; padding:16px; display:flex;
+  flex-direction:column; align-items:center; gap:10px}
+.matrix{display:grid; grid-template-columns:repeat(5,26px); grid-template-rows:repeat(5,26px); gap:6px}
+.px{width:26px; height:26px; border-radius:5px; background:#2a2f3d}
+.px.on{background:#ff3b30; box-shadow:0 0 9px rgba(255,59,48,.75)}
+.board .cap{color:#9aa4b8; font-size:12.5px; font-family:var(--mono)}
+.group{display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 2px}
+.group button{min-width:48px; height:44px; border-radius:10px; border:1px solid var(--line);
+  background:#fff; font-weight:800; font-size:15px; color:var(--sub); font-family:inherit; cursor:pointer}
+.group button.on{background:var(--navy); color:#fff; border-color:var(--navy)}
+.mbstat{margin-top:12px; font-size:14.5px; font-weight:700; min-height:24px}
+.mbstat.ok{color:var(--teal)}
+.mbstat.no{color:var(--red)}
+
+/* ===== 퀴즈 ===== */
+.q{border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-bottom:12px; background:#fff}
+.q .qt{font-weight:800; font-size:15.5px; margin-bottom:12px}
+.q .qt .num{display:inline-grid; place-items:center; width:26px; height:26px; border-radius:50%;
+  background:var(--navy); color:#fff; font-size:13px; margin-right:8px; vertical-align:2px}
+.opts{display:grid; gap:8px}
+.opt{border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:15px;
+  background:#fff; min-height:46px; display:flex; align-items:center; font-family:inherit;
+  text-align:left; cursor:pointer; color:var(--ink)}
+.opt.pick{border-color:var(--navy); background:#eef1f7}
+.opt.right{border-color:var(--teal); background:var(--teal-soft); font-weight:800}
+.opt.wrong{border-color:#e8a9a2; background:var(--red-soft)}
+.exp{margin-top:10px; font-size:14px; color:var(--sub); background:var(--grey);
+  border-radius:9px; padding:11px 13px; display:none}
+.exp.show{display:block}
+.score{background:var(--navy); color:#fff; border-radius:12px; padding:16px 18px;
+  font-size:17px; font-weight:800; display:none; margin-top:4px}
+.score.show{display:block}
+footer{text-align:center; color:#93a0b5; font-size:13px; padding:26px 0 10px}
+
+/* 아이패드/터치 : 입력 확대 방지를 위해 16px 이상 유지 */
+@media (hover:none){
+  .chip,.opt,.btn,nav.tabs button{font-size:16px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <span class="badge-unit">Ⅰ단원 · 컴퓨팅 시스템</span>
+    <h1>사물 인터넷 실습</h1>
+    <p class="subtitle">교실 속 IoT 분류 · 동작 원리 4단계 · 마이크로비트 온도계 · 확인 퀴즈</p>
+    <div class="progress" id="prog">
+      <div class="pbadge" data-k="sort"><span class="dot"></span>분류</div>
+      <div class="pbadge" data-k="flow"><span class="dot"></span>4단계</div>
+      <div class="pbadge" data-k="mb"><span class="dot"></span>온도계</div>
+      <div class="pbadge" data-k="quiz"><span class="dot"></span>퀴즈</div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="tabs" id="tabs">
+    <button class="active" data-t="sort">① 교실 속 IoT 분류</button>
+    <button data-t="flow">② 동작 원리 4단계</button>
+    <button data-t="mb">③ 마이크로비트 온도계</button>
+    <button data-t="quiz">④ 확인 퀴즈</button>
+  </nav>
+
+  <!-- ================= ① 분류 ================= -->
+  <section class="tab active" id="tab-sort">
+    <div class="card">
+      <h2>교실 속 사물 인터넷을 구성 요소로 나누기</h2>
+      <p class="lead">교과서 24~25p 교실 그림에 있는 것들입니다. 항목을 누른 다음, 들어갈 칸을 누르세요.
+        <span class="tag">활동지 활동 3</span></p>
+
+      <div class="pool" id="pool"></div>
+      <div class="hintline" id="sortHint">항목을 먼저 고르세요.</div>
+
+      <div class="bins" id="bins"></div>
+
+      <div class="btnrow">
+        <button class="btn" id="sortCheck">정답 확인</button>
+        <button class="btn ghost" id="sortReset">다시 하기</button>
+      </div>
+      <div class="result" id="sortResult"></div>
+
+      <div class="note"><b>판단 기준</b> · 무엇을 <b>감지</b>하면 센서, 데이터를 <b>옮기면</b> 네트워크,
+        <b>저장·분석</b>하면 클라우드, 명령을 받아 <b>실제로 움직이면</b> 스마트 기기입니다.</div>
+    </div>
+  </section>
+
+  <!-- ================= ② 4단계 ================= -->
+  <section class="tab" id="tab-flow">
+    <div class="card">
+      <h2>동작 원리 4단계 시뮬레이터</h2>
+      <p class="lead">교실의 온도·습도를 바꾸고 [측정 시작]을 누르면, 수집 → 전달 → 분석 → 제어가 차례로 일어납니다.
+        <span class="tag">활동지 활동 4</span></p>
+
+      <div class="ctrls">
+        <div class="ctrl">
+          <label for="inTemp">교실 온도</label>
+          <div class="val"><span id="inTempV">28</span> ℃</div>
+          <input type="range" id="inTemp" min="16" max="34" value="28">
+          <div class="stepper"><button data-step="inTemp,-1">−</button><button data-step="inTemp,1">+</button></div>
+        </div>
+        <div class="ctrl">
+          <label for="setTemp">설정 온도(목표)</label>
+          <div class="val"><span id="setTempV">24</span> ℃</div>
+          <input type="range" id="setTemp" min="18" max="30" value="24">
+          <div class="stepper"><button data-step="setTemp,-1">−</button><button data-step="setTemp,1">+</button></div>
+        </div>
+        <div class="ctrl">
+          <label for="humid">습도</label>
+          <div class="val"><span id="humidV">55</span> %</div>
+          <input type="range" id="humid" min="20" max="90" value="55">
+          <div class="stepper"><button data-step="humid,-5">−</button><button data-step="humid,5">+</button></div>
+        </div>
+      </div>
+
+      <div class="flow" id="stages">
+        <div class="stage" data-s="0"><div class="k">① 감지</div><div class="t">센서</div><div class="d" id="d0">온습도 센서가 교실 상태를 잰다.</div></div>
+        <div class="stage" data-s="1"><div class="k">② 전달</div><div class="t">네트워크</div><div class="d" id="d1">무선으로 클라우드에 보낸다.</div></div>
+        <div class="stage" data-s="2"><div class="k">③ 분석</div><div class="t">클라우드</div><div class="d" id="d2">설정 온도와 비교해 판단한다.</div></div>
+        <div class="stage" data-s="3"><div class="k">④ 제어</div><div class="t">스마트 기기</div><div class="d" id="d3">냉난방기를 작동시킨다.</div></div>
+      </div>
+
+      <div class="device">
+        <div class="acbox"><span class="lamp" id="lamp"></span><span id="acText">냉난방기 : 꺼짐</span></div>
+        <div class="acbox"><span class="lamp" id="lamp2"></span><span id="dhText">제습 : 꺼짐</span></div>
+      </div>
+
+      <div class="log" id="flowLog">여기에 데이터의 이동이 기록됩니다.</div>
+
+      <div class="btnrow">
+        <button class="btn" id="flowRun">측정 시작</button>
+        <button class="btn ghost" id="flowClear">기록 지우기</button>
+      </div>
+
+      <h3>미션</h3>
+      <div class="mission" id="missions">
+        <div data-m="cool">☐ 냉방이 켜지는 상황을 만들어 보자.</div>
+        <div data-m="heat">☐ 난방이 켜지는 상황을 만들어 보자.</div>
+        <div data-m="idle">☐ 아무것도 작동하지 않는(적정한) 상황을 만들어 보자.</div>
+        <div data-m="dehum">☐ 제습이 필요한 상황(습도 70% 이상)을 만들어 보자.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ③ 마이크로비트 ================= -->
+  <section class="tab" id="tab-mb">
+    <div class="card">
+      <h2>마이크로비트 온도계 (교과서 30~33p)</h2>
+      <p class="lead">실외 마이크로비트가 온도를 <b>라디오로 전송</b>하고, 실내 마이크로비트가 받아서 비교합니다.
+        온도 차가 5도 이하면 <b>하트</b>, 넘으면 <b>체스판</b>이 나타납니다.</p>
+
+      <div class="mbwrap">
+        <div class="mb">
+          <h4>실외 마이크로비트</h4>
+          <div class="role">온도를 재서 보낸다 (송신)</div>
+          <label style="font-size:14.5px;font-weight:700">라디오 그룹</label>
+          <div class="group" data-g="out">
+            <button data-v="1" class="on">1</button><button data-v="2">2</button>
+            <button data-v="3">3</button><button data-v="4">4</button>
+          </div>
+          <div class="ctrl" style="margin-top:12px">
+            <label for="outTemp">실외 온도</label>
+            <div class="val"><span id="outTempV">5</span> ℃</div>
+            <input type="range" id="outTemp" min="-10" max="40" value="5">
+            <div class="stepper"><button data-step="outTemp,-1">−</button><button data-step="outTemp,1">+</button></div>
+          </div>
+          <div class="btnrow"><button class="btn navy" id="mbSend">라디오 전송</button></div>
+          <div class="note" style="margin-bottom:0">실제 프로그램에서는 <b>무한 반복</b> 안에서
+            30초마다 자동으로 전송합니다. 전송 간격이 길수록 전지를 오래 씁니다.</div>
+        </div>
+
+        <div class="mb">
+          <h4>실내 마이크로비트</h4>
+          <div class="role">받아서 판단하고 보여 준다 (수신)</div>
+          <label style="font-size:14.5px;font-weight:700">라디오 그룹</label>
+          <div class="group" data-g="in">
+            <button data-v="1" class="on">1</button><button data-v="2">2</button>
+            <button data-v="3">3</button><button data-v="4">4</button>
+          </div>
+          <div class="ctrl" style="margin-top:12px">
+            <label for="inTemp2">실내 온도</label>
+            <div class="val"><span id="inTemp2V">24</span> ℃</div>
+            <input type="range" id="inTemp2" min="0" max="40" value="24">
+            <div class="stepper"><button data-step="inTemp2,-1">−</button><button data-step="inTemp2,1">+</button></div>
+          </div>
+          <div class="board">
+            <div class="matrix" id="matrix"></div>
+            <div class="cap" id="mbCap">대기 중</div>
+          </div>
+          <div class="mbstat" id="mbStat"></div>
+        </div>
+      </div>
+
+      <div class="note warn"><b>확인해 보기</b> · 두 마이크로비트의 라디오 그룹을 <b>다르게</b> 하면 어떻게 될까요?
+        같은 그룹에서만 데이터를 주고받을 수 있습니다. (교과서 32~33p)</div>
+
+      <div class="mission" id="mbMissions">
+        <div data-m="heart">☐ 하트가 나오게 만들어 보자. (온도 차 5도 이하)</div>
+        <div data-m="chess">☐ 체스판이 나오게 만들어 보자. (온도 차 5도 초과)</div>
+        <div data-m="fail">☐ 그룹을 다르게 해서 수신이 안 되는 것을 확인해 보자.</div>
+      </div>
+
+      <div class="hr"></div>
+      <h3>이 실습의 의사 코드</h3>
+      <div class="log" style="min-height:0">실외 : 라디오 그룹 설정 → 무한 반복 { 온도 전송, 30초 기다림 }
+실내 : 라디오 그룹 설정 → 숫자 수신 시 { 'In' 출력, 실내 온도, 'Out' 출력, 실외 온도,
+        만약 |실내−실외| ≤ 5 이면 하트, 아니라면 체스판 }</div>
+      <div class="note">실제 마이크로비트의 온도 센서는 프로세서에 있어 <b>실제 공기 온도보다 조금 높게</b> 측정됩니다.</div>
+    </div>
+  </section>
+
+  <!-- ================= ④ 퀴즈 ================= -->
+  <section class="tab" id="tab-quiz">
+    <div class="card">
+      <h2>확인 퀴즈</h2>
+      <p class="lead">8문항입니다. 답을 누르면 바로 해설이 나옵니다.</p>
+      <div id="quiz"></div>
+      <div class="score" id="score"></div>
+      <div class="btnrow"><button class="btn ghost" id="quizReset">다시 풀기</button></div>
+    </div>
+  </section>
+</div>
+
+<footer>2026 정보 · Ⅰ단원 컴퓨팅 시스템 — 사물 인터넷 실습</footer>
+
+<script>
+const $ = (s,p=document)=>p.querySelector(s);
+const $$ = (s,p=document)=>[...p.querySelectorAll(s)];
+const progress = {sort:false, flow:false, mb:false, quiz:false};
+function mark(k){
+  if(progress[k]) return;
+  progress[k]=true;
+  $(`.pbadge[data-k="${k}"]`).classList.add('done');
+}
+
+/* 탭 */
+$$('#tabs button').forEach(b=>b.onclick=()=>{
+  $$('#tabs button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  $$('section.tab').forEach(s=>s.classList.remove('active'));
+  $('#tab-'+b.dataset.t).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+
+/* 공통 : ± 버튼 */
+$$('button[data-step]').forEach(b=>{
+  b.onclick=()=>{
+    const [id,delta] = b.dataset.step.split(',');
+    const el = document.getElementById(id);
+    const v = Math.min(+el.max, Math.max(+el.min, +el.value + (+delta)));
+    el.value = v;
+    el.dispatchEvent(new Event('input'));
+  };
+});
+function bindRange(id, out, after){
+  const el = document.getElementById(id);
+  el.addEventListener('input', ()=>{
+    document.getElementById(out).textContent = el.value;
+    if(after) after();
+  });
+}
+
+/* ============ ① 분류 ============ */
+const BINS = [
+  {k:'sensor', t:'센서', d:'현실 세계를 감지'},
+  {k:'net',    t:'통신 · 네트워크', d:'데이터를 옮김'},
+  {k:'cloud',  t:'클라우드', d:'저장 · 분석 · 판단'},
+  {k:'device', t:'스마트 기기', d:'명령대로 동작'}
+];
+const ITEMS = [
+  {id:1, label:'온도 · 습도 센서', ans:'sensor', why:'교실의 온도와 습도를 감지해 전기 신호로 바꿉니다.'},
+  {id:2, label:'얼굴 인식 카메라', ans:'sensor', why:'빛을 받아 영상 데이터로 바꾸어 사람을 감지합니다.'},
+  {id:3, label:'무선 공유기(AP)', ans:'net', why:'센서가 모은 데이터를 클라우드로 전달하는 통로입니다.'},
+  {id:4, label:'냉난방기', ans:'device', why:'클라우드의 명령을 받아 실제로 작동하는 기기입니다.'},
+  {id:5, label:'전자칠판', ans:'device', why:'네트워크에 연결되어 정보를 보여 주는 스마트 기기입니다.'},
+  {id:6, label:'AI 스피커', ans:'device', why:'명령을 받아 소리로 알려 주는 스마트 기기입니다.'},
+  {id:7, label:'출석 · 환경 데이터 저장소', ans:'cloud', why:'데이터를 모아 두고 분석해 정보를 제공합니다.'},
+  {id:8, label:'인체 감지 센서', ans:'sensor', why:'사람의 움직임을 감지합니다.'}
+];
+let place = {};      // id -> bin key
+let picked = null;   // 선택된 item id
+
+function renderSort(){
+  const pool = $('#pool'); pool.innerHTML='';
+  ITEMS.filter(it=>!place[it.id]).forEach(it=>pool.appendChild(chipEl(it)));
+  if(!pool.children.length) pool.innerHTML = '<span style="color:#5c636b;font-size:14.5px;padding:10px">모두 나누었습니다. [정답 확인]을 눌러 보세요.</span>';
+  const bins = $('#bins'); bins.innerHTML='';
+  BINS.forEach(b=>{
+    const box = document.createElement('div');
+    box.className = 'bin' + (picked ? ' target' : '');
+    box.dataset.k = b.k;
+    const mine = ITEMS.filter(it=>place[it.id]===b.k);
+    box.innerHTML = `<h4>${b.t}</h4><div class="cnt">${b.d} · ${mine.length}개</div>`;
+    const wrapEl = document.createElement('div');
+    wrapEl.className='items';
+    mine.forEach(it=>wrapEl.appendChild(chipEl(it, true)));
+    box.appendChild(wrapEl);
+    box.onclick = (e)=>{
+      if(e.target.closest('.chip')) return;
+      if(!picked){ hint('먼저 위에서 항목을 고르세요.'); return; }
+      place[picked] = b.k; picked=null;
+      hint('옮겼습니다. 다음 항목을 고르세요.');
+      renderSort();
+    };
+    bins.appendChild(box);
+  });
+}
+function chipEl(it, inBin){
+  const el = document.createElement('button');
+  el.className = 'chip' + (picked===it.id ? ' sel' : '') + (it._mark==='ok'?' ok':'') + (it._mark==='no'?' no':'');
+  el.innerHTML = `<span class="n">${it.id}</span>${it.label}` +
+    (it._mark==='ok'?'<span class="mark">✓</span>':'') + (it._mark==='no'?'<span class="mark">✕</span>':'');
+  el.onclick = (ev)=>{
+    ev.stopPropagation();
+    if(inBin){ delete place[it.id]; picked=null; hint('다시 꺼냈습니다.'); renderSort(); return; }
+    picked = (picked===it.id) ? null : it.id;
+    hint(picked ? `'${it.label}'을 골랐습니다. 아래에서 들어갈 칸을 누르세요.` : '선택을 취소했습니다.');
+    renderSort();
+  };
+  return el;
+}
+function hint(t){ $('#sortHint').textContent = t; }
+
+$('#sortCheck').onclick = ()=>{
+  const done = ITEMS.filter(it=>place[it.id]);
+  const box = $('#sortResult');
+  if(done.length < ITEMS.length){
+    box.className='result show bad';
+    box.innerHTML = `아직 나누지 않은 항목이 <b>${ITEMS.length-done.length}개</b> 있습니다.`;
+    return;
+  }
+  let wrong = [];
+  ITEMS.forEach(it=>{
+    const ok = place[it.id]===it.ans;
+    it._mark = ok ? 'ok' : 'no';
+    if(!ok) wrong.push(it);
+  });
+  renderSort();
+  if(!wrong.length){
+    box.className='result show good';
+    box.innerHTML = '<b>모두 정확합니다.</b> 센서 → 네트워크 → 클라우드 → 스마트 기기의 흐름을 잘 구분했습니다.';
+    mark('sort');
+  } else {
+    box.className='result show bad';
+    box.innerHTML = `<b>${ITEMS.length-wrong.length} / ${ITEMS.length} 정답.</b> 다시 볼 항목입니다.<ul>` +
+      wrong.map(it=>`<li><b>${it.label}</b> → ${BINS.find(b=>b.k===it.ans).t} : ${it.why}</li>`).join('') + '</ul>';
+  }
+};
+$('#sortReset').onclick = ()=>{
+  place={}; picked=null; ITEMS.forEach(it=>delete it._mark);
+  $('#sortResult').className='result'; hint('항목을 먼저 고르세요.'); renderSort();
+};
+renderSort();
+
+/* ============ ② 4단계 ============ */
+bindRange('inTemp','inTempV');
+bindRange('setTemp','setTempV');
+bindRange('humid','humidV');
+const missionState = {cool:false, heat:false, idle:false, dehum:false};
+function missionDone(k){
+  if(missionState[k]) return;
+  missionState[k]=true;
+  const el = $(`#missions div[data-m="${k}"]`);
+  el.classList.add('done');
+  el.textContent = '☑' + el.textContent.slice(1);
+  if(Object.values(missionState).every(Boolean)) mark('flow');
+}
+let running = false;
+$('#flowRun').onclick = async ()=>{
+  if(running) return;
+  running = true; $('#flowRun').disabled = true;
+  const t = +$('#inTemp').value, s = +$('#setTemp').value, h = +$('#humid').value;
+  const log = $('#flowLog');
+  log.textContent = '';
+  const stages = $$('#stages .stage');
+  stages.forEach(x=>x.classList.remove('on'));
+  const add = (s)=>{ log.textContent += s + '\n'; };
+
+  const seq = [
+    ()=>{ add(`[센서]      온도 ${t}℃ / 습도 ${h}% 측정`); },
+    ()=>{ add(`[네트워크]  무선으로 클라우드에 전송 (수신 완료)`); },
+    ()=>{
+      add(`[클라우드]  설정 온도 ${s}℃ 와 비교 → 차이 ${t-s > 0 ? '+' : ''}${t-s}℃`);
+      if(t > s+1) add(`            판단 : 덥다 → 냉방 필요`);
+      else if(t < s-1) add(`            판단 : 춥다 → 난방 필요`);
+      else add(`            판단 : 적정 → 그대로 유지`);
+      if(h >= 70) add(`            판단 : 습하다 → 제습 필요`);
+    },
+    ()=>{
+      const lamp = $('#lamp'), lamp2 = $('#lamp2');
+      lamp.className='lamp'; lamp2.className='lamp';
+      if(t > s+1){ lamp.classList.add('cool'); $('#acText').textContent='냉난방기 : 냉방 작동'; add('[제어]      냉난방기 냉방 ON'); missionDone('cool'); }
+      else if(t < s-1){ lamp.classList.add('heat'); $('#acText').textContent='냉난방기 : 난방 작동'; add('[제어]      냉난방기 난방 ON'); missionDone('heat'); }
+      else { $('#acText').textContent='냉난방기 : 꺼짐(적정)'; add('[제어]      작동 없음 — 이미 적정한 상태'); missionDone('idle'); }
+      if(h >= 70){ lamp2.classList.add('cool'); $('#dhText').textContent='제습 : 작동'; add('[제어]      제습 ON'); missionDone('dehum'); }
+      else { $('#dhText').textContent='제습 : 꺼짐'; }
+      add('[사용자]    스마트폰으로 현재 상태를 확인할 수 있다.');
+    }
+  ];
+  for(let i=0;i<seq.length;i++){
+    stages.forEach(x=>x.classList.remove('on'));
+    stages[i].classList.add('on');
+    seq[i]();
+    await new Promise(r=>setTimeout(r, 850));
+  }
+  stages.forEach(x=>x.classList.remove('on'));
+  running = false; $('#flowRun').disabled = false;
+};
+$('#flowClear').onclick = ()=>{ $('#flowLog').textContent='여기에 데이터의 이동이 기록됩니다.'; };
+
+/* ============ ③ 마이크로비트 ============ */
+const FONT = {
+  '0':['01110','10001','10001','10001','01110'],
+  '1':['00100','01100','00100','00100','01110'],
+  '2':['11110','00001','01110','10000','11111'],
+  '3':['11110','00001','01110','00001','11110'],
+  '4':['10010','10010','11111','00010','00010'],
+  '5':['11111','10000','11110','00001','11110'],
+  '6':['01110','10000','11110','10001','01110'],
+  '7':['11111','00010','00100','01000','01000'],
+  '8':['01110','10001','01110','10001','01110'],
+  '9':['01110','10001','01111','00001','01110'],
+  'I':['11111','00100','00100','00100','11111'],
+  'N':['10001','11001','10101','10011','10001'],
+  'O':['01110','10001','10001','10001','01110'],
+  'U':['10001','10001','10001','10001','01110'],
+  'T':['11111','00100','00100','00100','00100'],
+  '-':['00000','00000','11111','00000','00000'],
+  ' ':['00000','00000','00000','00000','00000']
+};
+const HEART = ['01010','11111','11111','01110','00100'];
+const CHESS = ['01010','10101','01010','10101','01010'];
+
+const matrix = $('#matrix');
+for(let i=0;i<25;i++){ const d=document.createElement('div'); d.className='px'; matrix.appendChild(d); }
+function draw(rows){
+  const px = matrix.children;
+  for(let r=0;r<5;r++) for(let c=0;c<5;c++){
+    px[r*5+c].classList.toggle('on', rows[r][c]==='1');
+  }
+}
+function clearBoard(){ draw(['00000','00000','00000','00000','00000']); }
+clearBoard();
+
+const groups = {out:1, in:1};
+$$('.group').forEach(g=>{
+  g.querySelectorAll('button').forEach(b=>{
+    b.onclick = ()=>{
+      g.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      groups[g.dataset.g] = +b.dataset.v;
+    };
+  });
+});
+bindRange('outTemp','outTempV');
+bindRange('inTemp2','inTemp2V');
+
+const mbMission = {heart:false, chess:false, fail:false};
+function mbDone(k){
+  if(mbMission[k]) return;
+  mbMission[k]=true;
+  const el = $(`#mbMissions div[data-m="${k}"]`);
+  el.classList.add('done');
+  el.textContent = '☑' + el.textContent.slice(1);
+  if(Object.values(mbMission).every(Boolean)) mark('mb');
+}
+let sending = false;
+async function showChars(str, ms=520){
+  for(const ch of str.toUpperCase()){
+    draw(FONT[ch] || FONT[' ']);
+    $('#mbCap').textContent = `출력 : ${str}`;
+    await new Promise(r=>setTimeout(r, ms));
+  }
+}
+$('#mbSend').onclick = async ()=>{
+  if(sending) return;
+  sending = true; $('#mbSend').disabled = true;
+  const out = +$('#outTemp').value, inn = +$('#inTemp2').value;
+  const stat = $('#mbStat');
+  if(groups.out !== groups.in){
+    clearBoard();
+    $('#mbCap').textContent = '수신 없음';
+    stat.className = 'mbstat no';
+    stat.textContent = `✕ 실외는 그룹 ${groups.out}, 실내는 그룹 ${groups.in} — 같은 그룹이 아니어서 데이터가 오지 않습니다.`;
+    mbDone('fail');
+    sending = false; $('#mbSend').disabled = false;
+    return;
+  }
+  stat.className = 'mbstat ok';
+  stat.textContent = `→ 그룹 ${groups.out} 로 실외 온도 ${out}℃ 전송 · 수신 완료`;
+  await showChars('IN');
+  await showChars(String(inn));
+  await showChars('OUT');
+  await showChars((out<0?'-':'') + String(Math.abs(out)));
+  const diff = Math.abs(inn - out);
+  if(diff <= 5){
+    draw(HEART);
+    $('#mbCap').textContent = '하트 — 온도 차 적정';
+    stat.textContent = `♥ 온도 차 ${diff}도 → 5도 이하이므로 하트를 출력합니다.`;
+    mbDone('heart');
+  } else {
+    draw(CHESS);
+    $('#mbCap').textContent = '체스판 — 온도 차 큼';
+    stat.textContent = `▦ 온도 차 ${diff}도 → 5도를 넘으므로 체스판을 출력합니다.`;
+    mbDone('chess');
+  }
+  sending = false; $('#mbSend').disabled = false;
+};
+
+/* ============ ④ 퀴즈 ============ */
+const QUIZ = [
+  {q:'센서로 데이터를 수집하고 네트워크로 전달하며, 서버에서 분석·공유·학습하여 정보를 제공하거나 사물을 제어하는 것은?',
+   o:['사물 인터넷(IoT)','클라우드','임베디드 시스템','네트워크 드라이브'], a:0,
+   e:'교과서 22p의 정의입니다. 마지막 \'사물을 제어한다\'가 빠지지 않도록 주의하세요.'},
+  {q:'기계나 전자 제품의 제어를 위해 특정 기능을 수행하는 컴퓨팅 시스템은?',
+   o:['웨어러블 기기','임베디드 시스템','스마트 기기','전송 매체'], a:1,
+   e:'세탁기 제어판, 에어컨, 자동차 제어 장치처럼 제품 속에 숨어 있는 컴퓨터입니다.'},
+  {q:'사물 인터넷의 구성 요소가 아닌 것은?',
+   o:['센서 및 스마트 기기','통신 및 네트워크','클라우드','종이 설명서'], a:3,
+   e:'구성은 센서 및 스마트 기기 · 통신 및 네트워크 · 클라우드 세 영역입니다.'},
+  {q:'센서가 하는 일을 옳게 설명한 것은?',
+   o:['전기 신호를 소리로 바꾼다','현실 세계의 정보를 측정해 전기 신호로 바꾼다','데이터를 저장하고 분석한다','명령을 받아 기기를 움직인다'], a:1,
+   e:'센서는 인간의 감각 기관처럼 주변 환경과 상황을 감지합니다.'},
+  {q:'사물 인터넷 기기가 저전력 통신 기술을 쓰는 가장 큰 이유는?',
+   o:['가격이 싸기 때문','배터리로 오래 동작해야 하기 때문','속도가 가장 빠르기 때문','유선보다 안전하기 때문'], a:1,
+   e:'센서는 24시간 계속 동작해야 하므로 에너지 소비량이 적은 기술을 사용합니다.'},
+  {q:'센서를 통해 정보를 지속적으로 수집·처리·분석하여 사용자가 원하는 정보를 제공하는 것은?',
+   o:['클라우드','공유 폴더','전송 매체','웨어러블 기기'], a:0,
+   e:'IoT 플랫폼은 대부분 클라우드 형태로 운영되며, 빅데이터와 인공지능으로 발전하고 있습니다.'},
+  {q:'마이크로비트 두 대가 라디오로 데이터를 주고받으려면?',
+   o:['서로 다른 그룹으로 설정한다','같은 그룹으로 설정한다','USB로 연결한다','같은 이름을 입력한다'], a:1,
+   e:'자료의 송수신은 같은 그룹에서만 가능합니다. 통신 거리는 약 20m입니다.'},
+  {q:'온도계 프로그램에서 실내 22℃, 실외 15℃ 일 때 화면에 나타나는 것은?',
+   o:['하트','체스판','아무것도 안 나온다','오류 표시'], a:1,
+   e:'차이가 7도로 5도를 넘으므로 체스판이 출력됩니다.'}
+];
+let answered = 0, correct = 0;
+function renderQuiz(){
+  answered = 0; correct = 0;
+  const box = $('#quiz'); box.innerHTML='';
+  $('#score').className='score';
+  QUIZ.forEach((item, i)=>{
+    const q = document.createElement('div');
+    q.className='q';
+    q.innerHTML = `<div class="qt"><span class="num">${i+1}</span>${item.q}</div>`;
+    const opts = document.createElement('div');
+    opts.className='opts';
+    item.o.forEach((o, j)=>{
+      const b = document.createElement('button');
+      b.className='opt'; b.textContent = o;
+      b.onclick = ()=>{
+        if(q.dataset.done) return;
+        q.dataset.done = '1';
+        answered++;
+        [...opts.children].forEach((c,k)=>{
+          if(k===item.a) c.classList.add('right');
+          else if(k===j) c.classList.add('wrong');
+          c.disabled = true;
+        });
+        if(j===item.a) correct++;
+        exp.classList.add('show');
+        if(answered===QUIZ.length){
+          const sc = $('#score');
+          sc.className='score show';
+          sc.textContent = `${QUIZ.length}문항 중 ${correct}문항 정답` +
+            (correct===QUIZ.length ? ' — 완벽합니다!' : ' — 틀린 문항의 해설을 다시 읽어 보세요.');
+          if(correct >= QUIZ.length - 1) mark('quiz');
+        }
+      };
+      opts.appendChild(b);
+    });
+    q.appendChild(opts);
+    const exp = document.createElement('div');
+    exp.className='exp';
+    exp.innerHTML = `<b>해설</b> ${item.e}`;
+    q.appendChild(exp);
+    box.appendChild(q);
+  });
+}
+$('#quizReset').onclick = renderQuiz;
+renderQuiz();
+</script>
+</body>
+</html>
