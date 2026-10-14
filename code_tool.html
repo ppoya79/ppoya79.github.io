@@ -1,0 +1,3294 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>교실 도구함 (냥이 교실 에디션) - 만든이 ppo</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- PDF.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Tone.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <!-- SheetJS (Excel) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Jua&family=Pretendard:wght@500;600;700;800;900&display=swap');
+    
+    * {
+      font-family: 'Pretendard', sans-serif;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    h1, h2, h3, h4, .font-title {
+      font-family: 'Jua', 'Pretendard', sans-serif;
+      letter-spacing: 0.02em;
+    }
+
+    /* 코랩 상단 걷는 냥이 레일 */
+    .colab-track {
+      position: relative;
+      height: 44px;
+      width: 100%;
+      overflow: hidden;
+      border-bottom: 2px dashed #CBD5E1;
+      background: #F8FAFC;
+    }
+    .walking-cat {
+      position: absolute;
+      bottom: 2px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.1s ease-out;
+    }
+    .walking-cat:hover {
+      filter: drop-shadow(0 3px 6px rgba(37, 99, 235, 0.45));
+    }
+
+    /* 앙증맞은 뒤뚱뒤뚱 걷기 모션 */
+    @keyframes catCuteWaddle {
+      0%, 100% { transform: translateY(0px) rotate(-3deg); }
+      50% { transform: translateY(-2.5px) rotate(3deg); }
+    }
+    .cat-step-anim {
+      animation: catCuteWaddle 0.28s infinite ease-in-out;
+    }
+
+    /* 판서 마우스 커서들 */
+    .cursor-pencil {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M2 30 L8 28 L4 24 Z' fill='%230F172A'/%3E%3Cpath d='M4 24 L8 28 L24 12 L20 8 Z' fill='%2338BDF8' stroke='%230284C7' stroke-width='1'/%3E%3Cpath d='M20 8 L24 12 L27 9 C28.5 7.5 28.5 5 27 3.5 C25.5 2 23 2 21.5 3.5 Z' fill='%236366F1'/%3E%3Ccircle cx='3' cy='29' r='1.5' fill='%23EF4444'/%3E%3C/svg%3E") 2 30, crosshair !important;
+    }
+    .cursor-highlighter {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M3 29 L8 27 L5 24 Z' fill='%230F172A'/%3E%3Cpath d='M5 24 L8 27 L25 10 L22 7 Z' fill='%2310B981'/%3E%3Cpath d='M22 7 L25 10 L28 7 C29.5 5.5 29.5 3 28 1.5 C26.5 0 24 0 22.5 1.5 Z' fill='%2334D399'/%3E%3C/svg%3E") 3 29, crosshair !important;
+    }
+    .cursor-eraser {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Crect x='4' y='8' width='22' height='14' rx='4' transform='rotate(-25 15 15)' fill='%2338BDF8' stroke='%230284C7' stroke-width='1.5'/%3E%3Crect x='4' y='15' width='22' height='7' rx='2' transform='rotate(-25 15 15)' fill='%23BAE6FD'/%3E%3C/svg%3E") 6 22, pointer !important;
+    }
+    .cursor-laser-wand {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cpath d='M10 26 L26 10' stroke='%236366F1' stroke-width='3.5' stroke-linecap='round'/%3E%3Cpath d='M10 26 L26 10' stroke='%23FFFFFF' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpolygon points='26,3 28.5,8.5 34,9 29.8,13 31.2,18.5 26,15.5 20.8,18.5 22.2,13 18,9 23.5,8.5' fill='%2338BDF8' stroke='%230284C7' stroke-width='1'/%3E%3Ccircle cx='26' cy='11' r='2' fill='%23FFFFFF'/%3E%3C/svg%3E") 26 10, crosshair !important;
+    }
+    .cursor-laser-paw {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cpath d='M9 23 C7 16 11 10 18 10 C25 10 29 15 30 22 C31 29 27 34 18 34 C11 34 9 29 9 23 Z' fill='%23FFFFFF' stroke='%230F172A' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M14 24 C12 21 16 18 18 20 C20 18 24 21 22 24 C19 28 17 28 14 24 Z' fill='%2338BDF8'/%3E%3Cellipse cx='12' cy='15' rx='3' ry='3.8' transform='rotate(-22 12 15)' fill='%2338BDF8'/%3E%3Cellipse cx='18' cy='11' rx='3.2' ry='4' fill='%2338BDF8'/%3E%3Cellipse cx='24' cy='15' rx='3' ry='3.8' transform='rotate(22 24 15)' fill='%2338BDF8'/%3E%3C/svg%3E") 18 10, crosshair !important;
+    }
+    .cursor-laser-star {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpolygon points='16,2 20,12 30,16 20,20 16,30 12,20 2,16 12,12' fill='%236366F1' stroke='%234338CA' stroke-width='1.5'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23FFFFFF'/%3E%3C/svg%3E") 16 16, crosshair !important;
+    }
+    .cursor-laser-dot {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%23EF4444' fill-opacity='0.3'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23DC2626'/%3E%3Ccircle cx='16' cy='16' r='2' fill='%23FFFFFF'/%3E%3C/svg%3E") 16 16, crosshair !important;
+    }
+
+    /* 캔버스 최적화 */
+    canvas {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
+
+    /* 타이머 긴박감 가속 점멸 */
+    @keyframes fastHeartbeat {
+      0% { transform: scale(1); filter: brightness(1); }
+      35% { transform: scale(1.04); filter: brightness(1.3) drop-shadow(0 0 22px rgba(239,68,68,0.7)); }
+      70% { transform: scale(0.98); filter: brightness(1); }
+      100% { transform: scale(1); filter: brightness(1); }
+    }
+    .timer-accelerated-pulse {
+      animation: fastHeartbeat var(--pulse-duration, 0.8s) infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-[#F1F5F9] text-slate-900 min-h-screen flex flex-col select-none overflow-x-hidden">
+
+  <svg class="hidden">
+    <defs>
+      <!-- 기본 키티 얼굴 심볼 (헤더/로고용) -->
+      <g id="kitty-art">
+        <path d="M22 42 C14 26 25 12 36 24 C44 21 56 21 64 24 C75 12 86 26 78 42 C85 54 84 74 72 82 C60 90 40 90 28 82 C16 74 15 54 22 42 Z" fill="#FFFFFF" stroke="#0F172A" stroke-width="4.5" stroke-linejoin="round"/>
+        <path d="M26 34 C21 26 27 18 33 25 Z" fill="#93C5FD"/>
+        <path d="M74 34 C79 26 73 18 67 25 Z" fill="#93C5FD"/>
+        <circle cx="70" cy="27" r="4.5" fill="#EF4444"/>
+        <ellipse cx="63" cy="25" rx="5.5" ry="4" transform="rotate(-20 63 25)" fill="#EF4444" stroke="#DC2626" stroke-width="1.2"/>
+        <ellipse cx="77" cy="29" rx="5.5" ry="4" transform="rotate(-20 77 29)" fill="#EF4444" stroke="#DC2626" stroke-width="1.2"/>
+        <ellipse cx="37" cy="54" rx="3.5" ry="5.5" fill="#0F172A"/>
+        <ellipse cx="63" cy="54" rx="3.5" ry="5.5" fill="#0F172A"/>
+        <ellipse cx="50" cy="62" rx="4.5" ry="3.5" fill="#38BDF8" stroke="#0284C7" stroke-width="1.2"/>
+        <path d="M16 53 L29 55 M14 62 L28 62 M16 71 L29 68" stroke="#0F172A" stroke-width="3" stroke-linecap="round"/>
+        <path d="M84 53 L71 55 M86 62 L72 62 M84 71 L71 68" stroke="#0F172A" stroke-width="3" stroke-linecap="round"/>
+      </g>
+
+      <!-- 1번 냥이: 🎀 클래식 멜빵 키티 -->
+      <g id="char-kitty-classic">
+        <path d="M26 84 C18 80 14 70 18 64 C20 60 25 62 24 68 C23 74 28 78 32 80 Z" fill="#FFFFFF" stroke="#0F172A" stroke-width="3"/>
+        <ellipse cx="38" cy="100" rx="7" ry="5" fill="#FFFFFF" stroke="#0F172A" stroke-width="3"/>
+        <ellipse cx="62" cy="100" rx="7" ry="5" fill="#FFFFFF" stroke="#0F172A" stroke-width="3"/>
+        <path d="M30 65 Q50 63 70 65 L72 90 Q50 94 28 90 Z" fill="#F8FAFC" stroke="#0F172A" stroke-width="3"/>
+        <path d="M32 70 L68 70 L70 94 C70 98 64 100 58 100 L52 100 L52 92 L48 92 L48 100 L42 100 C36 100 30 98 30 94 Z" fill="#2563EB" stroke="#0F172A" stroke-width="3"/>
+        <rect x="36" y="65" width="5" height="13" fill="#1D4ED8" stroke="#0F172A" stroke-width="1.5"/>
+        <rect x="59" y="65" width="5" height="13" fill="#1D4ED8" stroke="#0F172A" stroke-width="1.5"/>
+        <ellipse cx="23" cy="74" rx="5" ry="7" transform="rotate(20 23 74)" fill="#FFFFFF" stroke="#0F172A" stroke-width="3"/>
+        <ellipse cx="77" cy="74" rx="5" ry="7" transform="rotate(-20 77 74)" fill="#FFFFFF" stroke="#0F172A" stroke-width="3"/>
+        <path d="M24 35 C16 21 27 8 38 18 C46 15 54 15 62 18 C73 8 84 21 76 35 C83 46 82 62 72 68 C61 74 39 74 28 68 C18 62 17 46 24 35 Z" fill="#FFFFFF" stroke="#0F172A" stroke-width="3.5"/>
+        <circle cx="68" cy="22" r="4" fill="#EF4444"/>
+        <ellipse cx="61" cy="20" rx="5" ry="3.5" transform="rotate(-20 61 20)" fill="#EF4444"/>
+        <ellipse cx="75" cy="24" rx="5" ry="3.5" transform="rotate(-20 75 24)" fill="#EF4444"/>
+        <ellipse cx="38" cy="45" rx="3" ry="4.5" fill="#0F172A"/>
+        <ellipse cx="62" cy="45" rx="3" ry="4.5" fill="#0F172A"/>
+        <ellipse cx="50" cy="51" rx="3.5" ry="2.5" fill="#38BDF8"/>
+        <path d="M20 45 L30 47 M19 51 L29 51 M20 57 L29 55" stroke="#0F172A" stroke-width="2" stroke-linecap="round"/>
+        <path d="M80 45 L70 47 M81 51 L71 51 M80 57 L71 55" stroke="#0F172A" stroke-width="2" stroke-linecap="round"/>
+      </g>
+
+      <!-- 2번 냥이: 🌿 민트 베레모 키티 -->
+      <g id="char-kitty-mint">
+        <path d="M26 84 C18 80 14 70 18 64 C20 60 25 62 24 68 C23 74 28 78 32 80 Z" fill="#FFFFFF" stroke="#0F172A" stroke-width="3"/>
+        <ellipse cx="38" cy="100" rx="7" ry="5" fill="#FFFFFF" stroke="#0F172A" stroke-width="3"/>
+        <ellipse cx="62" cy="100" rx="7" ry="5" fill="#FFFFFF" stroke="#0F172A" stroke-width="3"/>
+        <path d="M30 65 Q50 63 70 65 L72 94 Q50 98 28 94 Z" fill="#ECFDF5" stroke="#0F172A" stroke-width="3"/>
+        <ellipse cx="23" cy="74" rx="5" ry="7" transform="rotate(20 23 74)" fill="#FFFFFF" stroke="#0F172A" stroke-width="3"/>
+        <ellipse cx="77" cy="74" rx="5" ry="7" transform="rotate(-20 77 74)" fill="#FFFFFF" stroke="#0F172A" stroke-width="3"/>
+        <path d="M32 66 Q50 72 68 66 L66 74 Q50 79 34 74 Z" fill="#10B981" stroke="#0F172A" stroke-width="2"/>
+        <circle cx="50" cy="73" r="3.5" fill="#047857"/>
+        <path d="M24 35 C16 21 27 8 38 18 C46 15 54 15 62 18 C73 8 84 21 76 35 C83 46 82 62 72 68 C61 74 39 74 28 68 C18 62 17 46 24 35 Z" fill="#FFFFFF" stroke="#0F172A" stroke-width="3.5"/>
+        <ellipse cx="44" cy="17" rx="16" ry="8" transform="rotate(-15 44 17)" fill="#10B981" stroke="#0F172A" stroke-width="2.5"/>
+        <circle cx="42" cy="9" r="2.5" fill="#047857"/>
+        <ellipse cx="38" cy="45" rx="3" ry="4.5" fill="#0F172A"/>
+        <ellipse cx="62" cy="45" rx="3" ry="4.5" fill="#0F172A"/>
+        <ellipse cx="50" cy="51" rx="3.5" ry="2.5" fill="#F43F5E"/>
+        <path d="M20 45 L30 47 M19 51 L29 51 M20 57 L29 55" stroke="#0F172A" stroke-width="2" stroke-linecap="round"/>
+        <path d="M80 45 L70 47 M81 51 L71 51 M80 57 L71 55" stroke="#0F172A" stroke-width="2" stroke-linecap="round"/>
+      </g>
+
+      <!-- 3번 냥이: 🧀 방울 달린 치즈 줄무늬냥 -->
+      <g id="char-cat-cheese">
+        <path d="M26 84 C18 80 14 70 18 64 C20 60 25 62 24 68 C23 74 28 78 32 80 Z" fill="#F59E0B" stroke="#0F172A" stroke-width="3"/>
+        <path d="M20 72 L25 74 M21 66 L25 67" stroke="#D97706" stroke-width="2" stroke-linecap="round"/>
+        <ellipse cx="38" cy="100" rx="7" ry="5" fill="#FEF3C7" stroke="#0F172A" stroke-width="3"/>
+        <ellipse cx="62" cy="100" rx="7" ry="5" fill="#FEF3C7" stroke="#0F172A" stroke-width="3"/>
+        <path d="M30 65 Q50 63 70 65 L72 94 Q50 98 28 94 Z" fill="#F59E0B" stroke="#0F172A" stroke-width="3"/>
+        <ellipse cx="50" cy="82" rx="12" ry="12" fill="#FEF3C7"/>
+        <ellipse cx="23" cy="74" rx="5" ry="7" transform="rotate(20 23 74)" fill="#FEF3C7" stroke="#0F172A" stroke-width="3"/>
+        <ellipse cx="77" cy="74" rx="5" ry="7" transform="rotate(-20 77 74)" fill="#FEF3C7" stroke="#0F172A" stroke-width="3"/>
+        <path d="M33 66 Q50 71 67 66" stroke="#EF4444" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="50" cy="71" r="4" fill="#FBBF24" stroke="#B45309" stroke-width="1.2"/>
+        <path d="M24 35 C16 21 27 8 38 18 C46 15 54 15 62 18 C73 8 84 21 76 35 C83 46 82 62 72 68 C61 74 39 74 28 68 C18 62 17 46 24 35 Z" fill="#F59E0B" stroke="#0F172A" stroke-width="3.5"/>
+        <path d="M30 25 C26 19 30 14 34 20 Z" fill="#FCD34D"/>
+        <path d="M70 25 C74 19 70 14 66 20 Z" fill="#FCD34D"/>
+        <path d="M50 20 L50 28 M44 23 L46 29 M56 23 L54 29" stroke="#D97706" stroke-width="2.5" stroke-linecap="round"/>
+        <ellipse cx="38" cy="45" rx="3" ry="4.5" fill="#0F172A"/>
+        <ellipse cx="62" cy="45" rx="3" ry="4.5" fill="#0F172A"/>
+        <ellipse cx="50" cy="51" rx="3" ry="2.2" fill="#F43F5E"/>
+        <path d="M20 45 L30 47 M19 51 L29 51 M20 57 L29 55" stroke="#0F172A" stroke-width="2" stroke-linecap="round"/>
+        <path d="M80 45 L70 47 M81 51 L71 51 M80 57 L71 55" stroke="#0F172A" stroke-width="2" stroke-linecap="round"/>
+      </g>
+
+      <!-- 4번 냥이: 🎩 보타이 턱시도 신사냥 -->
+      <g id="char-cat-tuxedo">
+        <path d="M26 84 C18 80 14 70 18 64 C20 60 25 62 24 68 C23 74 28 78 32 80 Z" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>
+        <circle cx="19" cy="65" r="2.5" fill="#FFFFFF"/>
+        <ellipse cx="38" cy="100" rx="7" ry="5" fill="#FFFFFF" stroke="#0F172A" stroke-width="3"/>
+        <ellipse cx="62" cy="100" rx="7" ry="5" fill="#FFFFFF" stroke="#0F172A" stroke-width="3"/>
+        <path d="M30 65 Q50 63 70 65 L72 94 Q50 98 28 94 Z" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>
+        <path d="M42 66 L58 66 L55 92 L45 92 Z" fill="#FFFFFF"/>
+        <ellipse cx="23" cy="74" rx="5" ry="7" transform="rotate(20 23 74)" fill="#FFFFFF" stroke="#0F172A" stroke-width="3"/>
+        <ellipse cx="77" cy="74" rx="5" ry="7" transform="rotate(-20 77 74)" fill="#FFFFFF" stroke="#0F172A" stroke-width="3"/>
+        <polygon points="46,69 46,75 50,72" fill="#EF4444"/>
+        <polygon points="54,69 54,75 50,72" fill="#EF4444"/>
+        <circle cx="50" cy="72" r="1.8" fill="#DC2626"/>
+        <path d="M24 35 C16 21 27 8 38 18 C46 15 54 15 62 18 C73 8 84 21 76 35 C83 46 82 62 72 68 C61 74 39 74 28 68 C18 62 17 46 24 35 Z" fill="#1E293B" stroke="#0F172A" stroke-width="3.5"/>
+        <polygon points="50,42 36,65 64,65" fill="#FFFFFF"/>
+        <rect x="52" y="9" width="16" height="12" rx="2" fill="#0F172A"/>
+        <line x1="49" y1="21" x2="71" y2="21" stroke="#0F172A" stroke-width="3" stroke-linecap="round"/>
+        <line x1="53" y1="18" x2="67" y2="18" stroke="#EF4444" stroke-width="2"/>
+        <ellipse cx="38" cy="45" rx="3" ry="4.5" fill="#38BDF8"/>
+        <ellipse cx="62" cy="45" rx="3" ry="4.5" fill="#38BDF8"/>
+        <ellipse cx="50" cy="51" rx="3.5" ry="2.2" fill="#F43F5E"/>
+        <path d="M20 45 L30 47 M19 51 L29 51 M20 57 L29 55" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+        <path d="M80 45 L70 47 M81 51 L71 51 M80 57 L71 55" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+      </g>
+    </defs>
+  </svg>
+
+  <header class="bg-white/95 backdrop-blur-md border-b-2 border-slate-200 sticky top-0 z-50 shadow-xs">
+    
+    <!-- 코랩 상단 냥이 산책 레일 -->
+    <div id="colabCatTrack" class="colab-track">
+      <!-- 냥이들이 자바스크립트로 생성되어 산책합니다 -->
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      <!-- 로고 -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('hub')">
+        <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-200">
+          <svg class="w-7 h-7 drop-shadow-xs" viewBox="0 0 100 100">
+            <use href="#kitty-art"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-extrabold text-xl text-slate-900 tracking-tight">교실 도구함</h1>
+            <span class="text-xs bg-indigo-50 text-indigo-700 font-black px-2.5 py-0.5 rounded-full border border-indigo-200">Classroom Tools</span>
+          </div>
+          <p class="text-xs font-bold text-slate-500">만든이 ppo <span class="text-slate-300">|</span> 제작일자: 2026. 10. 08</p>
+        </div>
+      </div>
+
+      <!-- 상단 메뉴 네비게이션 -->
+      <nav class="flex items-center gap-1 sm:gap-2 overflow-x-auto py-1">
+        <button id="nav-group" onclick="switchTab('group')" class="nav-tab px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-1.5 transition-all text-slate-700 hover:bg-slate-100">
+          <i class="fa-solid fa-users text-indigo-600"></i> 조 편성기
+        </button>
+        <button id="nav-board" onclick="switchTab('board')" class="nav-tab px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-1.5 transition-all text-slate-700 hover:bg-slate-100">
+          <i class="fa-solid fa-chalkboard-user text-emerald-600"></i> 화이트보드 & PDF
+        </button>
+        <button id="nav-timer" onclick="switchTab('timer')" class="nav-tab px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-1.5 transition-all text-slate-700 hover:bg-slate-100">
+          <i class="fa-solid fa-stopwatch text-amber-500"></i> 냥이 시계
+        </button>
+        <button id="nav-picker" onclick="switchTab('picker')" class="nav-tab px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-1.5 transition-all text-slate-700 hover:bg-slate-100">
+          <i class="fa-solid fa-dice text-rose-500"></i> 발표자 뽑기
+        </button>
+        <button id="nav-score" onclick="switchTab('score')" class="nav-tab px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-1.5 transition-all text-slate-700 hover:bg-slate-100">
+          <i class="fa-solid fa-trophy text-amber-500"></i> 모둠 점수판
+        </button>
+        <button id="nav-grade" onclick="switchTab('grade')" class="nav-tab px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-1.5 transition-all text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200">
+          <i class="fa-solid fa-chart-simple text-blue-600"></i> 5등급 계산기
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="flex-1 flex flex-col relative w-full max-w-7xl mx-auto p-3 sm:p-5">
+    
+    <!-- 1. 허브 화면 (시작 홈) -->
+    <section id="tab-hub" class="tab-pane active flex flex-col justify-center items-center py-6 sm:py-10">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full max-w-5xl">
+        
+        <!-- 카드 1: 조 편성기 -->
+        <div onclick="switchTab('group')" class="bg-white p-6 rounded-3xl border-2 border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-indigo-400 transition-all cursor-pointer group">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-users"></i>
+          </div>
+          <h3 class="font-extrabold text-xl text-slate-900 flex items-center justify-between">
+            조 편성기 <i class="fa-solid fa-arrow-right text-xs text-slate-300 group-hover:text-indigo-600 transition-colors"></i>
+          </h3>
+          <p class="text-xs sm:text-sm font-medium text-slate-600 mt-2 leading-relaxed">
+            학생·워크샵 명단, 조장 우선 배분, 드래그 이동 및 엑셀/PDF 저장 지원.
+          </p>
+        </div>
+
+        <!-- 카드 2: 화이트보드 & PDF -->
+        <div onclick="switchTab('board')" class="bg-white p-6 rounded-3xl border-2 border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-emerald-400 transition-all cursor-pointer group">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-chalkboard-user"></i>
+          </div>
+          <h3 class="font-extrabold text-xl text-slate-900 flex items-center justify-between">
+            화이트보드 & PDF <i class="fa-solid fa-arrow-right text-xs text-slate-300 group-hover:text-emerald-600 transition-colors"></i>
+          </h3>
+          <p class="text-xs sm:text-sm font-medium text-slate-600 mt-2 leading-relaxed">
+            ✨ 2쪽 펼침 보기, 1쪽 전체 맞춤, 독립 보조 칠판 열기 및 레이저 포인터.
+          </p>
+        </div>
+
+        <!-- 카드 3: 냥이 시계 (타이머) -->
+        <div onclick="switchTab('timer')" class="bg-white p-6 rounded-3xl border-2 border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-amber-400 transition-all cursor-pointer group">
+          <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-stopwatch"></i>
+          </div>
+          <h3 class="font-extrabold text-xl text-slate-900 flex items-center justify-between">
+            냥이 시계 (타이머) <i class="fa-solid fa-arrow-right text-xs text-slate-300 group-hover:text-amber-600 transition-colors"></i>
+          </h3>
+          <p class="text-xs sm:text-sm font-medium text-slate-600 mt-2 leading-relaxed">
+            10초 이하 긴박감 가속 비상등과 째깍 비프음, 종료 팡파레 효과음 탑재.
+          </p>
+        </div>
+
+        <!-- 카드 4: 발표자 뽑기 -->
+        <div onclick="switchTab('picker')" class="bg-white p-6 rounded-3xl border-2 border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-rose-400 transition-all cursor-pointer group">
+          <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-dice"></i>
+          </div>
+          <h3 class="font-extrabold text-xl text-slate-900 flex items-center justify-between">
+            발표자 뽑기 <i class="fa-solid fa-arrow-right text-xs text-slate-300 group-hover:text-rose-600 transition-colors"></i>
+          </h3>
+          <p class="text-xs sm:text-sm font-medium text-slate-600 mt-2 leading-relaxed">
+            두근두근 슬롯머신 롤링 및 전원 랜덤 발표 순서 자동 배정 지원.
+          </p>
+        </div>
+
+        <!-- 카드 5: 모둠 점수판 -->
+        <div onclick="switchTab('score')" class="bg-white p-6 rounded-3xl border-2 border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-indigo-400 transition-all cursor-pointer group">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-trophy"></i>
+          </div>
+          <h3 class="font-extrabold text-xl text-slate-900 flex items-center justify-between">
+            모둠 점수판 <i class="fa-solid fa-arrow-right text-xs text-slate-300 group-hover:text-indigo-600 transition-colors"></i>
+          </h3>
+          <p class="text-xs sm:text-sm font-medium text-slate-600 mt-2 leading-relaxed">
+            모둠별 퀴즈/대결 실시간 스코어보드. 자동 1위 왕관 및 축하 폭죽 세레머니.
+          </p>
+        </div>
+
+        <!-- 카드 6: 내신 5등급제 계산기 -->
+        <div onclick="switchTab('grade')" class="bg-white p-6 rounded-3xl border-2 border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-blue-400 transition-all cursor-pointer group">
+          <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-chart-simple"></i>
+          </div>
+          <h3 class="font-extrabold text-xl text-slate-900 flex items-center justify-between">
+            5등급 계산기 <i class="fa-solid fa-arrow-right text-xs text-slate-300 group-hover:text-blue-600 transition-colors"></i>
+          </h3>
+          <p class="text-xs sm:text-sm font-medium text-slate-600 mt-2 leading-relaxed">
+            5등급제 및 9등급제 지원. 동석차 공식 계산 및 성적 파일(엑셀) 일괄 산출.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 조 편성기 탭 -->
+    <section id="tab-group" class="tab-pane hidden flex-col lg:flex-row gap-5 w-full items-start">
+      
+      <!-- 좌측 패널: 명단 입력 및 조건 설정 -->
+      <div class="w-full lg:w-[410px] flex flex-col gap-4 shrink-0">
+        
+        <!-- 카드 1: 참가자 명단 -->
+        <div class="bg-white p-5 rounded-2xl border-2 border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 font-extrabold text-xs flex items-center justify-center">1</span>
+              <h3 class="font-extrabold text-slate-900 text-base">참가자 명단</h3>
+            </div>
+            <div class="flex items-center gap-1.5 text-xs font-bold">
+              <button onclick="loadSampleRoster('student')" class="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors">학생 샘플</button>
+              <button onclick="loadSampleRoster('workshop')" class="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors">워크샵 샘플</button>
+              <button onclick="clearRosterInput()" class="px-2 py-1 rounded text-rose-600 hover:bg-rose-50 transition-colors">비우기</button>
+            </div>
+          </div>
+
+          <p class="text-xs font-medium text-slate-600 mb-3 leading-relaxed">
+            줄바꿈 또는 쉼표(,)로 구분해 입력하세요. 이름 뒤에 <span class="text-indigo-600 font-bold">*</span> 를 붙이면 조장 후보가 됩니다.
+          </p>
+
+          <textarea id="groupStudentsInput" rows="7" class="w-full p-3.5 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none font-medium leading-relaxed" placeholder="참가자 이름을 입력하세요...&#10;김민준*&#10;이서연&#10;박도윤*&#10;최지우"></textarea>
+
+          <div class="flex items-center justify-between text-xs font-bold text-slate-600 mt-2.5 pt-2 border-t border-slate-100">
+            <span>총 인원: <strong id="studentCountBadge" class="text-indigo-600 font-extrabold">0</strong>명</span>
+            <span>조장 후보: <strong id="leaderCountBadge" class="text-amber-600 font-extrabold">0</strong>명</span>
+          </div>
+        </div>
+
+        <!-- 카드 2: 편성 조건 설정 -->
+        <div class="bg-white p-5 rounded-2xl border-2 border-slate-200 shadow-sm flex flex-col gap-4">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 font-extrabold text-xs flex items-center justify-center">2</span>
+            <h3 class="font-extrabold text-slate-900 text-base">편성 조건 설정</h3>
+          </div>
+
+          <!-- 편성 기준 선택 (탭) -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">편성 기준</label>
+            <div class="flex bg-slate-100 p-1 rounded-xl">
+              <button id="modeByGroups" onclick="setGroupMode('groups')" class="flex-1 py-2 rounded-lg text-xs font-extrabold bg-white text-indigo-600 shadow-sm transition-all">조 개수 기준 (N개 조)</button>
+              <button id="modeByMembers" onclick="setGroupMode('members')" class="flex-1 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all">조당 인원 기준 (N명씩)</button>
+            </div>
+          </div>
+
+          <!-- 숫자 조정 박스 -->
+          <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <div>
+              <div id="groupNumberLabel" class="text-xs font-extrabold text-slate-800">원하는 조 개수</div>
+              <div id="groupNumberSubLabel" class="text-[11px] font-medium text-slate-500">생성될 총 조의 수</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="adjustGroupCount(-1)" class="w-8 h-8 rounded-lg bg-white border border-slate-300 text-slate-800 font-black hover:bg-slate-100 active:scale-95 flex items-center justify-center shadow-xs">-</button>
+              <input type="number" id="groupCountInput" value="3" min="1" max="30" class="w-12 text-center font-extrabold text-sm py-1 rounded-lg border border-slate-300 bg-white focus:outline-none">
+              <button onclick="adjustGroupCount(1)" class="w-8 h-8 rounded-lg bg-white border border-slate-300 text-slate-800 font-black hover:bg-slate-100 active:scale-95 flex items-center justify-center shadow-xs">+</button>
+            </div>
+          </div>
+
+          <!-- 조장 균등 배분 체크박스 -->
+          <label class="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer">
+            <input type="checkbox" id="distributeLeadersCheck" checked class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 accent-indigo-600">
+            조장 후보를 각 조에 균등하게 우선 배분
+          </label>
+
+          <!-- 조 이름 테마 -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">조 이름 테마</label>
+            <select id="groupThemeSelect" class="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="default">기본 (1조, 2조, 3조...)</option>
+              <option value="cats">냥이 (치즈냥조, 삼색이조, 고등어조, 턱시도조...)</option>
+              <option value="alpha">알파벳 (A조, B조, C조...)</option>
+              <option value="colors">무지개 (빨강조, 주황조, 노랑조...)</option>
+              <option value="animals">동물 (사자조, 호랑이조, 판다조...)</option>
+            </select>
+          </div>
+
+          <!-- 대형 편성 시작 버튼 -->
+          <button onclick="generateGroups()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm rounded-xl shadow-md shadow-indigo-200 flex items-center justify-center gap-2 active:scale-[0.99] transition-all">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> 랜덤 조 편성 시작하기
+          </button>
+        </div>
+      </div>
+
+      <!-- 우측 패널: 편성 결과 보드 -->
+      <div class="flex-1 w-full bg-white p-5 rounded-2xl border-2 border-slate-200 shadow-sm flex flex-col min-h-[580px]">
+        
+        <!-- 결과 보드 상단 헤더 -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 mb-4 border-b border-slate-200">
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-extrabold text-slate-900 text-base">편성 결과 보드</h3>
+              <span id="groupResultStatusBadge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">대기중</span>
+            </div>
+            <p class="text-xs font-medium text-slate-500 mt-0.5">팀원을 다른 조로 드래그해서 위치를 옮길 수 있습니다.</p>
+          </div>
+
+          <!-- 액션 버튼 -->
+          <div class="flex items-center gap-2 text-xs font-bold">
+            <button onclick="shuffleGroupsOnly()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 transition-colors">
+              <i class="fa-solid fa-rotate-right text-slate-400"></i> 다시 섞기
+            </button>
+            <button onclick="copyGroupResultText()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 transition-colors">
+              <i class="fa-regular fa-copy text-slate-400"></i> 결과 복사
+            </button>
+            
+            <!-- 파일 저장 드롭다운 -->
+            <div class="relative inline-block">
+              <button onclick="toggleExportMenu()" class="px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-extrabold flex items-center gap-1.5 transition-colors">
+                <i class="fa-solid fa-download text-emerald-600"></i> 파일 저장 ▾
+              </button>
+              <div id="exportDropdown" class="hidden absolute right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 w-32 z-30">
+                <button onclick="exportGroups('excel')" class="w-full text-left px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                  <i class="fa-solid fa-file-excel text-emerald-600"></i> 엑셀(.xlsx)
+                </button>
+                <button onclick="exportGroups('pdf')" class="w-full text-left px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                  <i class="fa-solid fa-file-pdf text-rose-600"></i> PDF 저장
+                </button>
+                <button onclick="exportGroups('image')" class="w-full text-left px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                  <i class="fa-solid fa-image text-blue-600"></i> 이미지(PNG)
+                </button>
+              </div>
+            </div>
+
+            <button onclick="syncGroupsToScoreboard()" class="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 font-extrabold flex items-center gap-1" title="점수판으로 이 모둠 복사">
+              <i class="fa-solid fa-trophy text-amber-500"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 대기 화면 -->
+        <div id="groupEmptyPlaceholder" class="flex-1 flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-300 rounded-2xl min-h-[420px]">
+          <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl mb-4">
+            <svg class="w-8 h-8" viewBox="0 0 100 100"><use href="#kitty-art"/></svg>
+          </div>
+          <h4 class="font-extrabold text-slate-900 text-base mb-1">아직 생성된 조가 없습니다</h4>
+          <p class="text-xs font-medium text-slate-500 text-center max-w-sm mb-5 leading-relaxed">
+            왼쪽에서 명단을 입력하거나 샘플을 불러온 뒤, [랜덤 조 편성 시작하기] 버튼을 눌러주세요!
+          </p>
+          <button onclick="loadSampleRoster('student')" class="px-4 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-extrabold text-xs flex items-center gap-1.5 transition-all">
+            <i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> 샘플 학생 명단 불러오기
+          </button>
+        </div>
+
+        <!-- 결과 카드 그리드 -->
+        <div id="groupCardsContainer" class="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+      </div>
+    </section>
+
+    <!-- 3. 화이트보드 & PDF 탭 -->
+    <section id="tab-board" class="tab-pane hidden flex-col flex-1 h-[82vh] bg-slate-900 rounded-2xl overflow-hidden border border-slate-700 shadow-2xl relative">
+      
+      <!-- 상단 툴바 -->
+      <div class="bg-slate-900 border-b border-slate-700/80 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-white z-20">
+        
+        <!-- 좌측 도구 모음 -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button id="tool-pen" onclick="setBoardTool('pen')" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold bg-indigo-600 text-white flex items-center gap-1.5 transition-all">
+            <i class="fa-solid fa-pen"></i> 펜
+          </button>
+          <button id="tool-highlighter" onclick="setBoardTool('highlighter')" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1.5 transition-all">
+            <i class="fa-solid fa-highlighter"></i> 형광펜
+          </button>
+          <button id="tool-eraser" onclick="setBoardTool('eraser')" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1.5 transition-all">
+            <i class="fa-solid fa-eraser"></i> 지우개
+          </button>
+
+          <!-- 레이저 포인터 및 스타일 선택 -->
+          <div class="relative inline-flex items-center">
+            <button id="tool-laser" onclick="setBoardTool('laser')" class="px-3 py-1.5 rounded-l-xl text-xs sm:text-sm font-extrabold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1.5 transition-all border-r border-slate-700">
+              <i class="fa-solid fa-bolt"></i> 레이저
+            </button>
+            <button id="laserStyleBtn" onclick="toggleLaserStyleMenu()" class="px-2.5 py-1.5 rounded-r-xl text-xs sm:text-sm font-extrabold bg-slate-800 text-sky-300 hover:bg-slate-700 flex items-center gap-1 transition-all">
+              <span id="currentLaserStyleIcon">✨</span> 요술봉 ▾
+            </button>
+            <div id="laserStyleDropdown" class="hidden absolute top-full left-0 mt-1.5 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 w-36 z-30 font-bold">
+              <button onclick="changeLaserStyle('wand')" class="w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+                <span>✨</span> 마법 요술봉
+              </button>
+              <button onclick="changeLaserStyle('paw')" class="w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+                <span>🐾</span> 냥이 발바닥
+              </button>
+              <button onclick="changeLaserStyle('star')" class="w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+                <span>🌟</span> 샤이닝 스타
+              </button>
+              <button onclick="changeLaserStyle('dot')" class="w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+                <span>🔴</span> 네온 빔
+              </button>
+            </div>
+          </div>
+
+          <!-- 도형 메뉴 -->
+          <div class="relative inline-block">
+            <button id="tool-shape-btn" onclick="toggleShapeMenu()" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1.5 transition-all">
+              <i class="fa-solid fa-shapes"></i> 도형 ▾
+            </button>
+            <div id="shapeDropdown" class="hidden absolute top-full left-0 mt-1.5 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 w-28 z-30 font-bold">
+              <button onclick="selectShape('rect')" class="w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+                <i class="fa-regular fa-square"></i> 사각형
+              </button>
+              <button onclick="selectShape('circle')" class="w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+                <i class="fa-regular fa-circle"></i> 원형
+              </button>
+              <button onclick="selectShape('arrow')" class="w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+                <i class="fa-solid fa-arrow-right"></i> 화살표
+              </button>
+            </div>
+          </div>
+
+          <!-- 가림막 -->
+          <button id="tool-curtain" onclick="toggleCurtain()" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1.5 transition-all">
+            <i class="fa-solid fa-eye-slash"></i> 가림막
+          </button>
+
+          <span class="w-[1px] h-5 bg-slate-700 mx-1"></span>
+
+          <!-- 색상 팔레트 -->
+          <div class="flex items-center gap-1">
+            <button onclick="setPenColor('#000000')" class="w-6 h-6 rounded-full bg-black border-2 border-white/60 hover:scale-110 transition-transform" title="검정"></button>
+            <button onclick="setPenColor('#ef4444')" class="w-6 h-6 rounded-full bg-red-500 border border-white/40 hover:scale-110 transition-transform" title="빨강"></button>
+            <button onclick="setPenColor('#2563eb')" class="w-6 h-6 rounded-full bg-blue-600 border border-white/40 hover:scale-110 transition-transform" title="파랑"></button>
+            <button onclick="setPenColor('#10b981')" class="w-6 h-6 rounded-full bg-emerald-500 border border-white/40 hover:scale-110 transition-transform" title="초록"></button>
+            <button onclick="setPenColor('#ffffff')" class="w-6 h-6 rounded-full bg-white border border-slate-400 hover:scale-110 transition-transform" title="흰색"></button>
+            <input type="color" id="customColorPicker" onchange="setPenColor(this.value)" class="w-6 h-6 rounded-full bg-transparent cursor-pointer border-0 p-0" title="기타 색상">
+          </div>
+
+          <div class="flex items-center gap-1.5 ml-1 font-bold text-xs text-slate-400">
+            <span>굵기</span>
+            <input type="range" id="brushSize" min="2" max="36" value="5" onchange="setBrushSize(this.value)" class="w-16 accent-indigo-500 cursor-pointer">
+          </div>
+        </div>
+
+        <!-- 우측 액션 모음 -->
+        <div class="flex items-center gap-2 flex-wrap font-bold text-xs sm:text-sm">
+          <label class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 cursor-pointer transition-all">
+            <i class="fa-solid fa-file-pdf"></i> PDF 열기
+            <input type="file" id="pdfFileInput" accept="application/pdf" class="hidden" onchange="loadPdfFile(event)">
+          </label>
+
+          <!-- 📝 서브 칠판 열기 버튼 (PDF 실행 시 활성화) -->
+          <button id="openSubBoardBtn" onclick="openSubBoardModal()" class="hidden px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white flex items-center gap-1.5 shadow-md transition-all">
+            <i class="fa-solid fa-chalkboard"></i> 📝 보조 칠판 열기
+          </button>
+
+          <!-- PDF 닫기 버튼 -->
+          <button id="closePdfBtn" onclick="closePdfAndShowBoard()" class="hidden px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white flex items-center gap-1.5 transition-all">
+            <i class="fa-solid fa-xmark"></i> PDF 닫기
+          </button>
+
+          <!-- 🎯 화면 비율 / 페이지 맞춤 설정 드롭다운 -->
+          <select id="pageFitSelect" onchange="changePageFit(this.value)" class="bg-slate-800 text-slate-200 border border-slate-700 rounded-xl px-2.5 py-1.5 focus:outline-none text-xs sm:text-sm font-bold" title="화면 맞춤 비율">
+            <option value="contain">🎯 1쪽 맞춤 (전체)</option>
+            <option value="width">↔️ 너비 맞춤 (가득)</option>
+          </select>
+
+          <!-- 📖 두쪽 보기 (양면 펼침) 버튼 -->
+          <button id="twoPageBtn" onclick="toggleTwoPageMode()" class="px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1.5 transition-all" title="2쪽 양면 보기">
+            <i class="fa-solid fa-book-open"></i> <span>2쪽 보기</span>
+          </button>
+
+          <!-- 📐 필기 여백 조절 -->
+          <select id="marginSelect" onchange="setWritingMargin(this.value)" class="bg-slate-800 text-slate-200 border border-slate-700 rounded-xl px-2.5 py-1.5 focus:outline-none text-xs sm:text-sm font-bold" title="우측 필기 여백 크기">
+            <option value="0">여백 없음 (0px)</option>
+            <option value="300">필기여백 보통 (+300px)</option>
+            <option value="600">필기여백 넓게 (+600px)</option>
+          </select>
+
+          <select id="boardBgSelect" onchange="changeBoardBackground(this.value)" class="bg-slate-800 text-slate-200 border border-slate-700 rounded-xl px-2.5 py-1.5 focus:outline-none">
+            <option value="white">⚪ 화이트보드</option>
+            <option value="chalk">🟢 초록 칠판</option>
+            <option value="grid">📐 모눈종이</option>
+          </select>
+
+          <button onclick="clearDrawCanvas()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-900/60 text-slate-300 hover:text-white transition-all" title="판서 지우기">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+          <button onclick="saveBoardImage()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-indigo-900/60 text-slate-300 hover:text-white transition-all" title="이미지 저장">
+            <i class="fa-solid fa-download"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- PDF 네비게이터 -->
+      <div id="pdfNavBar" class="hidden bg-slate-850 px-4 py-1.5 flex items-center justify-between text-white text-xs border-b border-slate-800 z-10">
+        <div class="flex items-center gap-2 font-bold">
+          <button onclick="prevPdfPage()" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600">◀ 이전쪽</button>
+          <span><strong id="pdfCurrentPage">1</strong> / <span id="pdfTotalPages">1</span> 쪽</span>
+          <button onclick="nextPdfPage()" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600">다음쪽 ▶</button>
+        </div>
+        <div class="flex items-center gap-3 font-semibold text-slate-400">
+          <span>💡 Ctrl+휠: 확대/축소 | Space+드래그: 화면이동</span>
+          <button onclick="resetZoomAndPan()" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white">100% 리셋</button>
+        </div>
+      </div>
+
+      <!-- 판서 캔버스 작업 공간 -->
+      <div id="boardContainer" 
+           class="flex-1 w-full h-full relative overflow-hidden bg-white select-none cursor-pencil"
+           ondblclick="handleBoardDoubleClick(event)"
+           ondragover="handleBoardDragOver(event)"
+           ondragleave="handleBoardDragLeave(event)"
+           ondrop="handleBoardDrop(event)">
+        
+        <div id="dragDropOverlay" class="absolute inset-0 bg-indigo-900/60 backdrop-blur-sm z-40 hidden flex flex-col items-center justify-center text-white pointer-events-none border-4 border-dashed border-indigo-300 m-4 rounded-2xl">
+          <svg class="w-16 h-16 mb-3 animate-bounce" viewBox="0 0 100 100"><use href="#kitty-art"/></svg>
+          <p class="font-black text-2xl">PDF 교재 파일을 여기에 놓으세요!</p>
+          <p class="text-xs text-indigo-200 mt-1">즉시 고해상도 1쪽 맞춤으로 열립니다.</p>
+        </div>
+
+        <div id="boardHintBanner" class="absolute top-4 left-4 z-20 bg-slate-900/80 backdrop-blur-md text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 border border-slate-700 pointer-events-none">
+          <span class="text-sky-400">✏️ 펜 판서 준비됨</span>
+          <span class="text-slate-400">| 화면 더블클릭 시 PDF 열기</span>
+        </div>
+
+        <!-- 뷰포트 래퍼 -->
+        <div id="boardViewport" class="absolute top-0 left-0 w-full h-full origin-top-left">
+          <canvas id="bgCanvas" class="absolute top-0 left-0"></canvas>
+          <canvas id="drawCanvas" class="absolute top-0 left-0"></canvas>
+          <canvas id="laserCanvas" class="absolute top-0 left-0 pointer-events-none"></canvas>
+        </div>
+
+        <!-- 가림막 -->
+        <div id="boardCurtain" class="hidden absolute top-0 left-0 w-full h-1/2 bg-slate-950/95 border-b-4 border-sky-400 cursor-ns-resize z-30 shadow-2xl flex items-end justify-center pb-2 text-white">
+          <div class="text-xs font-black bg-sky-500 text-slate-950 px-3 py-1 rounded-full shadow flex items-center gap-1.5">
+            <i class="fa-solid fa-arrows-up-down"></i> 정답 가림막 (상하 드래그 조절)
+          </div>
+        </div>
+      </div>
+
+      <!-- 📝 보조 판서 칠판 오버레이 팝업 모달 -->
+      <div id="subBoardOverlay" class="hidden absolute inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex flex-col p-3 sm:p-5">
+        <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl flex-1 flex flex-col shadow-2xl overflow-hidden">
+          
+          <!-- 보조 칠판 상단 툴바 -->
+          <div class="bg-slate-850 px-4 py-2.5 border-b border-slate-700 flex flex-wrap items-center justify-between gap-3 text-white">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-sm">
+                📝
+              </span>
+              <div>
+                <h4 class="font-extrabold text-sm sm:text-base text-slate-100">보조 판서 칠판</h4>
+                <p class="text-[11px] text-slate-400">PDF를 유지한 채 독립적으로 판서할 수 있습니다.</p>
+              </div>
+            </div>
+
+            <!-- 보조 판서 도구 -->
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <button id="subTool-pen" onclick="setSubBoardTool('pen')" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white">
+                <i class="fa-solid fa-pen"></i> 펜
+              </button>
+              <button id="subTool-highlighter" onclick="setSubBoardTool('highlighter')" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">
+                <i class="fa-solid fa-highlighter"></i> 형광펜
+              </button>
+              <button id="subTool-eraser" onclick="setSubBoardTool('eraser')" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">
+                <i class="fa-solid fa-eraser"></i> 지우개
+              </button>
+
+              <!-- 색상 선택 -->
+              <div class="flex items-center gap-1 mx-1.5">
+                <button onclick="setSubPenColor('#ffffff')" class="w-5 h-5 rounded-full bg-white border border-slate-400 hover:scale-110" title="흰색"></button>
+                <button onclick="setSubPenColor('#ef4444')" class="w-5 h-5 rounded-full bg-red-500 border border-white/40 hover:scale-110" title="빨강"></button>
+                <button onclick="setSubPenColor('#facc15')" class="w-5 h-5 rounded-full bg-yellow-400 border border-white/40 hover:scale-110" title="노랑"></button>
+                <button onclick="setSubPenColor('#38bdf8')" class="w-5 h-5 rounded-full bg-sky-400 border border-white/40 hover:scale-110" title="하늘"></button>
+              </div>
+
+              <!-- 칠판 배경 선택 -->
+              <select id="subBoardBgSelect" onchange="changeSubBoardBg(this.value)" class="bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-2 py-1 text-xs font-bold">
+                <option value="chalk">🟢 초록 칠판</option>
+                <option value="white">⚪ 화이트보드</option>
+                <option value="dark">⬛ 흑판</option>
+              </select>
+
+              <button onclick="clearSubDrawCanvas()" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-rose-900 text-slate-300 text-xs font-bold" title="보조판서 지우기">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+
+            <!-- ✕ 닫고 PDF 복귀 버튼 -->
+            <button onclick="closeSubBoardModal()" class="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-md active:scale-95 transition-all">
+              <i class="fa-solid fa-xmark"></i> 닫고 PDF 복귀
+            </button>
+          </div>
+
+          <!-- 보조 칠판 캔버스 영역 -->
+          <div id="subBoardCanvasArea" class="flex-1 w-full h-full relative overflow-hidden bg-[#1e3a2f] cursor-pencil">
+            <canvas id="subBgCanvas" class="absolute top-0 left-0"></canvas>
+            <canvas id="subDrawCanvas" class="absolute top-0 left-0"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 냥이 시계 (수업 타이머) -->
+    <section id="tab-timer" class="tab-pane hidden flex-col items-center justify-center py-6 w-full max-w-3xl mx-auto">
+      <div id="timerCard" class="w-full bg-white p-6 sm:p-10 rounded-3xl border-2 border-slate-200 shadow-xl flex flex-col items-center relative transition-all overflow-hidden">
+        
+        <div class="flex items-center gap-2 mb-4">
+          <span id="timerStatusBadge" class="px-3.5 py-1 rounded-full text-xs sm:text-sm font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1.5">
+            <svg class="w-4 h-4 inline-block" viewBox="0 0 100 100"><use href="#kitty-art"/></svg> 집중 시간이다냥
+          </span>
+        </div>
+
+        <!-- 타이머 전광판 -->
+        <div id="timerDisplayBox" class="relative my-4 flex items-center justify-center px-8 py-5 rounded-2xl bg-slate-950 text-white w-full max-w-lg shadow-2xl border-4 border-slate-800">
+          <div id="timerNumbers" class="text-6xl sm:text-8xl font-black tracking-tight font-mono text-center select-none text-emerald-400">
+            05:00
+          </div>
+        </div>
+
+        <!-- 프로그레스 바 -->
+        <div class="w-full max-w-lg h-3.5 bg-slate-100 rounded-full overflow-hidden mb-6 border border-slate-200">
+          <div id="timerProgressBar" class="h-full bg-gradient-to-r from-indigo-500 to-sky-500 rounded-full transition-all duration-300 w-full"></div>
+        </div>
+
+        <!-- 시간 추가 버튼 -->
+        <div class="flex flex-wrap items-center justify-center gap-2 mb-6">
+          <button onclick="addTimerTime(-60)" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-slate-100 hover:bg-slate-200 text-slate-800 transition-all">-1분</button>
+          <button onclick="addTimerTime(30)" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-slate-100 hover:bg-slate-200 text-slate-800 transition-all">+30초</button>
+          <button onclick="addTimerTime(60)" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-slate-100 hover:bg-slate-200 text-slate-800 transition-all">+1분</button>
+          <button onclick="addTimerTime(300)" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-slate-100 hover:bg-slate-200 text-slate-800 transition-all">+5분</button>
+        </div>
+
+        <!-- 프리셋 버튼 -->
+        <div class="flex flex-wrap items-center justify-center gap-2 mb-8">
+          <button onclick="setTimerPreset(60)" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100">1분</button>
+          <button onclick="setTimerPreset(180)" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100">3분</button>
+          <button onclick="setTimerPreset(300)" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100">5분</button>
+          <button onclick="setTimerPreset(600)" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100">10분</button>
+        </div>
+
+        <div class="flex items-center gap-3 w-full max-w-md">
+          <button id="timerToggleBtn" onclick="toggleTimer()" class="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-base sm:text-lg rounded-2xl shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 active:scale-95 transition-all">
+            <i class="fa-solid fa-play"></i> 시작
+          </button>
+          <button onclick="resetTimer()" class="px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-base rounded-2xl active:scale-95 transition-all">
+            <i class="fa-solid fa-rotate-left"></i> 초기화
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. 발표자 뽑기 탭 -->
+    <section id="tab-picker" class="tab-pane hidden flex-col items-center justify-center py-6 w-full max-w-3xl mx-auto">
+      <div class="w-full bg-white p-6 sm:p-10 rounded-3xl border-2 border-slate-200 shadow-xl flex flex-col items-center">
+        
+        <!-- 뽑기 모드 서브 탭 (한 명씩 뽑기 vs 전체 순서 정하기) -->
+        <div class="flex bg-slate-100 p-1.5 rounded-2xl mb-6 w-full max-w-sm">
+          <button id="pickerSubTabSingle" onclick="switchPickerSubMode('single')" class="flex-1 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-white text-rose-600 shadow-sm transition-all flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-dice"></i> 1명씩 뽑기
+          </button>
+          <button id="pickerSubTabOrder" onclick="switchPickerSubMode('order')" class="flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-list-ol"></i> 발표 순서 정하기
+          </button>
+        </div>
+
+        <!-- 1. 한 명씩 뽑기 모드 화면 -->
+        <div id="pickerSingleView" class="w-full flex flex-col items-center">
+          <div class="text-center mb-6">
+            <span class="px-3.5 py-1 rounded-full text-xs sm:text-sm font-extrabold bg-rose-50 text-rose-700 border border-rose-200">
+              🎲 두근두근 슬롯 추첨
+            </span>
+            <h3 class="font-extrabold text-2xl sm:text-3xl text-slate-900 mt-2">오늘의 발표자는 누구?</h3>
+          </div>
+
+          <div id="pickerDisplay" class="w-full max-w-lg h-36 bg-slate-950 rounded-2xl border-4 border-slate-800 flex items-center justify-center text-white text-4xl sm:text-5xl font-black shadow-2xl mb-6 tracking-wide select-none">
+            준비 완료!
+          </div>
+
+          <div class="w-full max-w-lg mb-6">
+            <label class="block text-xs sm:text-sm font-extrabold text-slate-700 mb-2">후보 명단 (줄바꿈 구분)</label>
+            <textarea id="pickerNamesInput" rows="4" class="w-full p-3.5 rounded-xl border border-slate-300 bg-slate-50 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 font-bold resize-none" placeholder="김철수&#10;이영희&#10;박민수&#10;최지우&#10;강하늘&#10;윤서진"></textarea>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-4 w-full max-w-lg">
+            <label class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-slate-700 cursor-pointer">
+              <input type="checkbox" id="excludePicked" checked class="w-4 h-4 rounded text-rose-600 focus:ring-rose-500">
+              당첨된 사람 제외하기
+            </label>
+            <button id="pickerBtn" onclick="spinPicker()" class="w-full sm:w-auto px-8 py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-sm sm:text-base rounded-xl shadow-lg shadow-rose-200 active:scale-95 transition-all flex items-center justify-center gap-2">
+              <i class="fa-solid fa-dice"></i> 추첨 시작!
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. 발표 순서 정하기 모드 화면 -->
+        <div id="pickerOrderView" class="w-full hidden flex-col items-center">
+          <div class="text-center mb-6">
+            <span class="px-3.5 py-1 rounded-full text-xs sm:text-sm font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200">
+              📋 전원 순서 자동 배정
+            </span>
+            <h3 class="font-extrabold text-2xl sm:text-3xl text-slate-900 mt-2">공정한 발표 순서 추첨</h3>
+          </div>
+
+          <div class="w-full max-w-lg mb-5">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-xs sm:text-sm font-extrabold text-slate-700">발표자 명단 (줄바꿈 구분)</label>
+              <button onclick="loadSampleOrderNames()" class="text-xs font-bold text-indigo-600 hover:underline">
+                샘플 명단 채우기
+              </button>
+            </div>
+            <textarea id="orderNamesInput" rows="4" class="w-full p-3.5 rounded-xl border border-slate-300 bg-slate-50 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold resize-none" placeholder="김민준&#10;이서연&#10;박도윤&#10;정시우&#10;최하은&#10;조유준"></textarea>
+          </div>
+
+          <div class="flex items-center gap-3 w-full max-w-lg mb-6">
+            <button id="btnGenerateOrder" onclick="generatePresentationOrder()" class="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm sm:text-base rounded-xl shadow-lg shadow-indigo-200 active:scale-95 transition-all flex items-center justify-center gap-2">
+              <i class="fa-solid fa-shuffle"></i> 랜덤 발표 순서 정하기!
+            </button>
+          </div>
+
+          <!-- 순서 결과 표시 보드 -->
+          <div id="orderResultSection" class="hidden w-full max-w-lg flex-col gap-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-200">
+              <span class="text-xs sm:text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
+                <i class="fa-solid fa-flag-checkered text-indigo-600"></i> 확정된 발표 순서 (<span id="orderTotalCount">0</span>명)
+              </span>
+              <div class="flex items-center gap-2">
+                <button onclick="generatePresentationOrder()" class="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 transition-colors">
+                  <i class="fa-solid fa-rotate-right"></i> 다시 섞기
+                </button>
+                <button onclick="copyOrderResultText()" class="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 flex items-center gap-1 transition-colors">
+                  <i class="fa-regular fa-copy"></i> 순서 복사
+                </button>
+              </div>
+            </div>
+
+            <!-- 순서 카드 리스트 -->
+            <div id="orderListCards" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 6. 모둠 점수판 탭 -->
+    <section id="tab-score" class="tab-pane hidden flex-col gap-5 w-full">
+      <div class="bg-white p-5 rounded-2xl border-2 border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 class="font-extrabold text-slate-900 text-lg sm:text-xl flex items-center gap-2">
+            <i class="fa-solid fa-trophy text-amber-500"></i> 모둠 대항 점수판
+          </h3>
+          <p class="text-xs font-medium text-slate-500 mt-0.5">퀴즈와 골든벨, 모둠 과제 점수를 실시간으로 기록하세요.</p>
+        </div>
+        <div class="flex items-center gap-2 font-bold text-xs sm:text-sm">
+          <button onclick="addScoreTeam()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center gap-1.5 transition-all">
+            <i class="fa-solid fa-plus"></i> 모둠 추가
+          </button>
+          <button onclick="celebrateFirstPlace()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl flex items-center gap-1.5 transition-all">
+            <i class="fa-solid fa-crown"></i> 1위 세레머니 🎉
+          </button>
+          <button onclick="resetAllScores()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl">
+            초기화
+          </button>
+        </div>
+      </div>
+
+      <div id="scoreTeamsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+    </section>
+
+    <!-- 7. 내신 등급 계산기 및 성적 파일 일괄 분석 탭 -->
+    <section id="tab-grade" class="tab-pane hidden flex-col gap-5 w-full max-w-5xl mx-auto">
+      
+      <!-- 상단 컨트롤 카드 -->
+      <div class="bg-white p-5 rounded-2xl border-2 border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg font-black">
+              <i class="fa-solid fa-chart-simple"></i>
+            </span>
+            <div>
+              <h3 class="font-extrabold text-slate-900 text-lg sm:text-xl">내신 등급 계산기</h3>
+              <p class="text-xs font-semibold text-slate-500">5등급제 및 9등급제 지원 · 교육부 훈령 공식 동석차(중간석차) 및 파일 일괄 분석</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 서브 모드 전환 및 등급 체계 선택 -->
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <!-- 모드 탭 (등급컷 계산 vs 성적파일 업로드 분석) -->
+          <div class="flex bg-slate-100 p-1 rounded-xl">
+            <button id="gradeSubModeCut" onclick="switchGradeSubMode('cut')" class="px-3 py-1.5 rounded-lg text-xs font-extrabold bg-white text-blue-600 shadow-sm transition-all">
+              등급컷 계산
+            </button>
+            <button id="gradeSubModeFile" onclick="switchGradeSubMode('file')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all">
+              📑 성적파일 업로드 분석
+            </button>
+          </div>
+
+          <!-- 등급제 선택 -->
+          <div class="flex bg-slate-100 p-1 rounded-xl">
+            <button id="gradeSys5" onclick="setGradeSystem(5)" class="px-3 py-1.5 rounded-lg text-xs font-extrabold bg-white text-blue-600 shadow-sm transition-all">
+              5등급제
+            </button>
+            <button id="gradeSys9" onclick="setGradeSystem(9)" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all">
+              9등급제
+            </button>
+          </div>
+
+          <button onclick="copyGradeTableText()" class="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-xs flex items-center gap-1.5 transition-colors">
+            <i class="fa-regular fa-copy"></i> 표 복사
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW 1: 등급컷 계산 및 내 등급 판정 화면 -->
+      <div id="gradeCutView" class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        
+        <!-- 좌측: 내 등급 판정기 (5칸) -->
+        <div class="lg:col-span-5 bg-white p-5 rounded-2xl border-2 border-slate-200 shadow-sm flex flex-col gap-4">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+            <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 font-extrabold text-xs flex items-center justify-center">1</span>
+            <h4 class="font-extrabold text-slate-900 text-base">내 석차 / 동석차 판정</h4>
+          </div>
+
+          <!-- 수강자 수 입력 -->
+          <div>
+            <label class="block text-xs font-extrabold text-slate-700 mb-1.5">총 수강자 수 (명)</label>
+            <div class="flex items-center gap-2">
+              <input type="number" id="gradeTotalStudents" value="200" min="1" max="5000" class="flex-1 p-3 rounded-xl border border-slate-300 font-extrabold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <button onclick="setTotalStudentPreset(50)" class="px-2.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700">50명</button>
+              <button onclick="setTotalStudentPreset(100)" class="px-2.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700">100명</button>
+              <button onclick="setTotalStudentPreset(200)" class="px-2.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700">200명</button>
+              <button onclick="setTotalStudentPreset(300)" class="px-2.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700">300명</button>
+            </div>
+          </div>
+
+          <!-- 내 등수 & 동점자 수 -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-extrabold text-slate-700 mb-1.5">내 석차 (등)</label>
+              <input type="number" id="myRankInput" value="8" min="1" class="w-full p-3 rounded-xl border border-slate-300 font-extrabold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-xs font-extrabold text-slate-700 mb-1.5">동점자(동석차) 수</label>
+              <input type="number" id="sameRankCountInput" value="1" min="1" class="w-full p-3 rounded-xl border border-slate-300 font-extrabold text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+
+          <!-- 판정 결과 박스 -->
+          <div class="bg-gradient-to-br from-blue-50/70 to-indigo-50/70 border-2 border-blue-200 rounded-2xl p-4 flex flex-col gap-2.5 shadow-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-extrabold text-slate-600">최종 판정 등급</span>
+              <span id="resGradeBadge" class="text-base font-black px-3.5 py-1 rounded-full text-white bg-blue-600 shadow-xs">1등급</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-blue-200/60 text-xs font-bold">
+              <div>
+                <span class="text-slate-500">반영 중간석차:</span>
+                <strong id="resMidRankText" class="text-slate-900 ml-1">8.0등</strong>
+              </div>
+              <div>
+                <span class="text-slate-500">상위 백분율:</span>
+                <strong id="resPercentText" class="text-blue-700 ml-1">4.00%</strong>
+              </div>
+            </div>
+            <p id="resSameRankNote" class="text-[11px] text-slate-500 leading-tight">단독 8등 기준 정상 판정 결과입니다.</p>
+          </div>
+
+          <!-- 중간석차 공식 안내 팁 -->
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-600 leading-relaxed font-medium">
+            <strong class="text-slate-800 font-black">💡 학교생활기록부 기재요령 공식:</strong><br>
+            중간석차 = 석차 + (동점자 수 - 1) ÷ 2<br>
+            <span class="text-slate-400">※ 동점자가 여러 명인 경우 중간석차를 적용하여 등급을 산출합니다.</span>
+          </div>
+        </div>
+
+        <!-- 우측: 등급컷 인원수 테이블 (7칸) -->
+        <div class="lg:col-span-7 bg-white p-5 rounded-2xl border-2 border-slate-200 shadow-sm flex flex-col gap-4">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 font-extrabold text-xs flex items-center justify-center">2</span>
+              <h4 class="font-extrabold text-slate-900 text-base">등급별 커트라인 인원표</h4>
+            </div>
+            <span id="gradeTableTitleBadge" class="text-xs font-black text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+              5등급제 기준
+            </span>
+          </div>
+
+          <!-- 분포 막대 그래프 -->
+          <div class="flex flex-col gap-1.5">
+            <div class="flex justify-between text-[11px] font-extrabold text-slate-500">
+              <span>등급별 비율 분포 (총 <strong id="gradeTableTotalDisplay" class="text-blue-600">200</strong>명)</span>
+              <span>1등급 ➔ 끝등급</span>
+            </div>
+            <div id="gradeDistributionBar" class="w-full h-3 rounded-full overflow-hidden flex bg-slate-100 border border-slate-200 shadow-inner"></div>
+          </div>
+
+          <!-- 등급컷 상세 테이블 -->
+          <div class="overflow-x-auto rounded-xl border border-slate-200">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 font-extrabold text-slate-700">
+                <tr>
+                  <th class="py-2.5 px-3">등급</th>
+                  <th class="py-2.5 px-3">비율</th>
+                  <th class="py-2.5 px-3">누적비율</th>
+                  <th class="py-2.5 px-3">커트라인</th>
+                  <th class="py-2.5 px-3">배정 인원</th>
+                </tr>
+              </thead>
+              <tbody id="gradeCutTableBody" class="divide-y divide-slate-100 font-bold"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- VIEW 2: 성적파일 일괄 분석 및 엑셀 다운로드 화면 -->
+      <div id="gradeFileView" class="hidden flex-col gap-5 w-full">
+        
+        <!-- 업로드 드롭존 박스 -->
+        <div id="gradeUploadDropzone" 
+             ondragover="handleGradeDragOver(event)" 
+             ondragleave="handleGradeDragLeave(event)" 
+             ondrop="handleGradeDrop(event)"
+             class="border-3 border-dashed border-blue-300 bg-blue-50/40 rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all hover:bg-blue-50/80">
+          <div class="w-14 h-14 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-2xl mb-3 shadow-xs">
+            <i class="fa-solid fa-file-excel"></i>
+          </div>
+          <h4 class="font-extrabold text-slate-900 text-lg mb-1">성적 파일(.xlsx, .xls, .csv)을 여기에 드래그하세요</h4>
+          <p class="text-xs text-slate-500 mb-4 max-w-md">이름/학번 열과 원점수 열을 자동 탐지하여 석차 및 동석차, 등급을 한 번에 산출합니다.</p>
+          
+          <div class="flex items-center gap-3">
+            <label class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs cursor-pointer shadow-md shadow-blue-200 transition-all flex items-center gap-1.5">
+              <i class="fa-solid fa-folder-open"></i> 내 컴퓨터에서 선택
+              <input type="file" id="gradeFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleGradeFileSelect(event)">
+            </label>
+            <button onclick="loadSampleGradeExcel()" class="px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-extrabold text-xs shadow-xs transition-all flex items-center gap-1.5">
+              <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i> 샘플 성적표 불러오기 (30명)
+            </button>
+          </div>
+        </div>
+
+        <!-- 파일 로드 후 분석 결과 영역 -->
+        <div id="gradeFileInfoBar" class="hidden bg-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-base font-black">
+              <i class="fa-solid fa-check"></i>
+            </span>
+            <div>
+              <div class="flex items-center gap-2">
+                <strong id="gradeFileName" class="text-sm font-extrabold text-slate-900">파일명.xlsx</strong>
+                <span id="gradeFileCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-black">총 0명</span>
+              </div>
+              <p class="text-[11px] text-slate-500">석차 및 동석차(중간석차) 기준 등급 산출 완료</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="exportGradedExcel()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-200 transition-all">
+              <i class="fa-solid fa-file-excel"></i> 📥 등급 결과 엑셀 다운로드
+            </button>
+          </div>
+        </div>
+
+        <!-- 통계 요약 카드 & 등급 결과 테이블 -->
+        <div id="gradeResultContainer" class="hidden flex-col gap-4">
+          <!-- 통계 카드 요약 4종 -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+              <span class="text-[11px] font-bold text-slate-500">총 수강 인원</span>
+              <div id="statTotalStudents" class="text-xl font-black text-slate-900 mt-1">0명</div>
+            </div>
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+              <span class="text-[11px] font-bold text-slate-500">평균 점수</span>
+              <div id="statAvgScore" class="text-xl font-black text-blue-600 mt-1">0.0점</div>
+            </div>
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+              <span class="text-[11px] font-bold text-slate-500">최고 / 최저점</span>
+              <div id="statMinMaxScore" class="text-xl font-black text-slate-900 mt-1">0 / 0점</div>
+            </div>
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+              <span class="text-[11px] font-bold text-slate-500">동석차 발생 구간</span>
+              <div id="statTiesCount" class="text-xl font-black text-amber-600 mt-1">0구간</div>
+            </div>
+          </div>
+
+          <!-- 등급별 인원 분포 뱃지 리스트 -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col gap-2">
+            <div class="flex items-center justify-between text-xs font-extrabold text-slate-700">
+              <span>등급별 배정 인원 현황 (<span id="gradeSummarySysName">5등급제</span> 기준)</span>
+              <span class="text-slate-400 font-normal">누적 비율 기준 자동 부여</span>
+            </div>
+            <div id="gradeFileSummaryBadges" class="flex flex-wrap gap-2"></div>
+          </div>
+
+          <!-- 학생별 결과 테이블 -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-black text-slate-800">학생별 석차 및 등급 산출 명단</span>
+              <input type="text" id="gradeSearchInput" oninput="filterGradedTable()" placeholder="이름 검색..." class="px-3 py-1 rounded-lg border border-slate-300 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-blue-500">
+            </div>
+            <div class="overflow-x-auto max-h-[460px]">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 text-slate-700 font-extrabold sticky top-0 border-b border-slate-200">
+                  <tr>
+                    <th class="py-2.5 px-3">석차</th>
+                    <th class="py-2.5 px-3">이름/학번</th>
+                    <th class="py-2.5 px-3">원점수</th>
+                    <th class="py-2.5 px-3">동점자수</th>
+                    <th class="py-2.5 px-3">중간석차</th>
+                    <th class="py-2.5 px-3">상위 백분율</th>
+                    <th class="py-2.5 px-3">등급</th>
+                  </tr>
+                </thead>
+                <tbody id="gradedTableBody" class="divide-y divide-slate-100 font-bold"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // --- 탭 전환 로직 ---
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => {
+        el.classList.add('hidden');
+        el.classList.remove('flex', 'active');
+      });
+      const activeEl = document.getElementById('tab-' + tabId);
+      if (activeEl) {
+        activeEl.classList.remove('hidden');
+        activeEl.classList.add('flex', 'active');
+      }
+
+      document.querySelectorAll('.nav-tab').forEach(btn => {
+        btn.classList.remove('bg-indigo-50', 'text-indigo-700', 'font-black');
+        btn.classList.add('text-slate-700');
+      });
+      const activeBtn = document.getElementById('nav-' + tabId);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-indigo-50', 'text-indigo-700', 'font-black');
+        activeBtn.classList.remove('text-slate-700');
+      }
+
+      if (tabId === 'board') {
+        setTimeout(resizeBoardCanvases, 100);
+      }
+    }
+
+    // Tone.js 오디오 효과
+    const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+    synth.volume.value = -8;
+
+    function playBeep(high = false) {
+      try {
+        Tone.start();
+        synth.triggerAttackRelease(high ? "A5" : "E5", "16n");
+      } catch (e) {}
+    }
+
+    function playFanfare() {
+      try {
+        Tone.start();
+        const now = Tone.now();
+        synth.triggerAttackRelease("C5", "8n", now);
+        synth.triggerAttackRelease("E5", "8n", now + 0.12);
+        synth.triggerAttackRelease("G5", "8n", now + 0.24);
+        synth.triggerAttackRelease("C6", "4n", now + 0.36);
+      } catch (e) {}
+    }
+
+    // 상단 산책 레일 냥이 엔진 (4종 냥이 크루)
+    const colabCats = [
+      { id: 'cat-1', symbol: '#char-kitty-classic', name: '키티', x: 20, dir: 1, speed: 0.7, state: 'walking', timer: 0 },
+      { id: 'cat-2', symbol: '#char-kitty-mint', name: '민트냥', x: 100, dir: 1, speed: 0.6, state: 'walking', timer: 30 },
+      { id: 'cat-3', symbol: '#char-cat-cheese', name: '치즈냥', x: 180, dir: 1, speed: 0.8, state: 'walking', timer: 60 },
+      { id: 'cat-4', symbol: '#char-cat-tuxedo', name: '턱시도냥', x: 260, dir: 1, speed: 0.65, state: 'walking', timer: 90 }
+    ];
+
+    function initColabCats() {
+      const track = document.getElementById('colabCatTrack');
+      if (!track) return;
+      track.innerHTML = '';
+
+      colabCats.forEach(cat => {
+        const catWrapper = document.createElement('div');
+        catWrapper.id = cat.id;
+        catWrapper.className = 'walking-cat cat-step-anim';
+        catWrapper.style.left = `${cat.x}px`;
+        catWrapper.onclick = () => jumpCat(cat);
+
+        catWrapper.innerHTML = `
+          <div class="relative flex flex-col items-center">
+            <div id="${cat.id}-bubble" class="hidden absolute -top-5 px-1.5 py-0.5 rounded-full bg-slate-900 text-white text-[9px] font-black shadow pointer-events-none whitespace-nowrap">
+              야옹♪
+            </div>
+            <svg class="w-8 h-9 drop-shadow-xs" viewBox="0 0 100 110">
+              <use href="${cat.symbol}"/>
+            </svg>
+          </div>
+        `;
+        track.appendChild(catWrapper);
+      });
+
+      requestAnimationFrame(updateColabCatsLoop);
+    }
+
+    function showCatBubble(catId, text, duration = 1200) {
+      const bubble = document.getElementById(`${catId}-bubble`);
+      if (!bubble) return;
+      bubble.textContent = text;
+      bubble.classList.remove('hidden');
+      setTimeout(() => {
+        bubble.classList.add('hidden');
+      }, duration);
+    }
+
+    function jumpCat(cat) {
+      playBeep(true);
+      const el = document.getElementById(cat.id);
+      if (!el) return;
+      
+      showCatBubble(cat.id, '야옹~♪', 1000);
+      el.style.transition = 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+      el.style.transform = `scale(${cat.dir}, 1) translateY(-16px) scale(1.15)`;
+      
+      confetti({
+        particleCount: 14,
+        spread: 50,
+        origin: {
+          x: el.getBoundingClientRect().left / window.innerWidth,
+          y: (el.getBoundingClientRect().top + 15) / window.innerHeight
+        }
+      });
+
+      setTimeout(() => {
+        el.style.transition = 'transform 0.15s ease-out';
+        el.style.transform = `scale(${cat.dir}, 1) translateY(0px) scale(1)`;
+      }, 250);
+    }
+
+    function updateColabCatsLoop() {
+      const track = document.getElementById('colabCatTrack');
+      if (track) {
+        const maxW = Math.max(280, track.clientWidth - 45);
+
+        colabCats.forEach(cat => {
+          const el = document.getElementById(cat.id);
+          if (!el) return;
+
+          cat.timer++;
+          cat.x += cat.speed * cat.dir;
+
+          if (cat.x >= maxW) {
+            cat.x = maxW;
+            cat.dir = -1;
+          } else if (cat.x <= 8) {
+            cat.x = 8;
+            cat.dir = 1;
+          }
+
+          el.style.left = `${cat.x}px`;
+          el.style.transform = `scale(${cat.dir}, 1)`;
+        });
+      }
+      requestAnimationFrame(updateColabCatsLoop);
+    }
+
+    // ==========================================
+    // 5. 내신 등급컷 계산기 & 성적파일 일괄 분석 로직
+    // ==========================================
+    let currentGradeSystem = 5; // 5등급제 기본값
+    let currentGradeSubMode = 'cut'; // 'cut' or 'file'
+    let uploadedGradeData = []; // 파싱된 성적 데이터
+
+    function switchGradeSubMode(mode) {
+      currentGradeSubMode = mode;
+      const btnCut = document.getElementById('gradeSubModeCut');
+      const btnFile = document.getElementById('gradeSubModeFile');
+      const viewCut = document.getElementById('gradeCutView');
+      const viewFile = document.getElementById('gradeFileView');
+
+      if (!btnCut || !btnFile || !viewCut || !viewFile) return;
+
+      if (mode === 'cut') {
+        btnCut.className = "px-3 py-1.5 rounded-lg text-xs font-extrabold bg-white text-blue-600 shadow-sm transition-all";
+        btnFile.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all";
+        viewCut.classList.remove('hidden');
+        viewCut.classList.add('grid');
+        viewFile.classList.add('hidden');
+        viewFile.classList.remove('flex');
+      } else {
+        btnFile.className = "px-3 py-1.5 rounded-lg text-xs font-extrabold bg-white text-blue-600 shadow-sm transition-all";
+        btnCut.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all";
+        viewCut.classList.add('hidden');
+        viewCut.classList.remove('grid');
+        viewFile.classList.remove('hidden');
+        viewFile.classList.add('flex');
+      }
+    }
+
+    // 9등급제 기준
+    const GRADE_RULES_9 = [
+      { grade: 1, ratio: 4,  cumRatio: 4,  color: '#2563EB', bg: 'bg-blue-600',   lightBg: 'bg-blue-50' },
+      { grade: 2, ratio: 7,  cumRatio: 11, color: '#3B82F6', bg: 'bg-blue-500',   lightBg: 'bg-blue-50/60' },
+      { grade: 3, ratio: 12, cumRatio: 23, color: '#0284C7', bg: 'bg-sky-600',    lightBg: 'bg-sky-50' },
+      { grade: 4, ratio: 17, cumRatio: 40, color: '#059669', bg: 'bg-emerald-600',lightBg: 'bg-emerald-50' },
+      { grade: 5, ratio: 20, cumRatio: 60, color: '#10B981', bg: 'bg-emerald-500',lightBg: 'bg-emerald-50/50' },
+      { grade: 6, ratio: 17, cumRatio: 77, color: '#D97706', bg: 'bg-amber-600',  lightBg: 'bg-amber-50' },
+      { grade: 7, ratio: 12, cumRatio: 89, color: '#EA580C', bg: 'bg-orange-600', lightBg: 'bg-orange-50' },
+      { grade: 8, ratio: 7,  cumRatio: 96, color: '#E11D48', bg: 'bg-rose-600',   lightBg: 'bg-rose-50' },
+      { grade: 9, ratio: 4,  cumRatio: 100,color: '#475569', bg: 'bg-slate-600',  lightBg: 'bg-slate-50' }
+    ];
+
+    // 5등급제 기준
+    const GRADE_RULES_5 = [
+      { grade: 1, ratio: 10, cumRatio: 10, color: '#2563EB', bg: 'bg-blue-600',   lightBg: 'bg-blue-50' },
+      { grade: 2, ratio: 24, cumRatio: 34, color: '#0284C7', bg: 'bg-sky-600',    lightBg: 'bg-sky-50' },
+      { grade: 3, ratio: 32, cumRatio: 66, color: '#059669', bg: 'bg-emerald-600',lightBg: 'bg-emerald-50' },
+      { grade: 4, ratio: 24, cumRatio: 90, color: '#D97706', bg: 'bg-amber-600',  lightBg: 'bg-amber-50' },
+      { grade: 5, ratio: 10, cumRatio: 100,color: '#E11D48', bg: 'bg-rose-600',   lightBg: 'bg-rose-50' }
+    ];
+
+    function setGradeSystem(sys) {
+      currentGradeSystem = sys;
+      const btn9 = document.getElementById('gradeSys9');
+      const btn5 = document.getElementById('gradeSys5');
+      const titleBadge = document.getElementById('gradeTableTitleBadge');
+
+      if (btn9 && btn5) {
+        if (sys === 9) {
+          btn9.className = "px-3 py-1.5 rounded-lg text-xs font-extrabold bg-white text-blue-600 shadow-sm transition-all";
+          btn5.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all";
+          if (titleBadge) titleBadge.textContent = "9등급제 기준";
+        } else {
+          btn5.className = "px-3 py-1.5 rounded-lg text-xs font-extrabold bg-white text-blue-600 shadow-sm transition-all";
+          btn9.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all";
+          if (titleBadge) titleBadge.textContent = "5등급제 기준";
+        }
+      }
+
+      renderGradeTable();
+      calculateMyGradeResult();
+      if (uploadedGradeData.length > 0) {
+        processUploadedGradeRoster(uploadedGradeData.map(d => ({ name: d.name, score: d.score })));
+      }
+    }
+
+    function setTotalStudentPreset(num) {
+      const input = document.getElementById('gradeTotalStudents');
+      if (input) {
+        input.value = num;
+        renderGradeTable();
+        calculateMyGradeResult();
+      }
+    }
+
+    function renderGradeTable() {
+      const inputEl = document.getElementById('gradeTotalStudents');
+      if (!inputEl) return;
+      const totalStudents = parseInt(inputEl.value) || 200;
+      const displayTotal = document.getElementById('gradeTableTotalDisplay');
+      if (displayTotal) displayTotal.textContent = totalStudents;
+
+      const rules = (currentGradeSystem === 9) ? GRADE_RULES_9 : GRADE_RULES_5;
+      const tbody = document.getElementById('gradeCutTableBody');
+      const bar = document.getElementById('gradeDistributionBar');
+
+      if (!tbody || !bar) return;
+      tbody.innerHTML = '';
+      bar.innerHTML = '';
+
+      let prevCumCount = 0;
+      rules.forEach(rule => {
+        let cumCount = Math.round((totalStudents * rule.cumRatio) / 100);
+        if (rule.cumRatio === 100) cumCount = totalStudents;
+
+        let count = cumCount - prevCumCount;
+        if (count < 0) count = 0;
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/80 transition-colors";
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-black flex items-center gap-1.5">
+            <span class="w-5 h-5 rounded-md flex items-center justify-center text-xs font-black text-white ${rule.bg}">
+              ${rule.grade}
+            </span>
+            ${rule.grade}등급
+          </td>
+          <td class="py-2.5 px-3 text-slate-600">${rule.ratio}%</td>
+          <td class="py-2.5 px-3 text-slate-500">${rule.cumRatio}%</td>
+          <td class="py-2.5 px-3 font-extrabold text-blue-700">~ ${cumCount}등까지</td>
+          <td class="py-2.5 px-3 text-slate-900">${count}명</td>
+        `;
+        tbody.appendChild(tr);
+
+        const segment = document.createElement('div');
+        segment.style.width = `${rule.ratio}%`;
+        segment.style.backgroundColor = rule.color;
+        segment.title = `${rule.grade}등급 (${rule.ratio}%, ${count}명)`;
+        bar.appendChild(segment);
+
+        prevCumCount = cumCount;
+      });
+    }
+
+    function calculateMyGradeResult() {
+      const inputTotal = document.getElementById('gradeTotalStudents');
+      const inputRank = document.getElementById('myRankInput');
+      const inputSame = document.getElementById('sameRankCountInput');
+      if (!inputTotal || !inputRank || !inputSame) return;
+
+      const totalStudents = parseInt(inputTotal.value) || 200;
+      let rank = parseInt(inputRank.value) || 1;
+      let sameCount = parseInt(inputSame.value) || 1;
+
+      rank = Math.max(1, Math.min(totalStudents, rank));
+      sameCount = Math.max(1, sameCount);
+
+      // 중간석차 = 석차 + (동점자 - 1) / 2
+      const midRank = rank + (sameCount - 1) / 2;
+      const percentage = (midRank / totalStudents) * 100;
+
+      const rules = (currentGradeSystem === 9) ? GRADE_RULES_9 : GRADE_RULES_5;
+      let calculatedGrade = rules[rules.length - 1].grade;
+      let matchedRule = rules[rules.length - 1];
+
+      for (let i = 0; i < rules.length; i++) {
+        let cumCount = Math.round((totalStudents * rules[i].cumRatio) / 100);
+        if (rules[i].cumRatio === 100) cumCount = totalStudents;
+
+        if (midRank <= cumCount) {
+          calculatedGrade = rules[i].grade;
+          matchedRule = rules[i];
+          break;
+        }
+      }
+
+      const badge = document.getElementById('resGradeBadge');
+      if (badge) {
+        badge.textContent = `${calculatedGrade}등급`;
+        badge.className = `text-base font-black px-3.5 py-1 rounded-full text-white shadow-xs ${matchedRule.bg}`;
+      }
+
+      const midRankEl = document.getElementById('resMidRankText');
+      if (midRankEl) midRankEl.textContent = `${midRank.toFixed(1)}등`;
+      
+      const percentEl = document.getElementById('resPercentText');
+      if (percentEl) percentEl.textContent = `${percentage.toFixed(2)}%`;
+
+      const note = document.getElementById('resSameRankNote');
+      if (note) {
+        if (sameCount > 1) {
+          note.textContent = `💡 ${rank}등 동점자 ${sameCount}명 발생으로 중간석차 ${midRank.toFixed(1)}등 기준 등급 판정되었습니다.`;
+          note.className = "text-[11px] text-blue-700 font-bold leading-tight";
+        } else {
+          note.textContent = `단독 ${rank}등 기준 정상 판정 결과입니다.`;
+          note.className = "text-[11px] text-slate-500 leading-tight";
+        }
+      }
+    }
+
+    function copyGradeTableText() {
+      const inputTotal = document.getElementById('gradeTotalStudents');
+      const totalStudents = inputTotal ? (parseInt(inputTotal.value) || 200) : 200;
+      const rules = (currentGradeSystem === 9) ? GRADE_RULES_9 : GRADE_RULES_5;
+      const sysName = (currentGradeSystem === 9) ? "9등급제" : "5등급제";
+
+      let text = `📊 [내신 등급컷 계산표 - ${sysName}]\n`;
+      text += `총 수강자 수: ${totalStudents}명\n\n`;
+      text += `등급 | 기준비율 | 누적비율 | 커트라인 | 인원\n`;
+      text += `-------------------------------------------\n`;
+
+      let prev = 0;
+      rules.forEach(r => {
+        let cum = Math.round((totalStudents * r.cumRatio) / 100);
+        if (r.cumRatio === 100) cum = totalStudents;
+        let cnt = cum - prev;
+        text += `${r.grade}등급 | ${r.ratio}% | ${r.cumRatio}% | ~ ${cum}등 | ${cnt}명\n`;
+        prev = cum;
+      });
+
+      const tempArea = document.createElement('textarea');
+      tempArea.value = text;
+      document.body.appendChild(tempArea);
+      tempArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempArea);
+
+      alert('등급컷 표 내용이 클립보드에 복사되었습니다!');
+    }
+
+    function handleGradeDragOver(e) {
+      e.preventDefault();
+      const dropzone = document.getElementById('gradeUploadDropzone');
+      if (dropzone) dropzone.classList.add('bg-blue-100', 'border-blue-500');
+    }
+    function handleGradeDragLeave(e) {
+      const dropzone = document.getElementById('gradeUploadDropzone');
+      if (dropzone) dropzone.classList.remove('bg-blue-100', 'border-blue-500');
+    }
+    function handleGradeDrop(e) {
+      e.preventDefault();
+      const dropzone = document.getElementById('gradeUploadDropzone');
+      if (dropzone) dropzone.classList.remove('bg-blue-100', 'border-blue-500');
+      const file = e.dataTransfer.files[0];
+      if (file) parseGradeFile(file);
+    }
+    function handleGradeFileSelect(e) {
+      const file = e.target.files[0];
+      if (file) parseGradeFile(file);
+    }
+
+    function parseGradeFile(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+          if (!json || json.length < 2) {
+            alert('파일에 데이터가 충분하지 않습니다.');
+            return;
+          }
+
+          let nameCol = 0;
+          let scoreCol = 1;
+          const header = json[0];
+
+          header.forEach((colName, idx) => {
+            if (typeof colName === 'string') {
+              const str = colName.trim().toLowerCase();
+              if (str.includes('이름') || str.includes('성명') || str.includes('학번') || str.includes('name')) {
+                nameCol = idx;
+              }
+              if (str.includes('점수') || str.includes('원점수') || str.includes('총점') || str.includes('score')) {
+                scoreCol = idx;
+              }
+            }
+          });
+
+          const rawList = [];
+          for (let i = 1; i < json.length; i++) {
+            const row = json[i];
+            if (!row || row.length === 0) continue;
+            const name = String(row[nameCol] !== undefined ? row[nameCol] : `학생${i}`).trim();
+            const scoreVal = parseFloat(row[scoreCol]);
+            if (!isNaN(scoreVal)) {
+              rawList.push({ name, score: scoreVal });
+            }
+          }
+
+          if (rawList.length === 0) {
+            alert('점수 데이터를 찾을 수 없습니다. 엑셀의 열을 확인해주세요.');
+            return;
+          }
+
+          const fileNameEl = document.getElementById('gradeFileName');
+          if (fileNameEl) fileNameEl.textContent = file.name;
+          processUploadedGradeRoster(rawList);
+        } catch (err) {
+          console.error(err);
+          alert('파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function loadSampleGradeExcel() {
+      const sampleNames = [
+        "김민준", "이서연", "박도윤", "정시우", "최하은", "조유준", "윤지호", "장서아", 
+        "임건우", "한예은", "오지훈", "신지안", "송우진", "유채원", "권태윤", "황서윤",
+        "강동현", "백지우", "안준우", "류아린", "문현우", "배소율", "송하준", "고다은",
+        "서민재", "채수빈", "남도현", "하은서", "노시원", "곽예진"
+      ];
+      const scores = [
+        100, 98, 98, 95, 93, 91, 91, 89, 88, 86, 
+        85, 85, 83, 81, 79, 78, 78, 78, 75, 73, 
+        70, 68, 65, 63, 60, 58, 55, 50, 48, 42
+      ];
+
+      const rawList = sampleNames.map((name, i) => ({ name, score: scores[i] }));
+      const fileNameEl = document.getElementById('gradeFileName');
+      if (fileNameEl) fileNameEl.textContent = "샘플성적표(30명).xlsx";
+      processUploadedGradeRoster(rawList);
+    }
+
+    function processUploadedGradeRoster(rawList) {
+      if (!rawList || rawList.length === 0) return;
+
+      rawList.sort((a, b) => b.score - a.score);
+      const total = rawList.length;
+
+      const scoreFreq = {};
+      rawList.forEach(item => {
+        scoreFreq[item.score] = (scoreFreq[item.score] || 0) + 1;
+      });
+
+      const rules = (currentGradeSystem === 9) ? GRADE_RULES_9 : GRADE_RULES_5;
+      let curRank = 1;
+      const processed = [];
+
+      for (let i = 0; i < rawList.length; i++) {
+        const item = rawList[i];
+        if (i > 0 && item.score < rawList[i - 1].score) {
+          curRank = i + 1;
+        }
+
+        const sameCount = scoreFreq[item.score];
+        const midRank = curRank + (sameCount - 1) / 2;
+        const pct = (midRank / total) * 100;
+
+        let grade = rules[rules.length - 1].grade;
+        let matchedRule = rules[rules.length - 1];
+        for (let r = 0; r < rules.length; r++) {
+          let cumCount = Math.round((total * rules[r].cumRatio) / 100);
+          if (rules[r].cumRatio === 100) cumCount = total;
+          if (midRank <= cumCount) {
+            grade = rules[r].grade;
+            matchedRule = rules[r];
+            break;
+          }
+        }
+
+        processed.push({
+          name: item.name,
+          score: item.score,
+          rank: curRank,
+          sameCount: sameCount,
+          midRank: midRank,
+          pct: pct,
+          grade: grade,
+          rule: matchedRule
+        });
+      }
+
+      uploadedGradeData = processed;
+      renderGradedResultView();
+      playFanfare();
+      confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
+    }
+
+    function renderGradedResultView() {
+      const infoBar = document.getElementById('gradeFileInfoBar');
+      const resultContainer = document.getElementById('gradeResultContainer');
+      const countBadge = document.getElementById('gradeFileCountBadge');
+      if (infoBar) infoBar.classList.remove('hidden');
+      if (resultContainer) {
+        resultContainer.classList.remove('hidden');
+        resultContainer.classList.add('flex');
+      }
+
+      const total = uploadedGradeData.length;
+      if (countBadge) countBadge.textContent = `총 ${total}명`;
+
+      const scores = uploadedGradeData.map(d => d.score);
+      const avg = (scores.reduce((a, b) => a + b, 0) / total).toFixed(1);
+      const maxScore = Math.max(...scores);
+      const minScore = Math.min(...scores);
+      const tieGroups = Object.values(
+        uploadedGradeData.reduce((acc, cur) => {
+          acc[cur.score] = (acc[cur.score] || 0) + 1;
+          return acc;
+        }, {})
+      ).filter(cnt => cnt > 1).length;
+
+      document.getElementById('statTotalStudents').textContent = `${total}명`;
+      document.getElementById('statAvgScore').textContent = `${avg}점`;
+      document.getElementById('statMinMaxScore').textContent = `${maxScore} / ${minScore}점`;
+      document.getElementById('statTiesCount').textContent = `${tieGroups}구간`;
+
+      const summaryBadges = document.getElementById('gradeFileSummaryBadges');
+      if (summaryBadges) {
+        summaryBadges.innerHTML = '';
+        document.getElementById('gradeSummarySysName').textContent = (currentGradeSystem === 9) ? "9등급제" : "5등급제";
+
+        const rules = (currentGradeSystem === 9) ? GRADE_RULES_9 : GRADE_RULES_5;
+        rules.forEach(rule => {
+          const count = uploadedGradeData.filter(d => d.grade === rule.grade).length;
+          const pct = ((count / total) * 100).toFixed(1);
+          const badge = document.createElement('div');
+          badge.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-black";
+          badge.innerHTML = `
+            <span class="w-4 h-4 rounded text-white flex items-center justify-center text-[10px] ${rule.bg}">${rule.grade}</span>
+            <span class="text-slate-800">${rule.grade}등급:</span>
+            <strong class="text-blue-700">${count}명</strong>
+            <span class="text-slate-400 font-normal">(${pct}%)</span>
+          `;
+          summaryBadges.appendChild(badge);
+        });
+      }
+
+      renderGradedTableRows(uploadedGradeData);
+    }
+
+    function renderGradedTableRows(list) {
+      const tbody = document.getElementById('gradedTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      list.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition-colors";
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-black text-slate-800">${item.rank}등</td>
+          <td class="py-2.5 px-3 text-slate-900">${item.name}</td>
+          <td class="py-2.5 px-3 text-slate-800 font-extrabold">${item.score}점</td>
+          <td class="py-2.5 px-3 text-slate-500">${item.sameCount > 1 ? `<span class="text-amber-600 font-extrabold">${item.sameCount}명</span>` : '단독'}</td>
+          <td class="py-2.5 px-3 text-slate-700">${item.midRank.toFixed(1)}등</td>
+          <td class="py-2.5 px-3 text-slate-500">${item.pct.toFixed(2)}%</td>
+          <td class="py-2.5 px-3">
+            <span class="px-2.5 py-0.5 rounded-full text-white text-[11px] font-black ${item.rule.bg}">
+              ${item.grade}등급
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterGradedTable() {
+      const input = document.getElementById('gradeSearchInput');
+      if (!input) return;
+      const query = input.value.trim().toLowerCase();
+      if (!query) {
+        renderGradedTableRows(uploadedGradeData);
+        return;
+      }
+      const filtered = uploadedGradeData.filter(d => d.name.toLowerCase().includes(query));
+      renderGradedTableRows(filtered);
+    }
+
+    function exportGradedExcel() {
+      if (uploadedGradeData.length === 0) return;
+      const sysName = (currentGradeSystem === 9) ? "9등급제" : "5등급제";
+
+      const headers = ["석차", "이름/학번", "원점수", "동점자수", "중간석차", "상위백분율(%)", "산출등급"];
+      const rows = [headers];
+
+      uploadedGradeData.forEach(d => {
+        rows.push([
+          d.rank,
+          d.name,
+          d.score,
+          d.sameCount,
+          parseFloat(d.midRank.toFixed(1)),
+          parseFloat(d.pct.toFixed(2)),
+          `${d.grade}등급`
+        ]);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "성적및등급산출결과");
+      XLSX.writeFile(wb, `성적등급산출결과_${sysName}.xlsx`);
+    }
+
+    // ==========================================
+    // 2. 조 편성기 로직
+    // ==========================================
+    let groupMode = 'groups';
+    let groupListState = [];
+
+    const themePresets = {
+      default: ["1조", "2조", "3조", "4조", "5조", "6조", "7조", "8조"],
+      cats: ["치즈냥조", "삼색이조", "고등어조", "턱시도조", "샴고양이조", "러시안블루조", "벵갈조", "페르시안조"],
+      alpha: ["A조", "B조", "C조", "D조", "E조", "F조", "G조", "H조"],
+      colors: ["빨강조", "주황조", "노랑조", "초록조", "파랑조", "보라조"],
+      animals: ["사자조", "호랑이조", "판다조", "코알라조", "돌고래조", "독수리조"]
+    };
+
+    function setGroupMode(mode) {
+      groupMode = mode;
+      const btnGroups = document.getElementById('modeByGroups');
+      const btnMembers = document.getElementById('modeByMembers');
+      const label = document.getElementById('groupNumberLabel');
+      const subLabel = document.getElementById('groupNumberSubLabel');
+
+      if (mode === 'groups') {
+        btnGroups.className = "flex-1 py-2 rounded-lg text-xs font-extrabold bg-white text-indigo-600 shadow-sm transition-all";
+        btnMembers.className = "flex-1 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all";
+        label.textContent = "원하는 조 개수";
+        subLabel.textContent = "생성될 총 조의 수";
+      } else {
+        btnMembers.className = "flex-1 py-2 rounded-lg text-xs font-extrabold bg-white text-indigo-600 shadow-sm transition-all";
+        btnGroups.className = "flex-1 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all";
+        label.textContent = "조당 인원 수";
+        subLabel.textContent = "한 조에 들어갈 학생 수";
+      }
+    }
+
+    function adjustGroupCount(delta) {
+      const input = document.getElementById('groupCountInput');
+      let val = parseInt(input.value) || 3;
+      val = Math.max(1, Math.min(30, val + delta));
+      input.value = val;
+    }
+
+    function loadSampleRoster(type = 'student') {
+      let sample = "";
+      if (type === 'student') {
+        sample = "김민준*\n이서연\n박도윤*\n정시우\n최하은*\n조유준\n윤지호*\n장서아\n임건우\n한예은\n오지훈*\n신지안\n송우진\n유채원\n권태윤\n황서윤";
+      } else {
+        sample = "이팀장*\n김책임\n박선임*\n최수석\n정연구원\n강매니저*\n윤프로\n한파트장";
+      }
+      document.getElementById('groupStudentsInput').value = sample;
+      updateStudentCount();
+    }
+
+    function clearRosterInput() {
+      document.getElementById('groupStudentsInput').value = '';
+      updateStudentCount();
+    }
+
+    function updateStudentCount() {
+      const text = document.getElementById('groupStudentsInput').value;
+      const names = text.split(/[\n,]+/).map(n => n.trim()).filter(n => n.length > 0);
+      const leaders = names.filter(n => n.includes('*'));
+      document.getElementById('studentCountBadge').textContent = names.length;
+      document.getElementById('leaderCountBadge').textContent = leaders.length;
+    }
+    const groupStudentsEl = document.getElementById('groupStudentsInput');
+    if (groupStudentsEl) groupStudentsEl.addEventListener('input', updateStudentCount);
+
+    function generateGroups() {
+      const raw = document.getElementById('groupStudentsInput').value;
+      const names = raw.split(/[\n,]+/).map(s => s.trim()).filter(s => s.length > 0);
+      if (names.length < 2) {
+        alert('최소 2명 이상의 명단을 입력해주세요!');
+        return;
+      }
+
+      const distributeLeaders = document.getElementById('distributeLeadersCheck').checked;
+      const leaders = [];
+      const members = [];
+
+      names.forEach(name => {
+        if (distributeLeaders && name.includes('*')) {
+          leaders.push({ name: name.replace('*', '').trim(), isLeader: true });
+        } else {
+          members.push({ name: name.replace('*', '').trim(), isLeader: false });
+        }
+      });
+
+      leaders.sort(() => Math.random() - 0.5);
+      members.sort(() => Math.random() - 0.5);
+
+      const targetVal = parseInt(document.getElementById('groupCountInput').value) || 3;
+      let numGroups = (groupMode === 'groups') ? targetVal : Math.ceil(names.length / targetVal);
+      numGroups = Math.max(1, Math.min(names.length, numGroups));
+
+      const themeKey = document.getElementById('groupThemeSelect').value;
+      const themeNames = themePresets[themeKey] || themePresets.default;
+
+      groupListState = Array.from({ length: numGroups }, (_, i) => ({
+        id: i + 1,
+        name: themeNames[i % themeNames.length] || `${i + 1}조`,
+        members: []
+      }));
+
+      leaders.forEach((ldr, idx) => {
+        groupListState[idx % numGroups].members.push(ldr);
+      });
+
+      members.forEach(mbr => {
+        let minGroup = groupListState.reduce((prev, curr) => curr.members.length < prev.members.length ? curr : prev);
+        minGroup.members.push(mbr);
+      });
+
+      renderGroupCards();
+      confetti({ particleCount: 35, spread: 60, origin: { y: 0.6 } });
+    }
+
+    function shuffleGroupsOnly() {
+      if (groupListState.length === 0) return;
+      const allMembers = [];
+      groupListState.forEach(g => allMembers.push(...g.members));
+
+      const distributeLeaders = document.getElementById('distributeLeadersCheck').checked;
+      const leaders = allMembers.filter(m => m.isLeader).sort(() => Math.random() - 0.5);
+      const regulars = allMembers.filter(m => !m.isLeader).sort(() => Math.random() - 0.5);
+
+      groupListState.forEach(g => g.members = []);
+      const numGroups = groupListState.length;
+
+      if (distributeLeaders) {
+        leaders.forEach((ldr, idx) => groupListState[idx % numGroups].members.push(ldr));
+      } else {
+        regulars.push(...leaders.map(l => ({ ...l, isLeader: false })));
+        regulars.sort(() => Math.random() - 0.5);
+      }
+
+      regulars.forEach(mbr => {
+        let minGroup = groupListState.reduce((prev, curr) => curr.members.length < prev.members.length ? curr : prev);
+        minGroup.members.push(mbr);
+      });
+      renderGroupCards();
+    }
+
+    function renderGroupCards() {
+      const container = document.getElementById('groupCardsContainer');
+      const placeholder = document.getElementById('groupEmptyPlaceholder');
+      const statusBadge = document.getElementById('groupResultStatusBadge');
+
+      placeholder.classList.add('hidden');
+      container.classList.remove('hidden');
+      statusBadge.textContent = `${groupListState.length}개 조 완료`;
+      statusBadge.className = "text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200";
+
+      container.innerHTML = '';
+
+      groupListState.forEach((grp, gIdx) => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 flex flex-col shadow-xs transition-all hover:border-indigo-300";
+        card.setAttribute('ondragover', 'allowDrop(event)');
+        card.setAttribute('ondrop', `handleDropMember(event, ${gIdx})`);
+
+        let membersHtml = grp.members.map((m, mIdx) => `
+          <div draggable="true" 
+               ondragstart="handleDragStart(event, ${gIdx}, ${mIdx})"
+               class="p-2.5 rounded-xl border ${m.isLeader ? 'bg-amber-50 border-amber-300 text-amber-900 font-extrabold' : 'bg-white border-slate-200 text-slate-800 font-bold'} text-xs sm:text-sm flex items-center justify-between cursor-grab active:cursor-grabbing shadow-xs hover:border-indigo-400 transition-all">
+            <span class="flex items-center gap-1.5">
+              ${m.isLeader ? '<i class="fa-solid fa-crown text-amber-500 text-xs"></i>' : '<i class="fa-regular fa-user text-slate-400 text-xs"></i>'}
+              ${m.name}
+            </span>
+            ${m.isLeader ? '<span class="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-black">조장</span>' : ''}
+          </div>
+        `).join('');
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-200">
+            <h5 class="font-extrabold text-sm sm:text-base text-slate-900 flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> ${grp.name}
+            </h5>
+            <span class="text-xs bg-white border border-slate-300 px-2 py-0.5 rounded-full font-black text-slate-600">${grp.members.length}명</span>
+          </div>
+          <div class="flex flex-col gap-1.5 min-h-[90px]">${membersHtml}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    let draggedData = null;
+    function handleDragStart(e, gIdx, mIdx) {
+      draggedData = { fromGroup: gIdx, memberIdx: mIdx };
+      e.dataTransfer.setData('text/plain', '');
+    }
+    function allowDrop(e) { e.preventDefault(); }
+    function handleDropMember(e, toGroupIdx) {
+      e.preventDefault();
+      if (!draggedData) return;
+      const { fromGroup, memberIdx } = draggedData;
+      if (fromGroup === toGroupIdx) return;
+      const member = groupListState[fromGroup].members.splice(memberIdx, 1)[0];
+      groupListState[toGroupIdx].members.push(member);
+      draggedData = null;
+      renderGroupCards();
+    }
+
+    function toggleExportMenu() {
+      document.getElementById('exportDropdown').classList.toggle('hidden');
+    }
+    window.addEventListener('click', (e) => {
+      if (!e.target.closest('#exportDropdown') && !e.target.closest('button[onclick="toggleExportMenu()"]')) {
+        const dd = document.getElementById('exportDropdown');
+        if (dd) dd.classList.add('hidden');
+      }
+    });
+
+    function copyGroupResultText() {
+      if (groupListState.length === 0) return;
+      let txt = "📋 [수업 조 편성 결과]\n";
+      groupListState.forEach(g => {
+        txt += `\n[${g.name}] (${g.members.length}명)\n`;
+        txt += g.members.map(m => m.isLeader ? `${m.name}(조장)` : m.name).join(', ') + '\n';
+      });
+      const tempArea = document.createElement('textarea');
+      tempArea.value = txt;
+      document.body.appendChild(tempArea);
+      tempArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempArea);
+      alert('편성 결과가 클립보드에 복사되었습니다!');
+    }
+
+    function exportGroups(type) {
+      if (groupListState.length === 0) return;
+      document.getElementById('exportDropdown').classList.add('hidden');
+
+      if (type === 'excel') {
+        const rows = [];
+        let maxLen = Math.max(...groupListState.map(g => g.members.length));
+        let header = groupListState.map(g => g.name);
+        rows.push(header);
+        for (let i = 0; i < maxLen; i++) {
+          let row = groupListState.map(g => {
+            const m = g.members[i];
+            return m ? (m.isLeader ? m.name + "(조장)" : m.name) : '';
+          });
+          rows.push(row);
+        }
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "조편성결과");
+        XLSX.writeFile(wb, "조편성결과.xlsx");
+      } else if (type === 'pdf') {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.text("Classroom Group List", 14, 15);
+        let y = 25;
+        groupListState.forEach(g => {
+          doc.text(`[${g.name}]`, 14, y);
+          y += 7;
+          let names = g.members.map(m => m.isLeader ? m.name + "*" : m.name).join(', ');
+          doc.text(names, 20, y);
+          y += 10;
+        });
+        doc.save("조편성결과.pdf");
+      } else if (type === 'image') {
+        html2canvas(document.getElementById('groupCardsContainer')).then(canvas => {
+          const a = document.createElement('a');
+          a.download = '조편성결과.png';
+          a.href = canvas.toDataURL();
+          a.click();
+        });
+      }
+    }
+
+    function syncGroupsToScoreboard() {
+      if (groupListState.length === 0) {
+        alert('먼저 조 편성을 완료해주세요!');
+        return;
+      }
+      scoreTeams = groupListState.map(g => ({ name: g.name, score: 0 }));
+      renderScoreboard();
+      switchTab('score');
+    }
+
+    // ==========================================
+    // 3. 화이트보드 & 교재 PDF 뷰어
+    // ==========================================
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    let currentTool = 'pen';
+    let currentLaserStyle = 'wand';
+    let penColor = '#000000';
+    let brushSize = 5;
+    let selectedShapeType = 'rect';
+    let isDrawing = false;
+    let startX = 0, startY = 0;
+
+    let pdfDoc = null;
+    let pdfCurrentPage = 1;
+    let writingMargin = 0;
+    let isTwoPageMode = false;
+    let pageFitMode = 'contain';
+    let boardBackground = 'white';
+
+    let zoomScale = 1.0;
+    let panX = 0, panY = 0;
+    let isPanning = false;
+    let spacePressed = false;
+    let panStartX = 0, panStartY = 0;
+
+    const boardContainer = document.getElementById('boardContainer');
+    const boardViewport = document.getElementById('boardViewport');
+    const bgCanvas = document.getElementById('bgCanvas');
+    const drawCanvas = document.getElementById('drawCanvas');
+    const laserCanvas = document.getElementById('laserCanvas');
+
+    const bgCtx = bgCanvas ? bgCanvas.getContext('2d') : null;
+    const drawCtx = drawCanvas ? drawCanvas.getContext('2d') : null;
+    const laserCtx = laserCanvas ? laserCanvas.getContext('2d') : null;
+
+    let laserParticles = [];
+
+    function setBoardTool(tool) {
+      currentTool = tool;
+      ['pen', 'highlighter', 'eraser', 'laser'].forEach(t => {
+        const btn = document.getElementById('tool-' + t);
+        if (btn) {
+          if (t === tool) {
+            btn.className = (t === 'laser') 
+              ? "px-3 py-1.5 rounded-l-xl text-xs sm:text-sm font-extrabold bg-rose-600 text-white flex items-center gap-1.5 shadow-md transition-all border-r border-rose-500"
+              : "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold bg-indigo-600 text-white flex items-center gap-1.5 transition-all";
+          } else {
+            btn.className = (t === 'laser')
+              ? "px-3 py-1.5 rounded-l-xl text-xs sm:text-sm font-extrabold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1.5 transition-all border-r border-slate-700"
+              : "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1.5 transition-all";
+          }
+        }
+      });
+
+      updateBoardCursor();
+    }
+
+    function updateBoardCursor() {
+      if (!boardContainer) return;
+      boardContainer.className = "flex-1 w-full h-full relative overflow-hidden select-none";
+      if (currentTool === 'laser') {
+        if (currentLaserStyle === 'wand') boardContainer.classList.add('cursor-laser-wand');
+        else if (currentLaserStyle === 'paw') boardContainer.classList.add('cursor-laser-paw');
+        else if (currentLaserStyle === 'star') boardContainer.classList.add('cursor-laser-star');
+        else if (currentLaserStyle === 'dot') boardContainer.classList.add('cursor-laser-dot');
+      } else if (currentTool === 'pen') {
+        boardContainer.classList.add('cursor-pencil');
+      } else if (currentTool === 'highlighter') {
+        boardContainer.classList.add('cursor-highlighter');
+      } else if (currentTool === 'eraser') {
+        boardContainer.classList.add('cursor-eraser');
+      } else {
+        boardContainer.style.cursor = 'crosshair';
+      }
+    }
+
+    function toggleLaserStyleMenu() {
+      document.getElementById('laserStyleDropdown').classList.toggle('hidden');
+    }
+
+    function changeLaserStyle(styleKey) {
+      currentLaserStyle = styleKey;
+      document.getElementById('laserStyleDropdown').classList.add('hidden');
+      const icons = { wand: '✨', paw: '🐾', star: '🌟', dot: '🔴' };
+      const labels = { wand: '요술봉', paw: '냥이발', star: '스타', dot: '네온빔' };
+      document.getElementById('laserStyleBtn').innerHTML = `<span id="currentLaserStyleIcon">${icons[styleKey]}</span> ${labels[styleKey]} ▾`;
+      setBoardTool('laser');
+    }
+
+    function setPenColor(col) {
+      penColor = col;
+      if (currentTool === 'eraser' || currentTool === 'laser') setBoardTool('pen');
+    }
+
+    function setBrushSize(sz) {
+      brushSize = parseInt(sz);
+    }
+
+    function toggleShapeMenu() {
+      document.getElementById('shapeDropdown').classList.toggle('hidden');
+    }
+
+    function selectShape(shp) {
+      selectedShapeType = shp;
+      document.getElementById('shapeDropdown').classList.add('hidden');
+      setBoardTool('shape');
+    }
+
+    function toggleCurtain() {
+      document.getElementById('boardCurtain').classList.toggle('hidden');
+    }
+
+    function changeBoardBackground(val) {
+      boardBackground = val;
+      renderBackground();
+    }
+
+    function setWritingMargin(val) {
+      writingMargin = parseInt(val) || 0;
+      if (pdfDoc) renderPdfPages();
+      else resizeBoardCanvases();
+    }
+
+    function changePageFit(mode) {
+      pageFitMode = mode;
+      if (pdfDoc) renderPdfPages();
+    }
+
+    function toggleTwoPageMode() {
+      isTwoPageMode = !isTwoPageMode;
+      const btn = document.getElementById('twoPageBtn');
+      if (isTwoPageMode) {
+        btn.className = "px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold bg-indigo-600 text-white shadow-md flex items-center gap-1.5 transition-all";
+        btn.innerHTML = `<i class="fa-solid fa-book-open"></i> <span>2쪽 보기 ON</span>`;
+      } else {
+        btn.className = "px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1.5 transition-all";
+        btn.innerHTML = `<i class="fa-solid fa-book-open"></i> <span>2쪽 보기</span>`;
+      }
+      if (pdfDoc) renderPdfPages();
+    }
+
+    function resizeBoardCanvases() {
+      if (!boardContainer) return;
+      const rect = boardContainer.getBoundingClientRect();
+      const w = Math.max(800, rect.width);
+      const h = Math.max(600, rect.height);
+
+      if (!pdfDoc && bgCanvas && drawCanvas && laserCanvas) {
+        bgCanvas.width = w;
+        bgCanvas.height = h;
+        drawCanvas.width = w;
+        drawCanvas.height = h;
+        laserCanvas.width = w;
+        laserCanvas.height = h;
+        renderBackground();
+      }
+    }
+    window.addEventListener('resize', () => { 
+      if (!pdfDoc) resizeBoardCanvases(); 
+      if (!document.getElementById('subBoardOverlay').classList.contains('hidden')) {
+        resizeSubBoardCanvas();
+      }
+    });
+
+    function renderBackground() {
+      if (pdfDoc || !bgCtx) return;
+      bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+      if (boardBackground === 'chalk') {
+        bgCtx.fillStyle = '#1e3a2f';
+        bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+      } else if (boardBackground === 'grid') {
+        bgCtx.fillStyle = '#ffffff';
+        bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+        bgCtx.strokeStyle = '#e2e8f0';
+        bgCtx.lineWidth = 1;
+        const step = 28;
+        for (let x = 0; x < bgCanvas.width; x += step) {
+          bgCtx.beginPath(); bgCtx.moveTo(x, 0); bgCtx.lineTo(x, bgCanvas.height); bgCtx.stroke();
+        }
+        for (let y = 0; y < bgCanvas.height; y += step) {
+          bgCtx.beginPath(); bgCtx.moveTo(0, y); bgCtx.lineTo(bgCanvas.width, y); bgCtx.stroke();
+        }
+      } else {
+        bgCtx.fillStyle = '#ffffff';
+        bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+      }
+    }
+
+    function loadPdfFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      openPdfFromBlob(file);
+    }
+
+    function openPdfFromBlob(blob) {
+      const fileReader = new FileReader();
+      fileReader.onload = function() {
+        const typedarray = new Uint8Array(this.result);
+        pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+          pdfDoc = pdf;
+          pdfCurrentPage = 1;
+          document.getElementById('pdfTotalPages').textContent = pdf.numPages;
+          document.getElementById('pdfNavBar').classList.remove('hidden');
+          document.getElementById('openSubBoardBtn').classList.remove('hidden');
+          document.getElementById('closePdfBtn').classList.remove('hidden');
+          document.getElementById('boardHintBanner').classList.add('hidden');
+          renderPdfPages();
+        });
+      };
+      fileReader.readAsArrayBuffer(blob);
+    }
+
+    function closePdfAndShowBoard() {
+      pdfDoc = null;
+      document.getElementById('pdfNavBar').classList.add('hidden');
+      document.getElementById('openSubBoardBtn').classList.add('hidden');
+      document.getElementById('closePdfBtn').classList.add('hidden');
+      document.getElementById('boardHintBanner').classList.remove('hidden');
+      closeSubBoardModal();
+      clearDrawCanvas();
+      resetZoomAndPan();
+      resizeBoardCanvases();
+    }
+
+    // 보조 판서 칠판
+    let subCurrentTool = 'pen';
+    let subPenColor = '#ffffff';
+    let subBrushSize = 5;
+    let isSubDrawing = false;
+    let subBoardBg = 'chalk';
+
+    const subOverlay = document.getElementById('subBoardOverlay');
+    const subCanvasArea = document.getElementById('subBoardCanvasArea');
+    const subBgCanvas = document.getElementById('subBgCanvas');
+    const subDrawCanvas = document.getElementById('subDrawCanvas');
+    const subBgCtx = subBgCanvas ? subBgCanvas.getContext('2d') : null;
+    const subDrawCtx = subDrawCanvas ? subDrawCanvas.getContext('2d') : null;
+
+    function openSubBoardModal() {
+      if (!subOverlay) return;
+      subOverlay.classList.remove('hidden');
+      setTimeout(resizeSubBoardCanvas, 30);
+      updateSubBoardCursor();
+    }
+
+    function closeSubBoardModal() {
+      if (!subOverlay) return;
+      subOverlay.classList.add('hidden');
+    }
+
+    function resizeSubBoardCanvas() {
+      if (!subCanvasArea || !subBgCanvas || !subDrawCanvas) return;
+      const rect = subCanvasArea.getBoundingClientRect();
+      const dpr = Math.max(window.devicePixelRatio || 1, 2.0);
+      const w = Math.max(400, rect.width);
+      const h = Math.max(300, rect.height);
+
+      subBgCanvas.width = w * dpr;
+      subBgCanvas.height = h * dpr;
+      subBgCanvas.style.width = w + 'px';
+      subBgCanvas.style.height = h + 'px';
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = subDrawCanvas.width;
+      tempCanvas.height = subDrawCanvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      if (subDrawCanvas.width > 0 && subDrawCanvas.height > 0) {
+        tempCtx.drawImage(subDrawCanvas, 0, 0);
+      }
+
+      subDrawCanvas.width = w * dpr;
+      subDrawCanvas.height = h * dpr;
+      subDrawCanvas.style.width = w + 'px';
+      subDrawCanvas.style.height = h + 'px';
+
+      if (subBgCtx) subBgCtx.scale(dpr, dpr);
+      if (subDrawCtx) {
+        subDrawCtx.scale(dpr, dpr);
+        if (tempCanvas.width > 0 && tempCanvas.height > 0) {
+          subDrawCtx.drawImage(tempCanvas, 0, 0, tempCanvas.width / dpr, tempCanvas.height / dpr);
+        }
+      }
+
+      renderSubBackground();
+    }
+
+    function renderSubBackground() {
+      if (!subCanvasArea) return;
+      if (subBoardBg === 'chalk') {
+        subCanvasArea.style.backgroundColor = '#1e3a2f';
+      } else if (subBoardBg === 'white') {
+        subCanvasArea.style.backgroundColor = '#ffffff';
+      } else {
+        subCanvasArea.style.backgroundColor = '#0f172a';
+      }
+    }
+
+    function changeSubBoardBg(bg) {
+      subBoardBg = bg;
+      if (bg === 'white' && subPenColor === '#ffffff') {
+        subPenColor = '#000000';
+      } else if (bg !== 'white' && subPenColor === '#000000') {
+        subPenColor = '#ffffff';
+      }
+      renderSubBackground();
+    }
+
+    function setSubBoardTool(tool) {
+      subCurrentTool = tool;
+      ['pen', 'highlighter', 'eraser'].forEach(t => {
+        const btn = document.getElementById('subTool-' + t);
+        if (btn) {
+          btn.className = (t === tool)
+            ? "px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white"
+            : "px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700";
+        }
+      });
+      updateSubBoardCursor();
+    }
+
+    function updateSubBoardCursor() {
+      if (!subCanvasArea) return;
+      subCanvasArea.className = "flex-1 w-full h-full relative overflow-hidden select-none";
+      if (subCurrentTool === 'pen') subCanvasArea.classList.add('cursor-pencil');
+      else if (subCurrentTool === 'highlighter') subCanvasArea.classList.add('cursor-highlighter');
+      else if (subCurrentTool === 'eraser') subCanvasArea.classList.add('cursor-eraser');
+    }
+
+    function setSubPenColor(col) {
+      subPenColor = col;
+      if (subCurrentTool === 'eraser') setSubBoardTool('pen');
+    }
+
+    function clearSubDrawCanvas() {
+      if (!subCanvasArea || !subDrawCtx) return;
+      const rect = subCanvasArea.getBoundingClientRect();
+      subDrawCtx.clearRect(0, 0, rect.width, rect.height);
+    }
+
+    function getSubCanvasCoordinates(e) {
+      const rect = subDrawCanvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    if (subCanvasArea) {
+      subCanvasArea.addEventListener('mousedown', (e) => {
+        const pt = getSubCanvasCoordinates(e);
+        isSubDrawing = true;
+        if (subDrawCtx) {
+          subDrawCtx.beginPath();
+          subDrawCtx.moveTo(pt.x, pt.y);
+        }
+      });
+
+      subCanvasArea.addEventListener('mousemove', (e) => {
+        if (!isSubDrawing || !subDrawCtx) return;
+        const pt = getSubCanvasCoordinates(e);
+
+        subDrawCtx.save();
+        if (subCurrentTool === 'eraser') {
+          subDrawCtx.globalCompositeOperation = 'destination-out';
+          subDrawCtx.lineWidth = subBrushSize * 4;
+          subDrawCtx.lineCap = 'round';
+          subDrawCtx.lineJoin = 'round';
+          subDrawCtx.lineTo(pt.x, pt.y);
+          subDrawCtx.stroke();
+        } else if (subCurrentTool === 'highlighter') {
+          subDrawCtx.globalAlpha = 0.4;
+          subDrawCtx.strokeStyle = subPenColor;
+          subDrawCtx.lineWidth = subBrushSize * 3;
+          subDrawCtx.lineCap = 'round';
+          subDrawCtx.lineJoin = 'round';
+          subDrawCtx.lineTo(pt.x, pt.y);
+          subDrawCtx.stroke();
+        } else {
+          subDrawCtx.strokeStyle = subPenColor;
+          subDrawCtx.lineWidth = subBrushSize;
+          subDrawCtx.lineCap = 'round';
+          subDrawCtx.lineJoin = 'round';
+          subDrawCtx.lineTo(pt.x, pt.y);
+          subDrawCtx.stroke();
+        }
+        subDrawCtx.restore();
+      });
+
+      window.addEventListener('mouseup', () => {
+        isSubDrawing = false;
+      });
+    }
+
+    async function renderPdfPages() {
+      if (!pdfDoc) return;
+      const containerRect = boardContainer.getBoundingClientRect();
+      const availableW = Math.max(400, containerRect.width - writingMargin);
+      const availableH = Math.max(300, containerRect.height);
+      const dpr = Math.max(window.devicePixelRatio || 1, 2.0);
+
+      if (!isTwoPageMode) {
+        const page = await pdfDoc.getPage(pdfCurrentPage);
+        const unscaledViewport = page.getViewport({ scale: 1 });
+
+        let fitScale;
+        if (pageFitMode === 'width') {
+          fitScale = (availableW / unscaledViewport.width) * 0.98;
+        } else {
+          const scaleX = availableW / unscaledViewport.width;
+          const scaleY = availableH / unscaledViewport.height;
+          fitScale = Math.min(scaleX, scaleY) * 0.98;
+        }
+
+        const viewport = page.getViewport({ scale: fitScale });
+        const totalW = viewport.width + writingMargin;
+        const totalH = Math.max(viewport.height, containerRect.height);
+
+        [bgCanvas, drawCanvas, laserCanvas].forEach(cvs => {
+          cvs.width = totalW * dpr;
+          cvs.height = totalH * dpr;
+          cvs.style.width = totalW + 'px';
+          cvs.style.height = totalH + 'px';
+        });
+
+        bgCtx.scale(dpr, dpr);
+        drawCtx.scale(dpr, dpr);
+        laserCtx.scale(dpr, dpr);
+
+        bgCtx.fillStyle = '#ffffff';
+        bgCtx.fillRect(0, 0, totalW, totalH);
+
+        if (writingMargin > 0) {
+          bgCtx.fillStyle = '#f8fafc';
+          bgCtx.fillRect(viewport.width, 0, writingMargin, totalH);
+          bgCtx.strokeStyle = '#e2e8f0';
+          bgCtx.beginPath();
+          bgCtx.moveTo(viewport.width, 0);
+          bgCtx.lineTo(viewport.width, totalH);
+          bgCtx.stroke();
+        }
+
+        await page.render({ canvasContext: bgCtx, viewport }).promise;
+        document.getElementById('pdfCurrentPage').textContent = pdfCurrentPage;
+      } else {
+        const page1 = await pdfDoc.getPage(pdfCurrentPage);
+        const hasPage2 = (pdfCurrentPage + 1 <= pdfDoc.numPages);
+        const page2 = hasPage2 ? await pdfDoc.getPage(pdfCurrentPage + 1) : null;
+
+        const unscaled1 = page1.getViewport({ scale: 1 });
+        const unscaled2 = page2 ? page2.getViewport({ scale: 1 }) : unscaled1;
+
+        const combinedUnscaledW = unscaled1.width + unscaled2.width;
+        const maxUnscaledH = Math.max(unscaled1.height, unscaled2.height);
+
+        let fitScale;
+        if (pageFitMode === 'width') {
+          fitScale = (availableW / combinedUnscaledW) * 0.98;
+        } else {
+          const scaleX = availableW / combinedUnscaledW;
+          const scaleY = availableH / maxUnscaledH;
+          fitScale = Math.min(scaleX, scaleY) * 0.98;
+        }
+
+        const vp1 = page1.getViewport({ scale: fitScale });
+        const vp2 = page2 ? page2.getViewport({ scale: fitScale }) : null;
+
+        const pagesW = vp1.width + (vp2 ? vp2.width : 0);
+        const totalW = pagesW + writingMargin;
+        const totalH = Math.max(vp1.height, vp2 ? vp2.height : 0, containerRect.height);
+
+        [bgCanvas, drawCanvas, laserCanvas].forEach(cvs => {
+          cvs.width = totalW * dpr;
+          cvs.height = totalH * dpr;
+          cvs.style.width = totalW + 'px';
+          cvs.style.height = totalH + 'px';
+        });
+
+        bgCtx.scale(dpr, dpr);
+        drawCtx.scale(dpr, dpr);
+        laserCtx.scale(dpr, dpr);
+
+        bgCtx.fillStyle = '#f1f5f9';
+        bgCtx.fillRect(0, 0, totalW, totalH);
+
+        bgCtx.save();
+        bgCtx.fillStyle = '#ffffff';
+        bgCtx.fillRect(0, 0, vp1.width, vp1.height);
+        await page1.render({ canvasContext: bgCtx, viewport: vp1 }).promise;
+        bgCtx.restore();
+
+        bgCtx.strokeStyle = '#cbd5e1';
+        bgCtx.lineWidth = 1.5;
+        bgCtx.beginPath();
+        bgCtx.moveTo(vp1.width, 0);
+        bgCtx.lineTo(vp1.width, totalH);
+        bgCtx.stroke();
+
+        if (page2 && vp2) {
+          bgCtx.save();
+          bgCtx.translate(vp1.width, 0);
+          bgCtx.fillStyle = '#ffffff';
+          bgCtx.fillRect(0, 0, vp2.width, vp2.height);
+          await page2.render({ canvasContext: bgCtx, viewport: vp2 }).promise;
+          bgCtx.restore();
+        }
+
+        if (writingMargin > 0) {
+          bgCtx.fillStyle = '#ffffff';
+          bgCtx.fillRect(pagesW, 0, writingMargin, totalH);
+          bgCtx.strokeStyle = '#e2e8f0';
+          bgCtx.beginPath();
+          bgCtx.moveTo(pagesW, 0);
+          bgCtx.lineTo(pagesW, totalH);
+          bgCtx.stroke();
+        }
+
+        document.getElementById('pdfCurrentPage').textContent = hasPage2 ? `${pdfCurrentPage}-${pdfCurrentPage + 1}` : `${pdfCurrentPage}`;
+      }
+    }
+
+    function prevPdfPage() {
+      if (!pdfDoc) return;
+      const step = isTwoPageMode ? 2 : 1;
+      if (pdfCurrentPage - step >= 1) {
+        pdfCurrentPage -= step;
+        renderPdfPages();
+      } else if (pdfCurrentPage > 1) {
+        pdfCurrentPage = 1;
+        renderPdfPages();
+      }
+    }
+
+    function nextPdfPage() {
+      if (!pdfDoc) return;
+      const step = isTwoPageMode ? 2 : 1;
+      if (pdfCurrentPage + step <= pdfDoc.numPages) {
+        pdfCurrentPage += step;
+        renderPdfPages();
+      }
+    }
+
+    function getCanvasCoordinates(e) {
+      const rect = drawCanvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const logicalWidth = parseFloat(drawCanvas.style.width) || drawCanvas.width;
+      const logicalHeight = parseFloat(drawCanvas.style.height) || drawCanvas.height;
+      const x = ((clientX - rect.left) / rect.width) * logicalWidth;
+      const y = ((clientY - rect.top) / rect.height) * logicalHeight;
+      return { x, y };
+    }
+
+    function updateLaserParticles() {
+      if (!laserCtx || !laserCanvas) return;
+      laserCtx.clearRect(0, 0, laserCanvas.width, laserCanvas.height);
+      for (let i = laserParticles.length - 1; i >= 0; i--) {
+        const p = laserParticles[i];
+        p.alpha -= 0.04;
+        p.radius *= 0.94;
+        if (p.alpha <= 0) {
+          laserParticles.splice(i, 1);
+        } else {
+          laserCtx.save();
+          laserCtx.globalAlpha = p.alpha;
+          laserCtx.fillStyle = p.color || '#38BDF8';
+          laserCtx.shadowColor = p.glow || '#0284C7';
+          laserCtx.shadowBlur = 12;
+          laserCtx.beginPath();
+          laserCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          laserCtx.fill();
+          laserCtx.restore();
+        }
+      }
+      requestAnimationFrame(updateLaserParticles);
+    }
+    updateLaserParticles();
+
+    function triggerLaserEffect(x, y) {
+      let color = '#38BDF8', glow = '#0284C7';
+      if (currentLaserStyle === 'paw') { color = '#38BDF8'; glow = '#0284C7'; }
+      else if (currentLaserStyle === 'star') { color = '#6366F1'; glow = '#4338CA'; }
+      else if (currentLaserStyle === 'dot') { color = '#EF4444'; glow = '#DC2626'; }
+
+      laserParticles.push({ x, y, radius: 10, alpha: 0.9, color, glow });
+    }
+
+    if (boardContainer) {
+      boardContainer.addEventListener('mousedown', (e) => {
+        if (spacePressed) {
+          isPanning = true;
+          panStartX = e.clientX - panX;
+          panStartY = e.clientY - panY;
+          return;
+        }
+        const pt = getCanvasCoordinates(e);
+        startX = pt.x;
+        startY = pt.y;
+
+        if (currentTool === 'laser') {
+          triggerLaserEffect(pt.x, pt.y);
+          return;
+        }
+
+        isDrawing = true;
+        if (currentTool === 'pen' || currentTool === 'highlighter' || currentTool === 'eraser') {
+          drawCtx.beginPath();
+          drawCtx.moveTo(pt.x, pt.y);
+        }
+      });
+
+      boardContainer.addEventListener('mousemove', (e) => {
+        if (isPanning) {
+          panX = e.clientX - panStartX;
+          panY = e.clientY - panStartY;
+          applyViewportTransform();
+          return;
+        }
+
+        const pt = getCanvasCoordinates(e);
+
+        if (currentTool === 'laser') {
+          triggerLaserEffect(pt.x, pt.y);
+          return;
+        }
+
+        if (!isDrawing) return;
+
+        drawCtx.save();
+        if (currentTool === 'eraser') {
+          drawCtx.globalCompositeOperation = 'destination-out';
+          drawCtx.lineWidth = brushSize * 4;
+          drawCtx.lineCap = 'round';
+          drawCtx.lineJoin = 'round';
+          drawCtx.lineTo(pt.x, pt.y);
+          drawCtx.stroke();
+        } else if (currentTool === 'highlighter') {
+          drawCtx.globalAlpha = 0.35;
+          drawCtx.strokeStyle = penColor;
+          drawCtx.lineWidth = brushSize * 3;
+          drawCtx.lineCap = 'round';
+          drawCtx.lineJoin = 'round';
+          drawCtx.lineTo(pt.x, pt.y);
+          drawCtx.stroke();
+        } else if (currentTool === 'pen') {
+          drawCtx.strokeStyle = penColor;
+          drawCtx.lineWidth = brushSize;
+          drawCtx.lineCap = 'round';
+          drawCtx.lineJoin = 'round';
+          drawCtx.lineTo(pt.x, pt.y);
+          drawCtx.stroke();
+        }
+        drawCtx.restore();
+      });
+
+      window.addEventListener('mouseup', () => {
+        isDrawing = false;
+        isPanning = false;
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !spacePressed && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT') {
+          spacePressed = true;
+          boardContainer.style.cursor = 'grab';
+        }
+      });
+      window.addEventListener('keyup', (e) => {
+        if (e.code === 'Space') {
+          spacePressed = false;
+          updateBoardCursor();
+        }
+      });
+
+      boardContainer.addEventListener('wheel', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          const delta = e.deltaY < 0 ? 0.08 : -0.08;
+          zoomScale = Math.max(0.5, Math.min(3.5, zoomScale + delta));
+          applyViewportTransform();
+        }
+      }, { passive: false });
+    }
+
+    function applyViewportTransform() {
+      if (boardViewport) {
+        boardViewport.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomScale})`;
+      }
+    }
+
+    function resetZoomAndPan() {
+      zoomScale = 1.0;
+      panX = 0;
+      panY = 0;
+      applyViewportTransform();
+    }
+
+    function clearDrawCanvas() {
+      if (drawCtx && drawCanvas) {
+        drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+      }
+    }
+
+    function saveBoardImage() {
+      if (!drawCanvas || !bgCanvas) return;
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = drawCanvas.width;
+      exportCanvas.height = drawCanvas.height;
+      const ctx = exportCanvas.getContext('2d');
+      ctx.drawImage(bgCanvas, 0, 0);
+      ctx.drawImage(drawCanvas, 0, 0);
+      const a = document.createElement('a');
+      a.download = '수업판서.png';
+      a.href = exportCanvas.toDataURL();
+      a.click();
+    }
+
+    function handleBoardDoubleClick(e) {
+      if (!pdfDoc) document.getElementById('pdfFileInput').click();
+    }
+    function handleBoardDragOver(e) {
+      e.preventDefault();
+      document.getElementById('dragDropOverlay').classList.remove('hidden');
+    }
+    function handleBoardDragLeave(e) {
+      document.getElementById('dragDropOverlay').classList.add('hidden');
+    }
+    function handleBoardDrop(e) {
+      e.preventDefault();
+      document.getElementById('dragDropOverlay').classList.add('hidden');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type === 'application/pdf') openPdfFromBlob(file);
+    }
+
+    // ==========================================
+    // 4. 수업 타이머 & 추첨기 & 점수판
+    // ==========================================
+    let timerTotalSeconds = 300;
+    let timerRemaining = 300;
+    let timerInterval = null;
+    let isTimerRunning = false;
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function updateTimerUI() {
+      const display = document.getElementById('timerNumbers');
+      const progressBar = document.getElementById('timerProgressBar');
+      const displayBox = document.getElementById('timerDisplayBox');
+
+      display.textContent = formatTime(timerRemaining);
+      const pct = (timerRemaining / timerTotalSeconds) * 100;
+      progressBar.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+
+      if (timerRemaining <= 10 && timerRemaining > 0) {
+        const accelDuration = (0.2 + (timerRemaining / 10) * 0.6).toFixed(2);
+        displayBox.style.setProperty('--pulse-duration', `${accelDuration}s`);
+        displayBox.classList.add('timer-accelerated-pulse', 'border-rose-600', 'bg-rose-950');
+        display.classList.remove('text-emerald-400');
+        display.classList.add('text-rose-400');
+        progressBar.className = "h-full bg-rose-500 rounded-full transition-all duration-300";
+
+        playBeep(timerRemaining <= 3);
+      } else if (timerRemaining <= 30 && timerRemaining > 10) {
+        displayBox.classList.remove('timer-accelerated-pulse', 'border-rose-600', 'bg-rose-950');
+        displayBox.classList.add('border-amber-500');
+        display.classList.remove('text-emerald-400', 'text-rose-400');
+        display.classList.add('text-amber-400');
+        progressBar.className = "h-full bg-amber-500 rounded-full transition-all duration-300";
+      } else {
+        displayBox.classList.remove('timer-accelerated-pulse', 'border-rose-600', 'bg-rose-950', 'border-amber-500');
+        display.classList.remove('text-rose-400', 'text-amber-400');
+        display.classList.add('text-emerald-400');
+        progressBar.className = "h-full bg-gradient-to-r from-indigo-500 to-sky-500 rounded-full transition-all duration-300";
+      }
+    }
+
+    function toggleTimer() {
+      const btn = document.getElementById('timerToggleBtn');
+      if (isTimerRunning) {
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+        btn.innerHTML = `<i class="fa-solid fa-play"></i> 계속`;
+      } else {
+        if (timerRemaining <= 0) timerRemaining = timerTotalSeconds;
+        isTimerRunning = true;
+        btn.innerHTML = `<i class="fa-solid fa-pause"></i> 일시정지`;
+        timerInterval = setInterval(() => {
+          timerRemaining--;
+          updateTimerUI();
+          if (timerRemaining <= 0) {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            btn.innerHTML = `<i class="fa-solid fa-play"></i> 시작`;
+            playFanfare();
+            confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
+          }
+        }, 1000);
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      isTimerRunning = false;
+      timerRemaining = timerTotalSeconds;
+      document.getElementById('timerToggleBtn').innerHTML = `<i class="fa-solid fa-play"></i> 시작`;
+      updateTimerUI();
+    }
+
+    function addTimerTime(sec) {
+      timerRemaining = Math.max(0, timerRemaining + sec);
+      timerTotalSeconds = Math.max(timerTotalSeconds, timerRemaining);
+      updateTimerUI();
+    }
+
+    function setTimerPreset(sec) {
+      clearInterval(timerInterval);
+      isTimerRunning = false;
+      document.getElementById('timerToggleBtn').innerHTML = `<i class="fa-solid fa-play"></i> 시작`;
+      timerTotalSeconds = sec;
+      timerRemaining = sec;
+      updateTimerUI();
+    }
+
+    // 단일 뽑기
+    let isSpinning = false;
+    let singlePickedList = []; // 당첨자 누적 기록 리스트
+
+    function spinPicker() {
+      if (isSpinning) return;
+      const raw = document.getElementById('pickerNamesInput').value;
+      const names = raw.split(/[\n,]+/).map(s => s.trim()).filter(s => s.length > 0);
+      if (names.length === 0) {
+        alert('후보 명단을 입력해주세요!');
+        return;
+      }
+
+      isSpinning = true;
+      const display = document.getElementById('pickerDisplay');
+      const btn = document.getElementById('pickerBtn');
+      btn.disabled = true;
+
+      let counter = 0;
+      const totalTicks = 25;
+      const interval = setInterval(() => {
+        const randName = names[Math.floor(Math.random() * names.length)];
+        display.textContent = randName;
+        playBeep(false);
+        counter++;
+
+        if (counter >= totalTicks) {
+          clearInterval(interval);
+          const winner = names[Math.floor(Math.random() * names.length)];
+          display.textContent = `🎉 ${winner} 당첨!`;
+          playFanfare();
+          confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+          isSpinning = false;
+          btn.disabled = false;
+
+          // 당첨 기록 누적
+          addSinglePickRecord(winner);
+
+          if (document.getElementById('excludePicked').checked) {
+            const nextList = names.filter(n => n !== winner);
+            document.getElementById('pickerNamesInput').value = nextList.join('\n');
+          }
+        }
+      }, 90);
+    }
+
+    function addSinglePickRecord(name) {
+      singlePickedList.push(name);
+      renderSinglePickedHistory();
+    }
+
+    function renderSinglePickedHistory() {
+      const section = document.getElementById('singlePickedHistorySection');
+      const countEl = document.getElementById('singlePickedCount');
+      const container = document.getElementById('singlePickedTags');
+      if (!section || !container) return;
+
+      if (singlePickedList.length === 0) {
+        section.classList.add('hidden');
+        section.classList.remove('flex');
+        return;
+      }
+
+      section.classList.remove('hidden');
+      section.classList.add('flex');
+      countEl.textContent = singlePickedList.length;
+      container.innerHTML = '';
+
+      singlePickedList.forEach((name, idx) => {
+        const badge = document.createElement('div');
+        badge.className = "px-2.5 py-1 rounded-lg bg-white border border-rose-200 text-rose-800 text-xs font-black shadow-xs flex items-center gap-1.5";
+        badge.innerHTML = `<span class="w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-black">${idx + 1}</span> <span>${name}</span>`;
+        container.appendChild(badge);
+      });
+    }
+
+    function clearSinglePickHistory() {
+      singlePickedList = [];
+      renderSinglePickedHistory();
+    }
+
+    function toggleSingleExportMenu() {
+      const dd = document.getElementById('singleExportDropdown');
+      if (dd) dd.classList.toggle('hidden');
+    }
+
+    function exportSinglePickHistory(type) {
+      if (singlePickedList.length === 0) {
+        alert('저장할 당첨자 기록이 없습니다.');
+        return;
+      }
+      const dd = document.getElementById('singleExportDropdown');
+      if (dd) dd.classList.add('hidden');
+
+      if (type === 'excel') {
+        const rows = [["순번", "당첨자 이름"]];
+        singlePickedList.forEach((name, idx) => {
+          rows.push([idx + 1, name]);
+        });
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "발표당첨자기록");
+        XLSX.writeFile(wb, "발표자_당첨기록.xlsx");
+      } else if (type === 'txt') {
+        let text = "📋 [발표자 당첨 기록]\n\n";
+        singlePickedList.forEach((name, idx) => {
+          text += `${idx + 1}번째 당첨: ${name}\n`;
+        });
+        downloadTextFile(text, "발표자_당첨기록.txt");
+      }
+    }
+
+    // 발표 순서 정하기
+    let currentPresentationOrder = [];
+
+    function toggleOrderExportMenu() {
+      const dd = document.getElementById('orderExportDropdown');
+      if (dd) dd.classList.toggle('hidden');
+    }
+
+    function exportPresentationOrder(type) {
+      if (currentPresentationOrder.length === 0) {
+        alert('먼저 발표 순서를 정해주세요.');
+        return;
+      }
+      const dd = document.getElementById('orderExportDropdown');
+      if (dd) dd.classList.add('hidden');
+
+      if (type === 'excel') {
+        const rows = [["발표순서", "발표자 이름"]];
+        currentPresentationOrder.forEach((name, idx) => {
+          rows.push([idx + 1, name]);
+        });
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "발표순서");
+        XLSX.writeFile(wb, "발표_순서_결과.xlsx");
+      } else if (type === 'txt') {
+        let text = "📋 [확정된 발표 순서]\n\n";
+        currentPresentationOrder.forEach((name, idx) => {
+          text += `${idx + 1}번 발표자: ${name}\n`;
+        });
+        downloadTextFile(text, "발표_순서_결과.txt");
+      } else if (type === 'pdf') {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.text("Presentation Order List", 14, 15);
+        let y = 25;
+        currentPresentationOrder.forEach((name, idx) => {
+          doc.text(`No.${idx + 1}: ${name}`, 20, y);
+          y += 8;
+          if (y > 270) {
+            doc.addPage();
+            y = 20;
+          }
+        });
+        doc.save("발표_순서_결과.pdf");
+      }
+    }
+
+    function downloadTextFile(text, filename) {
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // 드롭다운 외부 클릭 닫기 이벤트 핸들러 보강
+    window.addEventListener('click', (e) => {
+      if (!e.target.closest('#singleExportDropdown') && !e.target.closest('button[onclick="toggleSingleExportMenu()"]')) {
+        const dd = document.getElementById('singleExportDropdown');
+        if (dd) dd.classList.add('hidden');
+      }
+      if (!e.target.closest('#orderExportDropdown') && !e.target.closest('button[onclick="toggleOrderExportMenu()"]')) {
+        const dd = document.getElementById('orderExportDropdown');
+        if (dd) dd.classList.add('hidden');
+      }
+    });
+
+    function switchPickerSubMode(mode) {
+      const tabSingle = document.getElementById('pickerSubTabSingle');
+      const tabOrder = document.getElementById('pickerSubTabOrder');
+      const viewSingle = document.getElementById('pickerSingleView');
+      const viewOrder = document.getElementById('pickerOrderView');
+
+      if (mode === 'single') {
+        tabSingle.className = "flex-1 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-white text-rose-600 shadow-sm transition-all flex items-center justify-center gap-1.5";
+        tabOrder.className = "flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5";
+        viewSingle.classList.remove('hidden');
+        viewOrder.classList.add('hidden');
+      } else {
+        tabOrder.className = "flex-1 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-white text-indigo-600 shadow-sm transition-all flex items-center justify-center gap-1.5";
+        tabSingle.className = "flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5";
+        viewSingle.classList.add('hidden');
+        viewOrder.classList.remove('hidden');
+
+        const singleText = document.getElementById('pickerNamesInput').value.trim();
+        const orderText = document.getElementById('orderNamesInput').value.trim();
+        if (singleText && !orderText) {
+          document.getElementById('orderNamesInput').value = singleText;
+        }
+      }
+    }
+
+    function loadSampleOrderNames() {
+      document.getElementById('orderNamesInput').value = "김민준\n이서연\n박도윤\n정시우\n최하은\n조유준\n윤지호\n장서아";
+    }
+
+    function generatePresentationOrder() {
+      const raw = document.getElementById('orderNamesInput').value;
+      const names = raw.split(/[\n,]+/).map(s => s.trim()).filter(s => s.length > 0);
+      if (names.length < 2) {
+        alert('순서를 정할 명단을 최소 2명 이상 입력해주세요!');
+        return;
+      }
+
+      playBeep(true);
+
+      const shuffled = [...names];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      currentPresentationOrder = shuffled;
+      renderPresentationOrder();
+
+      playFanfare();
+      confetti({ particleCount: 70, spread: 75, origin: { y: 0.6 } });
+    }
+
+    function renderPresentationOrder() {
+      const section = document.getElementById('orderResultSection');
+      const container = document.getElementById('orderListCards');
+      const countEl = document.getElementById('orderTotalCount');
+
+      section.classList.remove('hidden');
+      countEl.textContent = currentPresentationOrder.length;
+      container.innerHTML = '';
+
+      currentPresentationOrder.forEach((name, idx) => {
+        const orderNum = idx + 1;
+        const isFirst = orderNum === 1;
+        const card = document.createElement('div');
+        
+        card.className = `p-3 rounded-2xl border-2 flex items-center justify-between transition-all ${
+          isFirst 
+            ? 'bg-amber-50 border-amber-300 text-amber-950 font-black shadow-sm ring-2 ring-amber-200' 
+            : 'bg-slate-50 border-slate-200 text-slate-800 font-extrabold'
+        }`;
+
+        card.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black shadow-xs ${
+              isFirst ? 'bg-amber-500 text-white' : 'bg-indigo-600 text-white'
+            }">
+              ${orderNum}
+            </span>
+            <span class="text-sm tracking-tight">${name}</span>
+          </div>
+          ${isFirst ? '<span class="text-xs bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-black">👑 1번 발표자</span>' : `<span class="text-xs text-slate-400 font-bold">${orderNum}번째</span>`}
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function copyOrderResultText() {
+      if (currentPresentationOrder.length === 0) return;
+      let text = "📋 [발표 순서 추첨 결과]\n";
+      currentPresentationOrder.forEach((name, idx) => {
+        text += `${idx + 1}번: ${name}\n`;
+      });
+
+      const tempArea = document.createElement('textarea');
+      tempArea.value = text;
+      document.body.appendChild(tempArea);
+      tempArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempArea);
+
+      alert('발표 순서가 클립보드에 복사되었습니다!');
+    }
+
+    // 모둠 점수판
+    let scoreTeams = [
+      { name: "1조", score: 0 },
+      { name: "2조", score: 0 },
+      { name: "3조", score: 0 },
+      { name: "4조", score: 0 }
+    ];
+
+    function renderScoreboard() {
+      const grid = document.getElementById('scoreTeamsGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      let maxScore = Math.max(...scoreTeams.map(t => t.score));
+
+      scoreTeams.forEach((team, idx) => {
+        const isFirst = maxScore > 0 && team.score === maxScore;
+        const card = document.createElement('div');
+        card.className = `p-5 rounded-2xl border-2 transition-all ${isFirst ? 'bg-amber-50 border-amber-400 shadow-md ring-2 ring-amber-300' : 'bg-white border-slate-200 shadow-sm'}`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-3">
+            <input type="text" value="${team.name}" onchange="changeTeamName(${idx}, this.value)" class="font-extrabold text-base text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-500 focus:outline-none w-28">
+            ${isFirst ? '<span class="px-2 py-0.5 rounded-full text-xs font-black bg-amber-200 text-amber-900 animate-pulse">👑 1위</span>' : ''}
+          </div>
+          <div class="text-4xl sm:text-5xl font-black text-center my-3 ${isFirst ? 'text-amber-600' : 'text-slate-800'}">${team.score}점</div>
+          <div class="grid grid-cols-4 gap-1.5 mt-4 font-extrabold">
+            <button onclick="changeScore(${idx}, -1)" class="py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs text-slate-700">-1</button>
+            <button onclick="changeScore(${idx}, 1)" class="py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-xs text-indigo-700">+1</button>
+            <button onclick="changeScore(${idx}, 2)" class="py-2 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-xs text-indigo-800">+2</button>
+            <button onclick="changeScore(${idx}, 5)" class="py-2 rounded-lg bg-amber-100 hover:bg-amber-200 text-xs text-amber-800">+5</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function changeScore(idx, delta) {
+      scoreTeams[idx].score = Math.max(0, scoreTeams[idx].score + delta);
+      playBeep(delta > 0);
+      renderScoreboard();
+    }
+
+    function changeTeamName(idx, newName) {
+      scoreTeams[idx].name = newName.trim() || `${idx + 1}조`;
+    }
+
+    function addScoreTeam() {
+      scoreTeams.push({ name: `${scoreTeams.length + 1}조`, score: 0 });
+      renderScoreboard();
+    }
+
+    function resetAllScores() {
+      scoreTeams.forEach(t => t.score = 0);
+      renderScoreboard();
+    }
+
+    function celebrateFirstPlace() {
+      playFanfare();
+      confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 } });
+    }
+
+    // 입력 이벤트 안전 바인딩
+    const gradeTotalInput = document.getElementById('gradeTotalStudents');
+    if (gradeTotalInput) {
+      gradeTotalInput.addEventListener('input', () => {
+        renderGradeTable();
+        calculateMyGradeResult();
+      });
+    }
+
+    const rankInputEl = document.getElementById('myRankInput');
+    if (rankInputEl) {
+      rankInputEl.addEventListener('input', calculateMyGradeResult);
+    }
+
+    const sameRankInputEl = document.getElementById('sameRankCountInput');
+    if (sameRankInputEl) {
+      sameRankInputEl.addEventListener('input', calculateMyGradeResult);
+    }
+
+    // 초기화 구동
+    window.addEventListener('DOMContentLoaded', () => {
+      setBoardTool('pen');
+      renderScoreboard();
+      updateTimerUI();
+      updateStudentCount();
+      initColabCats();
+      if (document.getElementById('gradeTotalStudents')) {
+        setGradeSystem(5); // 5등급제 기본 활성화
+      }
+    });
+  </script>
+</body>
+</html>
