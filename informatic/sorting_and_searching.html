@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>정렬 알고리즘 & 빅오 학습실</title>
+<style>
+:root{--navy:#16365c;--blue:#2478ee;--green:#159565;--purple:#8054e8;--ink:#173253;--muted:#5d7188;--line:#dce7f4;--bg:#f5f8fc}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,"Malgun Gothic","맑은 고딕",sans-serif;color:var(--ink)}
+header{background:linear-gradient(110deg,#17365c,#2a5078);color:white;padding:18px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+header h1{font-size:23px;margin:0}header span{opacity:.9;font-size:14px}
+main{max-width:1500px;margin:auto;padding:22px}
+.intro{display:flex;justify-content:space-between;align-items:end;gap:18px;flex-wrap:wrap;margin-bottom:18px}
+h2{margin:0 0 8px;font-size:25px}.intro p{margin:0;color:var(--muted)}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.controls input{padding:11px 12px;border:1px solid #c6d5e8;border-radius:9px;font-size:16px;width:230px}.speed-control{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid #d7e3f2;border-radius:9px;padding:7px 10px;font-size:13px;color:#385573}.speed-control input{width:110px;padding:0;accent-color:#2478ee}.speed-value{min-width:42px;text-align:right;font-weight:700;color:#2478ee}
+button{border:0;border-radius:9px;padding:10px 14px;cursor:pointer;font-size:14px;font-weight:700;transition:.15s}
+button:hover{filter:brightness(.96);transform:translateY(-1px)}button:focus-visible,input:focus-visible{outline:3px solid #8ab9ff;outline-offset:2px}
+.primary{background:var(--blue);color:#fff}.mutedbtn{background:#edf3fb;color:#244569;border:1px solid #d7e3f2}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.card{background:white;border:1px solid var(--line);border-radius:15px;overflow:hidden;box-shadow:0 4px 16px #1b41610a;min-width:0}
+.cardhead{padding:16px 17px 12px;background:var(--tint);border-bottom:1px solid var(--border)}
+.cardhead h3{margin:0 0 8px;font-size:20px;color:var(--accent)}.cardhead p{margin:0;font-size:14px;line-height:1.5}
+.inner{padding:13px 14px 15px}.question{background:var(--tint);border-radius:9px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+.progress{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin:10px 0}
+.array{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;min-height:42px}
+.num{width:42px;height:42px;border-radius:8px;background:#eff3f8;border:1px solid #e1eaf4;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px}
+.num.active{background:var(--tint);border:2px solid var(--accent);color:var(--accent)}
+.num.done{background:#d9f6e7;border-color:#8dd8ae;color:#126a43}
+.arrow{text-align:center;font-size:24px;color:var(--accent);height:34px;padding-top:2px}
+.caption{text-align:center;min-height:35px;font-size:12px;line-height:1.45;color:#4d6480;padding:5px}
+.pivot-setting{display:flex;align-items:center;gap:8px;background:#f2edff;border:1px solid #d3c2ff;border-radius:9px;padding:9px 10px;margin:8px 0;font-size:12px;color:#5b3aa4}.pivot-setting label{font-weight:700}.pivot-setting select{flex:1;padding:7px;border:1px solid #cdbdf5;border-radius:7px;background:white;color:#4b347f}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.stat{background:#f7f9fc;border:1px solid #e1eaf4;border-radius:8px;padding:9px;text-align:center;font-size:12px;color:var(--muted)}.stat strong{display:block;font-size:20px;color:var(--accent);margin-top:3px}
+.groupboxes{display:grid;grid-template-columns:1fr .65fr 1fr;gap:7px;margin:9px 0}
+.group{background:var(--tint);border:1px solid var(--border);border-radius:8px;padding:9px 4px;text-align:center;font-size:12px}.group strong{display:block;font-size:18px;margin-top:7px}
+.actions{display:flex;gap:6px;margin:10px 0 13px}.actions button{flex:1;background:var(--accent);color:white;padding:9px 6px}.actions .auto{background:white;border:1px solid var(--border);color:var(--accent)}
+.codebox{border:1px solid #e1eaf4;border-radius:9px;overflow:hidden;background:#f7f9fc}
+.codehead{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;font-weight:700;font-size:12px;border-bottom:1px solid #e1eaf4}
+.codehead button{padding:5px 8px;background:white;border:1px solid #dce6f1;font-size:11px;color:#385573}
+pre{margin:0;padding:11px;overflow:auto;font-size:11px;line-height:1.55;color:#243d5d;white-space:pre}
+.bottom{margin-top:16px;display:grid;grid-template-columns:1.15fr 1fr;gap:14px}
+.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:16px}
+.panel h3{margin:0 0 12px;font-size:17px}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #e0e9f4;padding:9px;text-align:left}th{background:#f0f5fb}
+.quiz{background:#f8f5ff;border-color:#e6dcff}.quiz ol{padding-left:20px;line-height:1.8;font-size:14px}
+.note{color:var(--muted);font-size:12px;line-height:1.6;margin-top:10px}
+.mcq,.essay{background:#fff;border:1px solid #dce7f4;border-radius:10px;padding:14px;margin:12px 0}.mcq label{display:block;margin:8px 0}.mcq input{margin-right:6px}.feedback{font-size:13px;margin-top:8px;min-height:20px}.correct{color:#15803d;font-weight:700}.wrong{color:#b91c1c;font-weight:700}.score{margin-left:12px;font-weight:700;color:#4f46e5}.essay textarea{display:block;width:100%;min-height:78px;margin:10px 0;padding:10px;border:1px solid #cbd5e1;border-radius:8px;resize:vertical;font:inherit}.essay details{background:#f8fafc;border-radius:7px;padding:8px 10px;font-size:13px}.essay details p{margin:8px 0;line-height:1.6}
+@media(max-width:1050px){.cards{grid-template-columns:1fr}.bottom{grid-template-columns:1fr}.cardhead h3{font-size:19px}.problem-grid{grid-template-columns:1fr!important}}
+
+/* ===== Top-level page tabs ===== */
+.page-tabs{display:flex;gap:8px;background:#0f2949;padding:0 24px}
+.page-tab-btn{padding:14px 18px;border:none;background:none;color:#aebfd6;font-size:15px;font-weight:700;cursor:pointer;border-bottom:3px solid transparent;transition:.2s}
+.page-tab-btn:hover{color:#fff}
+.page-tab-btn.active{color:#fff;border-bottom-color:#ffb74d}
+.page-panel{display:none}
+.page-panel.active{display:block}
+
+/* ===== Big-O tab (scoped bo- prefix to avoid clashing with sorting styles) ===== */
+.bo-wrap{max-width:900px;margin:0 auto;padding:22px 4px}
+.bo-lead{color:var(--muted);margin:0 0 20px;font-size:15px;text-align:center}
+.bo-tabs{display:flex;gap:8px;border-bottom:2px solid var(--line);margin-bottom:22px;overflow-x:auto}
+.bo-tab-btn{flex:1;min-width:110px;padding:12px 8px;border:none;background:none;font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:.2s;white-space:nowrap}
+.bo-tab-btn:hover{color:var(--blue)}
+.bo-tab-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+.bo-panel{display:none;animation:bofade .3s ease}
+.bo-panel.active{display:block}
+@keyframes bofade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.bo-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:16px;box-shadow:0 2px 6px #1b41610a}
+.bo-card h2{margin-top:0;font-size:19px}
+.bo-card h3{font-size:16px;color:var(--blue);margin:18px 0 8px}
+.bo-badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:13px;font-weight:700;margin-right:6px}
+.bo-b1{background:#dcfce7;color:#166534}.bo-bn{background:#dbeafe;color:#1e40af}
+.bo-bnlogn{background:#ede9fe;color:#5b21b6}.bo-bn2{background:#fee2e2;color:#991b1b}
+.bo-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+.bo-table th,.bo-table td{border:1px solid var(--line);padding:10px 12px;text-align:center}
+.bo-table th{background:#eef2ff;color:var(--blue)}
+.bo-table td.hl{background:#fffbeb;font-weight:700}
+.bo-growth{display:flex;align-items:flex-end;gap:10px;margin:16px 0;height:140px}
+.bo-bargroup{flex:1;text-align:center;display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+.bo-bar{width:100%;border-radius:6px 6px 0 0;margin-bottom:6px}
+.bo-barlabel{font-size:12px;color:var(--muted)}
+.bo-chip{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;margin-bottom:10px;border:1px solid var(--line)}
+.bo-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.bo-dot-bubble{background:#f59e0b}.bo-dot-selection{background:#10b981}.bo-dot-quick{background:#6366f1}
+.bo-think{background:#fffbeb;border-left:4px solid #f59e0b;padding:16px 20px;border-radius:8px}
+.bo-think li{margin-bottom:8px}
+.bo-note{font-size:13px;color:var(--muted);margin-top:10px}
+.bo-example{background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:16px 18px;margin:14px 0}
+.bo-example b{color:#0369a1}
+.bo-steps{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:14px 0}
+.bo-step{background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:10px 14px;font-size:13px;text-align:center;min-width:70px}
+.bo-step b{display:block;font-size:17px;color:var(--purple)}
+.bo-graph{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin:16px 0;overflow:hidden}.bo-graph h3{margin:0 0 8px;color:var(--blue);font-size:16px}.bo-graph-control{display:flex;align-items:center;gap:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:9px 11px;margin:10px 0;font-size:13px;color:#475569}.bo-graph-control input{flex:1;accent-color:#4f46e5}.bo-graph-value{min-width:55px;text-align:right;font-weight:700;color:#4f46e5}.bo-graph svg{display:block;width:100%;height:auto;min-height:260px}.bo-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}.bo-legend span{display:inline-flex;align-items:center;gap:5px}.bo-legend i{width:22px;height:3px;display:inline-block;border-radius:3px}.bo-axis{font-size:11px;fill:#64748b}.bo-grid{stroke:#e2e8f0;stroke-width:1}.bo-curve{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+
+</style>
+</head>
+<body>
+
+<div class="page-tabs">
+  <button class="page-tab-btn active" data-page="pg-sort">↕ 정렬 알고리즘</button>
+  <button class="page-tab-btn" data-page="pg-bigo">⏱ 빅오(Big-O)</button>
+  <button class="page-tab-btn" data-page="pg-search">🔍 탐색 알고리즘</button>
+  <button class="page-tab-btn" data-page="pg-problems">📝 문제 확인하기</button>
+</div>
+
+<!-- =================== PAGE 1: 정렬 알고리즘 =================== -->
+<div class="page-panel active" id="pg-sort">
+<header><h1>↕ 정렬 알고리즘</h1><span>버블 정렬 · 선택 정렬 · 퀵 정렬</span><span style="margin-left:auto">직접 보고, 움직여 보고, 이해하는 알고리즘!</span></header>
+<main>
+<div class="intro">
+ <div><h2>세 가지 정렬 알고리즘을 직접 체험해 보세요!</h2><p>같은 숫자를 정렬하지만, 숫자를 선택하고 정렬하는 방식은 다릅니다.</p></div>
+ <div class="controls"><label for="inputArray">초기 배열</label><input id="inputArray" value="5, 2, 4, 1, 3" aria-label="초기 배열 입력"><button class="primary" id="apply">적용하기</button><button class="mutedbtn" id="shuffle">무작위 배열</button><label class="speed-control" for="speedSort">자동 진행 속도 <input id="speedSort" type="range" min="300" max="2500" step="100" value="1200" oninput="setSpeed(this.value,'speedSortValue')"><span class="speed-value" id="speedSortValue">1.2초</span></label></div>
+</div>
+<div class="cards" id="cards"></div>
+<div class="bottom">
+ <section class="panel"><h3>⚖ 세 알고리즘 한눈에 비교하기</h3><table><thead><tr><th>항목</th><th>버블 정렬</th><th>선택 정렬</th><th>퀵 정렬</th></tr></thead><tbody>
+ <tr><td>핵심 규칙</td><td>이웃끼리 비교·교환</td><td>최솟값 선택</td><td>기준값으로 분할</td></tr>
+ <tr><td>한 번의 주요 과정</td><td>큰 값이 뒤로 이동</td><td>작은 값이 앞으로 이동</td><td>작은 그룹·큰 그룹 분할</td></tr>
+ <tr><td>평균 시간 복잡도</td><td>O(n²)</td><td>O(n²)</td><td>O(n log n)</td></tr>
+ <tr><td>최악 시간 복잡도</td><td>O(n²)</td><td>O(n²)</td><td>O(n²)</td></tr>
+ </tbody></table><p class="note">※ 퀵 정렬은 기준값 선택과 분할 균형에 따라 성능이 달라집니다. 이 웹앱은 원리를 보여 주기 위한 교육용 구현입니다.</p></section>
+ <section class="panel quiz"><h3>💡 생각해 보세요!</h3><ol><li>세 알고리즘은 정렬 과정에서 어떤 차이가 있나요?</li><li>이미 정렬된 배열을 입력하면 과정이 어떻게 달라질까요?</li><li>숫자가 1,000개라면 어떤 알고리즘이 유리할까요?</li><li>퀵 정렬의 기준값이 계속 최솟값으로 선택되면 어떤 문제가 생길까요?</li></ol></section>
+</div>
+</main>
+</div>
+
+<!-- =================== PAGE 2: 빅오 =================== -->
+<div class="page-panel" id="pg-bigo">
+<header><h1>⏱ 빅오(Big-O) 표기법</h1><span style="margin-left:auto">정렬과 탐색으로 이해하는 알고리즘 효율</span></header>
+<main><div class="bo-wrap">
+<p class="bo-lead">빅오는 정확한 시간보다, 입력이 커질 때 알고리즘이 얼마나 빠르게 느려지는지를 비교하는 방법이에요.</p>
+<div class="bo-tabs">
+<button class="bo-tab-btn active" data-tab="t1">① 빅오란?</button>
+<button class="bo-tab-btn" data-tab="t2">② 정렬로 이해하기</button>
+<button class="bo-tab-btn" data-tab="t3">③ 탐색으로 이해하기</button>
+<button class="bo-tab-btn" data-tab="t4">④ 로그(log)가 뭐예요?</button>
+<button class="bo-tab-btn" data-tab="t5">⑤ 그래프와 생각</button>
+</div>
+<div class="bo-panel active" id="t1"><div class="bo-card">
+<h2>빅오를 한마디로 말하면?</h2>
+<p>빅오 표기법은 입력 데이터의 개수 <b>n</b>이 커질 때, 알고리즘의 작업량이 어떻게 늘어나는지 나타내요. 예를 들어 숫자 5개를 처리할 때는 괜찮았는데 1,000개가 되면 얼마나 더 오래 걸릴지 비교하는 기준입니다.</p>
+<div class="bo-example"><b>일상 비유: 책에서 이름 찾기</b><br><br>책의 첫 페이지부터 한 장씩 찾으면 책이 2배 두꺼워질 때 찾는 일도 대략 2배 늘어납니다. 이것은 <b>O(n)</b>이에요.<br><br>반대로 책을 반씩 나누며 찾으면 페이지가 훨씬 많아져도 찾는 횟수는 조금만 늘어납니다. 이것은 <b>O(log n)</b>과 연결돼요.</div>
+<h3>자주 만나는 네 가지</h3>
+<p><span class="bo-badge bo-b1">O(1)</span> 거의 일정한 작업<br><br><span class="bo-badge bo-bn">O(n)</span> 하나씩 확인하는 작업<br><br><span class="bo-badge bo-bnlogn">O(n log n)</span> 나누면서 전체를 한 번씩 살피는 작업<br><br><span class="bo-badge bo-bn2">O(n²)</span> 여러 번 반복해서 비교하는 작업</p>
+</div></div>
+<div class="bo-panel" id="t2"><div class="bo-card">
+<h2>정렬 알고리즘으로 빅오 이해하기</h2>
+<p>정렬 탭에서 본 세 알고리즘은 같은 숫자를 정렬하지만, 비교하는 방식이 달라요.</p>
+<div class="bo-chip"><span class="bo-dot bo-dot-bubble"></span><div><b>버블 정렬</b> — 이웃한 값들을 반복해서 비교·교환<br><span class="bo-badge bo-bn2">O(n²)</span> 숫자가 많아지면 비교가 빠르게 늘어납니다.</div></div>
+<div class="bo-chip"><span class="bo-dot bo-dot-selection"></span><div><b>선택 정렬</b> — 매번 남은 숫자에서 최솟값을 찾음<br><span class="bo-badge bo-bn2">O(n²)</span> 앞자리를 정해도 계속 남은 값을 살펴봐야 합니다.</div></div>
+<div class="bo-chip"><span class="bo-dot bo-dot-quick"></span><div><b>퀵 정렬</b> — 피벗으로 작은 그룹과 큰 그룹을 나눔<br><span class="bo-badge bo-bnlogn">평균 O(n log n)</span> 균형 있게 나뉘면 빠릅니다.</div></div>
+<div class="bo-example"><b>핵심 생각</b><br>버블·선택 정렬은 여러 번 전체를 살피는 느낌이라 O(n²)이고, 퀵 정렬은 그룹을 나누어 한 번에 살피는 범위를 줄이기 때문에 평균적으로 O(n log n)입니다.</div>
+<p class="bo-note">퀵 정렬의 피벗이 계속 최솟값이나 최댓값이면 그룹이 균형 있게 나뉘지 않아 최악의 경우 O(n²)이 될 수 있어요.</p>
+</div></div>
+<div class="bo-panel" id="t3"><div class="bo-card">
+<h2>탐색 알고리즘으로 빅오 이해하기</h2>
+<p>탐색 탭에서 볼 수 있는 선형 탐색과 이진 탐색은 빅오 차이를 보여 주는 좋은 예입니다.</p>
+<div class="bo-chip"><span class="bo-dot bo-dot-bubble"></span><div><b>선형 탐색</b> — 맨 앞부터 하나씩 확인<br><span class="bo-badge bo-bn">O(n)</span> 최악의 경우 마지막 값까지 모두 확인합니다.</div></div>
+<div class="bo-chip"><span class="bo-dot bo-dot-quick"></span><div><b>이진 탐색</b> — 가운데 값과 비교하고 절반을 버림<br><span class="bo-badge bo-bnlogn">O(log n)</span> 단, 배열이 정렬되어 있어야 합니다.</div></div>
+<div class="bo-steps"><div class="bo-step"><b>100개</b>후보</div><div class="bo-step">→</div><div class="bo-step"><b>50개</b>1번</div><div class="bo-step">→</div><div class="bo-step"><b>25개</b>2번</div><div class="bo-step">→</div><div class="bo-step"><b>1개</b>약 7번</div></div>
+<p class="bo-note">선형 탐색은 후보를 하나씩 줄이고, 이진 탐색은 후보를 절반씩 줄입니다. 그래서 입력이 커질수록 두 방법의 차이가 커져요.</p>
+</div></div>
+<div class="bo-panel" id="t4"><div class="bo-card">
+<h2>🔢 로그(log)가 뭔지 몰라도 괜찮아요</h2>
+<p>로그는 <b>“몇 번 반으로 나누면 1이 되는가?”</b>를 세는 생각이에요.</p>
+<div class="bo-example"><b>숫자 맞히기 게임</b><br><br>1부터 100 사이의 숫자를 맞힌다고 해 봅시다. 매번 가운데 숫자를 물으면 후보가 절반씩 줄어들어요.</div>
+<div class="bo-steps"><div class="bo-step"><b>100개</b>처음</div><div class="bo-step">→</div><div class="bo-step"><b>50개</b>1번</div><div class="bo-step">→</div><div class="bo-step"><b>25개</b>2번</div><div class="bo-step">→</div><div class="bo-step"><b>12개</b>3번</div><div class="bo-step">→</div><div class="bo-step"><b>1개</b>약 7번</div></div>
+<p><b>log₂100 ≈ 6.6</b>이므로 약 7번이면 됩니다. 후보가 100개에서 100만 개로 커져도 필요한 질문은 약 7번에서 20번 정도로만 늘어나요.</p>
+<h3>정렬·탐색과 연결하기</h3><p>이진 탐색은 매번 탐색 범위를 절반으로 줄이므로 O(log n)입니다. 퀵 정렬도 피벗으로 그룹을 균형 있게 나누면 비슷한 “절반씩 줄이기” 효과가 생겨 평균 O(n log n)이 됩니다.</p>
+</div></div>
+<div class="bo-panel" id="t5"><div class="bo-card">
+<h2>📈 그래프로 비교하기</h2>
+<p>아래 슬라이더를 움직여 x축 최대값을 바꾸면 곡선과 x축 눈금이 다시 계산됩니다. 입력이 커질 때 어떤 그래프가 더 가파르게 변하는지 관찰해 보세요.</p>
+<div class="bo-graph" aria-label="빅오 성장 속도 그래프"><h3>입력 크기별 작업량 증가</h3>
+<label class="bo-graph-control" for="boGraphN">가로축 최대값 <input id="boGraphN" type="range" min="20" max="1000" step="10" value="100" oninput="updateBigOGraph(this.value)"><span class="bo-graph-value" id="boGraphNValue">최대 n = 100</span></label>
+<svg viewBox="0 0 760 300" role="img" aria-label="빅오 그래프"><line x1="58" y1="245" x2="730" y2="245" class="bo-grid"/><line x1="58" y1="190" x2="730" y2="190" class="bo-grid"/><line x1="58" y1="135" x2="730" y2="135" class="bo-grid"/><line x1="58" y1="80" x2="730" y2="80" class="bo-grid"/><line x1="58" y1="25" x2="730" y2="25" class="bo-grid"/><line x1="58" y1="25" x2="58" y2="245" stroke="#64748b"/><line x1="58" y1="245" x2="730" y2="245" stroke="#64748b"/><text x="58" y="270" class="bo-axis">n=0</text><text id="boTick25" x="0" y="270" class="bo-axis">n=25</text><text id="boTick50" x="0" y="270" class="bo-axis">n=50</text><text id="boTick75" x="0" y="270" class="bo-axis">n=75</text><text id="boTick100" x="0" y="270" class="bo-axis">n=100</text><text x="670" y="270" class="bo-axis">가로축 n</text><text x="10" y="30" class="bo-axis">작업량</text><path id="boCurve1" class="bo-curve" stroke="#22c55e"/><path id="boCurveLog" class="bo-curve" stroke="#f59e0b"/><path id="boCurveN" class="bo-curve" stroke="#2563eb"/><path id="boCurveNlog" class="bo-curve" stroke="#ef4444"/><path id="boCurveN2" class="bo-curve" stroke="#8b5cf6"/><path id="boCurveN3" class="bo-curve" stroke="#16a34a"/></svg>
+<div class="bo-legend"><span><i style="background:#22c55e"></i>O(1)</span><span><i style="background:#f59e0b"></i>O(log n)</span><span><i style="background:#2563eb"></i>O(n) 선형 탐색</span><span><i style="background:#ef4444"></i>O(n log n) 평균 퀵 정렬</span><span><i style="background:#8b5cf6"></i>O(n²) 버블·선택 정렬</span><span><i style="background:#16a34a"></i>O(n³)</span></div>
+<h3 style="margin-top:18px">📊 수치로 비교하기</h3>
+<table class="bo-table">
+  <tr><th>입력 크기 n</th><th>O(1)</th><th>O(log₂ n)</th><th>O(n)</th><th>O(n log₂ n)</th><th>O(n²)</th></tr>
+  <tr><td>10</td><td>1</td><td>약 3.3</td><td>10</td><td>약 33</td><td>100</td></tr>
+  <tr><td>100</td><td>1</td><td>약 6.6</td><td>100</td><td>약 664</td><td>10,000</td></tr>
+  <tr><td>1,000</td><td>1</td><td>약 10</td><td>1,000</td><td>약 9,966</td><td>1,000,000</td></tr>
+</table>
+<p class="bo-note">예를 들어 n이 100에서 1,000으로 10배 커지면 O(n)은 100에서 1,000으로 10배 늘지만, O(n²)은 10,000에서 1,000,000으로 100배 늘어납니다. 반면 O(log₂ n)은 약 6.6에서 10으로만 조금 증가합니다.</p>
+<p class="bo-note">※ 실제 실행 시간은 컴퓨터와 코드에 따라 달라질 수 있습니다. 이 표는 각 복잡도의 증가 경향을 비교하기 위한 상대적인 수치입니다.</p>
+<p class="bo-note">그래프는 정확한 초 단위 시간이 아니라, 입력 크기가 커질 때 작업량이 증가하는 경향을 보여 줍니다.</p></div>
+</div></div>
+</div></main></div>
+
+<!-- =================== PAGE 3: 탐색 알고리즘 =================== -->
+<div class="page-panel" id="pg-search">
+<header><h1>🔍 탐색 알고리즘</h1><span>선형 탐색 · 이진 탐색</span><span style="margin-left:auto">빅오 탭의 '숫자 맞히기 게임'을 직접 눈으로 확인해 보세요!</span></header>
+<main>
+<div class="intro">
+ <div><h2>정렬된 숫자 배열에서 원하는 값을 찾아보세요!</h2><p>두 탐색 알고리즘의 비교 횟수 차이가 바로 빅오(Big-O) 차이로 이어집니다.</p></div>
+ <div class="controls"><label for="searchArray">정렬된 배열</label><input id="searchArray" value="2, 5, 8, 12, 16, 23, 38, 45, 56, 72" aria-label="탐색용 배열 입력"><label for="searchTarget">찾을 값</label><input id="searchTarget" value="23" style="width:90px" aria-label="찾을 값 입력"><button class="primary" id="searchApply">적용하기</button><label class="speed-control" for="speedSearch">자동 진행 속도 <input id="speedSearch" type="range" min="300" max="2500" step="100" value="1200" oninput="setSpeed(this.value,'speedSearchValue')"><span class="speed-value" id="speedSearchValue">1.2초</span></label></div>
+</div>
+<div class="cards" id="searchCards" style="grid-template-columns:repeat(2,minmax(0,1fr))"></div>
+<div class="bottom">
+ <section class="panel"><h3>⚖ 두 탐색 알고리즘 비교하기</h3><table><thead><tr><th>항목</th><th>선형 탐색</th><th>이진 탐색</th></tr></thead><tbody>
+ <tr><td>조건</td><td>정렬 여부 상관없음</td><td>반드시 정렬되어 있어야 함</td></tr>
+ <tr><td>핵심 규칙</td><td>처음부터 하나씩 확인</td><td>가운데 값과 비교해 절반씩 줄이기</td></tr>
+ <tr><td>평균 시간 복잡도</td><td>O(n)</td><td>O(log n)</td></tr>
+ <tr><td>최악 시간 복잡도</td><td>O(n)</td><td>O(log n)</td></tr>
+ </tbody></table><p class="note">※ 이진 탐색은 빅오 탭 '숫자 맞히기 게임'과 똑같은 원리예요 — 매번 절반씩 후보를 줄입니다.</p></section>
+ <section class="panel quiz"><h3>💡 생각해 보세요!</h3><ol><li>배열이 정렬되어 있지 않다면 이진 탐색을 바로 쓸 수 있을까요?</li><li>배열 원소가 1,000개일 때, 선형 탐색과 이진 탐색은 각각 최대 몇 번 비교할까요?</li><li>찾는 값이 배열의 맨 앞에 있을 때와 맨 뒤에 있을 때, 두 탐색 방법의 비교 횟수는 각각 어떻게 달라질까요?</li></ol></section>
+</div>
+</main>
+</div>
+
+<!-- =================== PAGE 4: 문제 확인하기 =================== -->
+<div class="page-panel" id="pg-problems">
+<header><h1>📝 문제 확인하기</h1><span style="margin-left:auto">정렬 · 탐색 · 빅오 개념 점검</span></header>
+<main>
+<section class="panel quiz" style="max-width:1100px;margin:0 auto 28px;padding:20px 22px;">
+<h2 style="font-size:21px;margin:0 0 8px">선지형 6문제</h2>
+<p class="note" style="margin-top:0">각 문제의 답을 고른 뒤 <b>선지형 답 확인</b> 버튼을 눌러 보세요. 정답과 해설이 표시됩니다.</p>
+<form id="mcQuiz">
+<div class="mcq"><b>1. 버블 정렬과 선택 정렬의 평균 시간 복잡도는?</b><label><input type="radio" name="q1" value="A"> A. O(1)</label><label><input type="radio" name="q1" value="B"> B. O(log n)</label><label><input type="radio" name="q1" value="C"> C. O(n)</label><label><input type="radio" name="q1" value="D"> D. O(n²)</label><div class="feedback" id="f1"></div></div>
+<div class="mcq"><b>2. 이진 탐색을 사용하기 위한 조건으로 알맞은 것은?</b><label><input type="radio" name="q2" value="A"> A. 배열이 정렬되어 있어야 한다.</label><label><input type="radio" name="q2" value="B"> B. 숫자가 반드시 5개여야 한다.</label><label><input type="radio" name="q2" value="C"> C. 교환 횟수가 많아야 한다.</label><label><input type="radio" name="q2" value="D"> D. 피벗을 정해야 한다.</label><div class="feedback" id="f2"></div></div>
+<div class="mcq"><b>3. O(log n)을 가장 잘 설명한 것은?</b><label><input type="radio" name="q3" value="A"> A. 입력을 한 번만 확인한다.</label><label><input type="radio" name="q3" value="B"> B. 입력이 커지면 항상 n²배로 늘어난다.</label><label><input type="radio" name="q3" value="C"> C. 후보를 절반씩 줄여 가며 확인한다.</label><label><input type="radio" name="q3" value="D"> D. 모든 값을 서로 비교한다.</label><div class="feedback" id="f3"></div></div>
+<div class="mcq"><b>4. 퀵 정렬의 평균 시간 복잡도로 알맞은 것은?</b><label><input type="radio" name="q4" value="A"> A. O(n²)</label><label><input type="radio" name="q4" value="B"> B. O(n log n)</label><label><input type="radio" name="q4" value="C"> C. O(1)</label><label><input type="radio" name="q4" value="D"> D. O(log n)</label><div class="feedback" id="f4"></div></div>
+<div class="mcq"><b>5. 퀵 정렬에서 피벗의 역할은?</b><label><input type="radio" name="q5" value="A"> A. 가장 큰 값만 삭제한다.</label><label><input type="radio" name="q5" value="B"> B. 작은 값과 큰 값을 나누는 기준이 된다.</label><label><input type="radio" name="q5" value="C"> C. 모든 값을 같은 값으로 바꾼다.</label><label><input type="radio" name="q5" value="D"> D. 탐색을 항상 끝낸다.</label><div class="feedback" id="f5"></div></div>
+<div class="mcq"><b>6. 입력 크기 n이 100에서 1,000으로 10배가 되면 O(n²)의 작업량은 대략 어떻게 될까?</b><label><input type="radio" name="q6" value="A"> A. 2배</label><label><input type="radio" name="q6" value="B"> B. 10배</label><label><input type="radio" name="q6" value="C"> C. 50배</label><label><input type="radio" name="q6" value="D"> D. 100배</label><div class="feedback" id="f6"></div></div>
+<button type="button" class="primary" onclick="checkMC()">선지형 답 확인</button><span id="mcScore" class="score"></span>
+</form>
+</section>
+<section class="panel quiz" style="max-width:1100px;margin:0 auto 28px;padding:20px 22px;">
+<h2 style="font-size:21px;margin:0 0 8px">서술형 4문제</h2>
+<p class="note" style="margin-top:0">답을 직접 작성한 뒤 <b>서술형 예시 답안 확인</b> 버튼을 누르세요. 자신의 답과 비교해 보세요.</p>
+<div class="essay"><b>1. 버블 정렬과 퀵 정렬의 평균 시간 복잡도를 비교하고, 숫자가 많을 때 퀵 정렬이 유리한 이유를 설명해 보세요.</b><textarea id="e1" placeholder="내 답을 입력하세요"></textarea><details><summary>예시 답안 보기</summary><p>버블 정렬은 평균 O(n²), 퀵 정렬은 평균 O(n log n)이다. n이 커질수록 O(n²)이 O(n log n)보다 훨씬 빠르게 증가하므로 퀵 정렬이 유리하다.</p></details></div>
+<div class="essay"><b>2. 선형 탐색과 이진 탐색의 차이를 ‘후보를 줄이는 방법’으로 설명해 보세요.</b><textarea id="e2" placeholder="내 답을 입력하세요"></textarea><details><summary>예시 답안 보기</summary><p>선형 탐색은 처음부터 하나씩 확인해 후보를 한 개씩 줄인다. 이진 탐색은 가운데 값과 비교해 절반을 버리므로 후보를 절반씩 줄인다.</p></details></div>
+<div class="essay"><b>3. 로그(log)를 숫자 맞히기 게임과 연결하여 설명해 보세요.</b><textarea id="e3" placeholder="내 답을 입력하세요"></textarea><details><summary>예시 답안 보기</summary><p>로그는 어떤 수를 몇 번 반으로 나누어야 1이 되는지를 나타내는 생각이다. 1~100 숫자 맞히기에서 매번 가운데를 물으면 후보가 절반씩 줄어 약 7번 만에 좁힐 수 있다.</p></details></div>
+<div class="essay"><b>4. 퀵 정렬에서 피벗을 잘못 고르면 최악의 경우 O(n²)이 될 수 있는 이유를 설명해 보세요.</b><textarea id="e4" placeholder="내 답을 입력하세요"></textarea><details><summary>예시 답안 보기</summary><p>피벗이 계속 최솟값이나 최댓값이면 그룹이 한쪽으로만 치우친다. 매번 절반씩 나누지 못하고 한 개씩만 줄어들어 비교가 반복되므로 O(n²)이 된다.</p></details></div>
+<button type="button" class="primary" onclick="showEssayAnswers()">서술형 예시 답안 확인</button>
+</section>
+</main>
+</div>
+
+<script>
+/* ---- Page-level tab switching ---- */
+document.querySelectorAll('.page-tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.page-tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.page-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.page).classList.add('active');
+  });
+});
+/* ---- Big-O inner tab switching ---- */
+document.querySelectorAll('.bo-tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.bo-tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.bo-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ---- Interactive Big-O graph ---- */
+function updateBigOGraph(value){
+ const maxN=Math.max(20,Number(value)||100);
+ const x0=58,x1=730,y0=245,yTop=25,samples=100;
+ const funcs={
+  boCurve1:n=>0.12,
+  boCurveLog:n=>0.12+0.36*(Math.log2(Math.max(1,n))/Math.log2(maxN)),
+  boCurveN:n=>0.12+0.62*(n/maxN),
+  boCurveNlog:n=>0.12+0.72*((n*Math.log2(Math.max(1,n)))/(maxN*Math.log2(maxN))),
+  boCurveN2:n=>0.12+0.82*Math.pow(n/maxN,2),
+  boCurveN3:n=>0.12+0.96*Math.pow(n/maxN,3)
+ };
+ const makePath=fn=>{let d='';for(let i=0;i<=samples;i++){const n=maxN*i/samples,x=x0+(i/samples)*(x1-x0),y=y0-fn(n)*(y0-yTop);d+=(i?' L':'M')+x.toFixed(1)+' '+y.toFixed(1)}return d};
+ Object.entries(funcs).forEach(([id,fn])=>{const el=document.getElementById(id);if(el)el.setAttribute('d',makePath(fn))});
+ const valueEl=document.getElementById('boGraphNValue');if(valueEl)valueEl.textContent='최대 n = '+Math.round(maxN);
+ ['25','50','75','100'].forEach((ratio,i)=>{const el=document.getElementById('boTick'+ratio);if(el){const x=x0+(i+1)/4*(x1-x0);el.setAttribute('x',x-12);el.textContent='n='+Math.round(maxN*(i+1)/4)}});
+ const point=document.getElementById('boGraphPoint');if(point){point.setAttribute('x',x1-58);point.textContent='최대 n='+Math.round(maxN)}
+ const guide=document.getElementById('boGraphGuide');if(guide){guide.setAttribute('x1',x1);guide.setAttribute('x2',x1)}
+}
+updateBigOGraph(100);
+
+/* ---- Sorting lab logic (original) ---- */
+const algorithms=[
+ {id:'bubble',name:'버블 정렬',eng:'Bubble Sort',accent:'#2478ee',tint:'#eaf3ff',border:'#b9d8ff',desc:'인접한 두 숫자를 비교하고, 순서가 틀리면 교환합니다.',question:'가장 큰 숫자가 어떻게 끝으로 이동할까요?',code:`def bubble_sort(arr):\n    arr = arr[:]\n    n = len(arr)\n    for i in range(n - 1):\n        for j in range(n - 1 - i):\n            if arr[j] > arr[j + 1]:\n                arr[j], arr[j + 1] = arr[j + 1], arr[j]\n    return arr`},
+ {id:'selection',name:'선택 정렬',eng:'Selection Sort',accent:'#159565',tint:'#e9faf2',border:'#a6e9ca',desc:'정렬되지 않은 숫자 중 최솟값을 찾아 맨 앞에 놓습니다.',question:'매번 가장 작은 숫자를 찾으면 어떻게 될까요?',code:`def selection_sort(arr):\n    arr = arr[:]\n    n = len(arr)\n    for i in range(n - 1):\n        min_idx = i\n        for j in range(i + 1, n):\n            if arr[j] < arr[min_idx]:\n                min_idx = j\n        arr[i], arr[min_idx] = arr[min_idx], arr[i]\n    return arr`},
+ {id:'quick',name:'퀵 정렬',eng:'Quick Sort',accent:'#8054e8',tint:'#f2edff',border:'#d3c2ff',desc:'기준 숫자를 정하고, 작은 숫자와 큰 숫자로 나눕니다.',question:'숫자를 두 그룹으로 나누면 정렬이 쉬워질까요?',code:`def quick_sort(arr):\n    if len(arr) <= 1:\n        return arr\n    pivot = arr[len(arr) // 2]\n    left = [x for x in arr if x < pivot]\n    middle = [x for x in arr if x == pivot]\n    right = [x for x in arr if x > pivot]\n    return quick_sort(left) + middle + quick_sort(right)`}
+];
+let base=[5,2,4,1,3], states={}, quickPivotMode='middle', speedDelay=1200;
+function setSpeed(value,labelId){speedDelay=Number(value);let el=document.getElementById(labelId);if(el)el.textContent=(speedDelay/1000).toFixed(1)+'초';}
+function bubbleSteps(a){let x=a.slice(),s=[],comparisons=0,swaps=0;for(let i=0;i<x.length-1;i++){for(let j=0;j<x.length-1-i;j++){let before=x.slice(),sw=x[j]>x[j+1];comparisons++;if(sw){[x[j],x[j+1]]=[x[j+1],x[j]];swaps++}s.push({arr:x.slice(),before,indices:[j,j+1],done:false,comparisons,swaps,msg:sw?`${before[j]}와 ${before[j+1]}을(를) 비교해 교환했습니다.`:`${before[j]}와 ${before[j+1]}을(를) 비교했습니다. 교환하지 않습니다.`})}s.push({arr:x.slice(),indices:[],done:true,comparisons,swaps,msg:`${i+1}번째 순회 완료: 가장 큰 값이 뒤쪽에 자리 잡았습니다.`})}return s}
+function selectionSteps(a){let x=a.slice(),s=[],comparisons=0,swaps=0;for(let i=0;i<x.length-1;i++){let m=i;for(let j=i+1;j<x.length;j++){comparisons++;s.push({arr:x.slice(),indices:[m,j],comparisons,swaps,msg:`현재 최솟값 후보 ${x[m]}과 ${x[j]}을(를) 비교합니다.`});if(x[j]<x[m])m=j}if(m!==i){[x[i],x[m]]=[x[m],x[i]];swaps++}s.push({arr:x.slice(),indices:[i,m],done:true,comparisons,swaps,msg:`최솟값 ${x[i]}을(를) ${i+1}번째 자리에 놓습니다.`});s.push({arr:x.slice(),indices:[i],comparisons,swaps,msg:`현재 배열: ${x.join(', ')}`})}return s}
+function quickSteps(a,pivotMode='middle'){
+ let s=[],comparisons=0,swaps=0;
+ function choosePivot(x){
+   if(pivotMode==='first') return 0;
+   if(pivotMode==='last') return x.length-1;
+   if(pivotMode==='random') return Math.floor(Math.random()*x.length);
+   return Math.floor(x.length/2);
+ }
+ function q(x,depth=0){
+   if(x.length<=1){s.push({arr:x.slice(),indices:[],comparisons,swaps,msg:`${x.join(', ')||'빈 그룹'}은(는) 원소가 ${x.length}개라 정렬이 끝났습니다.`});return x}
+   let pi=choosePivot(x),p=x[pi],l=[],m=[],r=[];
+   x.forEach((v,i)=>{if(i===pi){m.push(v);return}comparisons++;if(v<p)l.push(v);else if(v===p)m.push(v);else r.push(v)});
+   swaps++;
+   s.push({arr:x.slice(),indices:[pi],pivot:p,left:l.slice(),middle:m.slice(),right:r.slice(),comparisons,swaps,msg:`기준값 ${p}: 작은 그룹 [${l}], 같은 값 [${m}], 큰 그룹 [${r}]`});
+   let sorted=[...q(l,depth+1),...m,...q(r,depth+1)];
+   s.push({arr:sorted.slice(),indices:[],comparisons,swaps,msg:`그룹을 합치면 [${sorted.join(', ')}]입니다.`});return sorted
+ }
+ q(a);return s
+}
+function makeSteps(id,a){return id==='bubble'?bubbleSteps(a):id==='selection'?selectionSteps(a):quickSteps(a,quickPivotMode)}
+function changePivot(mode){quickPivotMode=mode;resetStates()}
+function resetStates(){states={};algorithms.forEach(o=>states[o.id]={steps:makeSteps(o.id,base),idx:0,timer:null});render()}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){document.getElementById('cards').innerHTML=algorithms.map(o=>{let st=states[o.id],step=st.steps[Math.min(st.idx,st.steps.length-1)]||{arr:base,indices:[],msg:'정렬 과정'};let arr=step.arr||base;let nums=arr.map((n,i)=>`<div class="num ${step.indices?.includes(i)?'active':''} ${step.done&&o.id!=='quick'&&i>=arr.length-(Math.min(st.idx+1,arr.length-1))?'done':''}">${n}</div>`).join('');let quick=o.id==='quick'&&step.pivot!==undefined?`<div class="pivot-setting"><label for="pivotMode">피벗 선택 방식</label><select id="pivotMode" onchange="changePivot(this.value)"><option value="middle" ${quickPivotMode==='middle'?'selected':''}>가운데 값</option><option value="first" ${quickPivotMode==='first'?'selected':''}>첫 번째 값</option><option value="last" ${quickPivotMode==='last'?'selected':''}>마지막 값</option><option value="random" ${quickPivotMode==='random'?'selected':''}>무작위 값</option></select></div><div class="caption">기준값(피벗) ${step.pivot} 선택</div><div class="bo-note" style="margin:6px 0">비교 횟수는 피벗 자신을 제외하고, 피벗과 나머지 값들을 비교한 횟수로 셉니다. 피벗을 고르는 것 자체는 교환 횟수로 세지 않습니다.</div><div class="groupboxes"><div class="group">기준보다 작은 그룹<strong>${step.left.join(', ')||'—'}</strong></div><div class="group">기준값<strong>${step.middle.join(', ')}</strong></div><div class="group">기준보다 큰 그룹<strong>${step.right.join(', ')||'—'}</strong></div></div>`:'';let stats=o.id==='quick'?`<div class="stats"><div class="stat">비교 횟수<strong>${step.comparisons||0}</strong></div></div>`:`<div class="stats"><div class="stat">비교 횟수<strong>${step.comparisons||0}</strong></div><div class="stat">교환 횟수<strong>${step.swaps||0}</strong></div></div>`;return `<article class="card" style="--accent:${o.accent};--tint:${o.tint};--border:${o.border}"><div class="cardhead"><h3>${o.name} <small style="font-size:13px">(${o.eng})</small></h3><p>${o.desc}</p></div><div class="inner"><div class="question">💡 <b>핵심 포인트</b><br>${o.question}</div><div class="progress"><b>정렬 과정</b><span>${Math.min(st.idx+1,st.steps.length)} / ${st.steps.length}</span></div><div class="array">${nums}</div>${o.id==='quick'?'':`<div class="arrow">↓</div><div class="array">${(step.before||arr).map((n,i)=>`<div class="num ${step.indices?.includes(i)?'active':''}">${n}</div>`).join('')}</div>`}${quick}${stats}<div class="caption" aria-live="polite">${escapeHtml(step.msg||'')}</div><div class="actions"><button onclick="move('${o.id}',-1)">‹ 이전</button><button onclick="move('${o.id}',1)">다음 ›</button><button class="auto" onclick="toggleAuto('${o.id}')">${st.timer?'■ 자동 진행 중':'▶ 자동 진행'}</button></div><div class="codebox"><div class="codehead"><span>파이썬 코드</span><button onclick="copyCode('${o.id}')">▣ 코드 복사</button></div><pre id="code-${o.id}">${escapeHtml(o.code)}</pre></div></div></article>`}).join('')}
+function move(id,d){let s=states[id];if(s.timer){clearInterval(s.timer);s.timer=null}let max=s.steps.length-1;s.idx=Math.max(0,Math.min(max,s.idx+d));render()}
+function toggleAuto(id){let s=states[id];if(s.timer){clearInterval(s.timer);s.timer=null;render();return}s.timer=setInterval(()=>{if(s.idx>=s.steps.length-1){clearInterval(s.timer);s.timer=null;render();return}s.idx++;render()},speedDelay);render()}
+function parseInput(){let raw=document.getElementById('inputArray').value.trim(),a=raw.split(/[,\s]+/).filter(Boolean).map(Number);if(!a.length||a.some(n=>!Number.isFinite(n))||a.length>10){alert('숫자를 1~10개 입력해 주세요. 예: 5, 2, 4, 1, 3');return}base=a;resetStates()}
+document.getElementById('apply').addEventListener('click',parseInput);
+document.getElementById('inputArray').addEventListener('keydown',e=>{if(e.key==='Enter')parseInput()});
+document.getElementById('shuffle').addEventListener('click',()=>{base=Array.from({length:5},()=>Math.floor(Math.random()*90)+10);document.getElementById('inputArray').value=base.join(', ');resetStates()});
+async function copyCode(id){let code=algorithms.find(o=>o.id===id).code;try{await navigator.clipboard.writeText(code);alert('코드를 복사했습니다.')}catch(e){let t=document.createElement('textarea');t.value=code;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();alert('코드를 복사했습니다.')}}
+resetStates();
+
+/* ---- Quiz checking ---- */
+function checkMC(){
+ const answers={q1:'D',q2:'A',q3:'C',q4:'B',q5:'B',q6:'D'};
+ const explain={q1:'버블·선택 정렬은 비교가 여러 겹 반복되어 O(n²)입니다.',q2:'이진 탐색은 정렬된 배열에서 가운데를 기준으로 탐색합니다.',q3:'매번 후보를 절반으로 줄이는 방식이 O(log n)입니다.',q4:'퀵 정렬은 균형 있게 나뉘면 평균 O(n log n)입니다.',q5:'피벗은 작은 값과 큰 값을 나누는 기준입니다.',q6:'n이 10배가 되면 n²은 10²배, 즉 100배가 됩니다.'};
+ let score=0;
+ Object.keys(answers).forEach((q,i)=>{const chosen=document.querySelector(`input[name="${q}"]:checked`),f=document.getElementById('f'+(i+1));if(!chosen){f.className='feedback wrong';f.textContent='답을 선택해 주세요.'}else if(chosen.value===answers[q]){score++;f.className='feedback correct';f.textContent='정답! '+explain[q]}else{f.className='feedback wrong';f.textContent='오답이에요. '+explain[q]}});
+ document.getElementById('mcScore').textContent=`점수: ${score} / 6`;
+}
+function showEssayAnswers(){document.querySelectorAll('#pg-problems .essay details').forEach(d=>d.open=true);}
+
+/* ---- Search lab logic ---- */
+const searchAlgos=[
+ {id:'linear',name:'선형 탐색',eng:'Linear Search',accent:'#2478ee',tint:'#eaf3ff',border:'#b9d8ff',desc:'배열의 맨 앞부터 하나씩 순서대로 확인합니다.'},
+ {id:'binary',name:'이진 탐색',eng:'Binary Search',accent:'#8054e8',tint:'#f2edff',border:'#d3c2ff',desc:'가운데 값과 비교해 탐색 범위를 절반씩 줄여 나갑니다.'}
+];
+let sBase=[2,5,8,12,16,23,38,45,56,72], sTarget=23, sStates={};
+function linearSearchSteps(arr,target){let s=[];for(let i=0;i<arr.length;i++){if(arr[i]===target){s.push({indices:[i],range:[0,arr.length-1],found:true,msg:`${i+1}번째 칸(${arr[i]})을 확인 → 찾았습니다!`});return s}s.push({indices:[i],range:[0,arr.length-1],msg:`${i+1}번째 칸(${arr[i]})을 확인 → ${target}이(가) 아닙니다.`})}s.push({indices:[],range:[0,arr.length-1],notFound:true,msg:`배열 전체를 확인했지만 ${target}을(를) 찾지 못했습니다.`});return s}
+function binarySearchSteps(arr,target){let s=[],lo=0,hi=arr.length-1;while(lo<=hi){let mid=Math.floor((lo+hi)/2);if(arr[mid]===target){s.push({indices:[mid],range:[lo,hi],found:true,msg:`가운데 칸(${arr[mid]})을 확인 → 찾았습니다!`});return s}else if(arr[mid]<target){s.push({indices:[mid],range:[lo,hi],msg:`가운데 칸(${arr[mid]}) < ${target} → 오른쪽 절반만 남깁니다.`});lo=mid+1}else{s.push({indices:[mid],range:[lo,hi],msg:`가운데 칸(${arr[mid]}) > ${target} → 왼쪽 절반만 남깁니다.`});hi=mid-1}}s.push({indices:[],range:[lo,hi],notFound:true,msg:`탐색 범위가 사라졌습니다. ${target}을(를) 찾지 못했습니다.`});return s}
+function resetSearchStates(){sStates={};searchAlgos.forEach(o=>{sStates[o.id]={steps:o.id==='linear'?linearSearchSteps(sBase,sTarget):binarySearchSteps(sBase,sTarget),idx:0,timer:null}});renderSearch()}
+function renderSearch(){document.getElementById('searchCards').innerHTML=searchAlgos.map(o=>{let st=sStates[o.id],step=st.steps[Math.min(st.idx,st.steps.length-1)]||{indices:[],range:[0,sBase.length-1],msg:''};let nums=sBase.map((n,i)=>{let inRange=i>=step.range[0]&&i<=step.range[1];let cls=step.indices.includes(i)?(step.found?'done':'active'):'';return `<div class="num ${cls}" style="opacity:${inRange?1:.3}">${n}</div>`}).join('');return `<article class="card" style="--accent:${o.accent};--tint:${o.tint};--border:${o.border}"><div class="cardhead"><h3>${o.name} <small style="font-size:13px">(${o.eng})</small></h3><p>${o.desc}</p></div><div class="inner"><div class="question">🎯 <b>찾는 값: ${sTarget}</b></div><div class="progress"><b>비교 횟수</b><span>${Math.min(st.idx+1,st.steps.length)} / ${st.steps.length}</span></div><div class="array">${nums}</div><div class="caption" aria-live="polite">${escapeHtml(step.msg||'')}</div><div class="actions"><button onclick="moveSearch('${o.id}',-1)">‹ 이전</button><button onclick="moveSearch('${o.id}',1)">다음 ›</button><button class="auto" onclick="toggleAutoSearch('${o.id}')">${st.timer?'■ 자동 진행 중':'▶ 자동 진행'}</button></div></div></article>`}).join('')}
+function moveSearch(id,d){let s=sStates[id];if(s.timer){clearInterval(s.timer);s.timer=null}let max=s.steps.length-1;s.idx=Math.max(0,Math.min(max,s.idx+d));renderSearch()}
+function toggleAutoSearch(id){let s=sStates[id];if(s.timer){clearInterval(s.timer);s.timer=null;renderSearch();return}s.timer=setInterval(()=>{if(s.idx>=s.steps.length-1){clearInterval(s.timer);s.timer=null;renderSearch();return}s.idx++;renderSearch()},speedDelay);renderSearch()}
+function parseSearchInput(){let raw=document.getElementById('searchArray').value.trim(),a=raw.split(/[,\s]+/).filter(Boolean).map(Number);if(!a.length||a.some(n=>!Number.isFinite(n))||a.length>15){alert('숫자를 1~15개 입력해 주세요.');return}let sorted=[...a].sort((x,y)=>x-y);let t=Number(document.getElementById('searchTarget').value);if(!Number.isFinite(t)){alert('찾을 값을 숫자로 입력해 주세요.');return}sBase=sorted;document.getElementById('searchArray').value=sorted.join(', ');sTarget=t;resetSearchStates()}
+document.getElementById('searchApply').addEventListener('click',parseSearchInput);
+resetSearchStates();
+</script>
+</body>
+</html>
