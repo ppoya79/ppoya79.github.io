@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PyCraft – print · input · 자료형</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,'Apple SD Gothic Neo','Nanum Gothic',sans-serif;background:#1d1d1d;color:#fff;min-height:100vh}
+header{background:#3b3b3b;border-bottom:4px solid #111;padding:10px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:5}
+header h1{margin:0;font-size:20px;color:#7bdc4e;text-shadow:2px 2px #000}
+.stat{font-size:14px}
+.bar{width:140px;height:12px;background:#111;border:2px solid #000;display:inline-block;vertical-align:middle}
+.bar i{display:block;height:100%;background:#7bdc4e;width:0}
+main{max-width:1000px;margin:0 auto;padding:16px}
+.btn{font:inherit;font-weight:700;color:#fff;background:#6b6b6b;border:3px solid #000;border-top-color:#b0b0b0;border-left-color:#b0b0b0;padding:10px 18px;cursor:pointer;text-shadow:2px 2px #333}
+.btn:hover{background:#5a7fd0}.btn.go{background:#3f8f2a}.btn.go:hover{background:#4fb035}
+.map{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.lv{background:#8b5a2b;border:4px solid #000;border-top-color:#c58a4a;border-left-color:#c58a4a;padding:12px;cursor:pointer}
+.lv.done{background:#3f8f2a;border-top-color:#7bdc4e;border-left-color:#7bdc4e}
+.lv.lock{background:#555;cursor:not-allowed;opacity:.6}
+.lv .ic{font-size:34px}.lv h3{margin:6px 0 2px;font-size:16px}.lv p{margin:0;font-size:13px;color:#eee}
+.tag{display:inline-block;font-size:11px;background:#000;padding:1px 6px;margin-left:4px}
+.panel{background:#c6c6c6;color:#222;border:4px solid #000;border-top-color:#fff;border-left-color:#fff;padding:16px;margin-top:12px}
+.panel h2{margin-top:0}
+.story{background:#2b2b2b;color:#fff;padding:12px;border-left:6px solid #7bdc4e;margin:10px 0;line-height:1.6}
+.learn{background:#fff8d6;border:3px solid #b8a000;padding:10px;line-height:1.7;font-size:15px}
+.learn code,.panel code{background:#eee3a0;padding:1px 5px;font-family:Consolas,Menlo,monospace}
+textarea{width:100%;background:#101010;color:#8bff8b;font:15px Consolas,Menlo,monospace;border:4px solid #000;padding:10px;resize:vertical;tab-size:4}
+#code{height:170px}#stdin{height:60px;color:#ffd866}
+.out{background:#000;color:#fff;padding:10px;min-height:48px;white-space:pre-wrap;font-family:Consolas,Menlo,monospace;margin-top:8px;border:3px solid #444}
+.msg{margin-top:8px;font-weight:700}.ok{color:#1d7a0d}.bad{color:#b3261e}
+.world{font-size:26px;background:#78b7ff;padding:8px;border:3px solid #000;margin-bottom:10px;min-height:56px}
+.hint{cursor:pointer;color:#245;text-decoration:underline;font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.ch{display:block;width:100%;text-align:left;margin:6px 0}
+.pop{animation:p .5s}@keyframes p{from{transform:scale(1.3)}to{transform:scale(1)}}
+label{font-size:13px;font-weight:700;display:block;margin-top:10px}
+table{border-collapse:collapse;background:#fff}td,th{border:2px solid #000;padding:4px 10px;font-size:14px}
+</style></head><body>
+<header>
+<h1>⛏ PyCraft: 기초 편</h1>
+<div class="stat">❤ <span id="hearts"></span></div>
+<div class="stat">XP <span class="bar"><i id="xp"></i></span> <span id="xpn"></span></div>
+<div class="stat">🎒 <span id="inv">비어있음</span></div>
+<button class="btn" id="admBtn" onclick="adminMode()" style="margin-left:auto;padding:4px 10px;font-size:12px">🔑 교사 모드</button>
+<button class="btn" onclick="resetAll()" style="padding:4px 10px;font-size:12px">초기화</button>
+</header>
+<main id="app"></main>
+<script>
+/* ===== 미니 파이썬 해석기 (print / input / 변수 / 자료형 / 연산 / f-string) ===== */
+function pyRun(code,stdin,quiet){
+ let out="";const inp=stdin.slice();
+ const E=(name,msg)=>{throw {name,msg}};
+ const mk=(t,v)=>({t,v});const NONE={t:'none'};
+ const isNum=x=>x.t==='int'||x.t==='float'||x.t==='bool';
+ const tname=x=>x.t==='none'?'NoneType':x.t==='type'?'type':x.t;
+ const fmtF=v=>Number.isInteger(v)&&Math.abs(v)<1e16?v.toFixed(1):String(v);
+ const S=x=>x.t==='str'?x.v:x.t==='int'?String(x.v):x.t==='float'?fmtF(x.v):x.t==='bool'?(x.v?'True':'False'):x.t==='none'?'None':"<class '"+x.v+"'>";
+ const R=x=>x.t==='str'?"'"+x.v+"'":S(x);
+ const truthy=x=>x.t==='none'?false:x.t==='str'?x.v.length>0:x.t==='type'?true:!!x.v;
+ const vars={};
+ function tokenize(s){
+  const re=/\s*(?:(#.*)|(f?)("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(\d+\.\d*|\.\d+|\d+)|([A-Za-z_가-힣][\w가-힣]*)|(\*\*|\/\/|==|!=|<=|>=|[-+*\/%()<>=,]))/y;
+  const toks=[];let m;re.lastIndex=0;
+  while(re.lastIndex<s.length){
+   const st=re.lastIndex;
+   if(/^\s*$/.test(s.slice(st)))break;
+   m=re.exec(s);if(!m)E('SyntaxError','이해할 수 없는 문법이에요: '+s.slice(st).trim().slice(0,12));
+   if(m[1])break;
+   if(m[3]){const raw=m[3].slice(1,-1).replace(/\\(.)/g,(a,c)=>c==='n'?'\n':c==='t'?'\t':c);toks.push({k:'str',v:raw,f:m[2]==='f'})}
+   else if(m[4])toks.push({k:'num',v:m[4]});
+   else if(m[5])toks.push({k:'name',v:m[5]});
+   else if(m[6])toks.push({k:'op',v:m[6]});
+  }
+  return toks;
+ }
+ function evalStr(src){return evalToks(tokenize(src),true)}
+ function evalToks(toks,whole){
+  let i=0;
+  const pk=()=>toks[i],isOp=v=>toks[i]&&toks[i].k==='op'&&toks[i].v===v,isKw=v=>toks[i]&&toks[i].k==='name'&&toks[i].v===v;
+  const num=x=>x.v===true?1:x.v===false?0:x.v;
+  function arith(op,a,b){
+   if(op==='+'){
+    if(a.t==='str'&&b.t==='str')return mk('str',a.v+b.v);
+    if(a.t==='str')E('TypeError','can only concatenate str (not "'+tname(b)+'") to str');
+   }
+   if(op==='*'&&((a.t==='str'&&b.t==='int')||(a.t==='int'&&b.t==='str'))){const s=a.t==='str'?a:b,n=a.t==='int'?a.v:b.v;return mk('str',s.v.repeat(Math.max(0,n)))}
+   if(!isNum(a)||!isNum(b))E('TypeError',"unsupported operand type(s) for "+op+": '"+tname(a)+"' and '"+tname(b)+"'");
+   const x=num(a),y=num(b),fl=a.t==='float'||b.t==='float';
+   if((op==='/'||op==='//'||op==='%')&&y===0)E('ZeroDivisionError','division by zero');
+   switch(op){
+    case'+':return mk(fl?'float':'int',x+y);case'-':return mk(fl?'float':'int',x-y);case'*':return mk(fl?'float':'int',x*y);
+    case'/':return mk('float',x/y);case'//':return mk(fl?'float':'int',Math.floor(x/y));
+    case'%':return mk(fl?'float':'int',((x%y)+y)%y);
+    case'**':return mk(fl||y<0?'float':'int',Math.pow(x,y));
+   }
+  }
+  function cmp(op,a,b){
+   let x,y;
+   if(isNum(a)&&isNum(b)){x=num(a);y=num(b)}
+   else if(a.t===b.t&&(a.t==='str'||a.t==='none')){x=a.v;y=b.v}
+   else{if(op==='==')return mk('bool',false);if(op==='!=')return mk('bool',true);E('TypeError',"'"+op+"' not supported between instances of '"+tname(a)+"' and '"+tname(b)+"'")}
+   return mk('bool',op==='=='?x===y:op==='!='?x!==y:op==='<'?x<y:op==='>'?x>y:op==='<='?x<=y:x>=y);
+  }
+  const B={
+   int(a){const x=a[0];if(!x)return mk('int',0);if(x.t==='str'){if(!/^\s*[+-]?\d+\s*$/.test(x.v))E('ValueError',"invalid literal for int() with base 10: '"+x.v+"'");return mk('int',parseInt(x.v,10))}if(isNum(x))return mk('int',Math.trunc(num(x)));E('TypeError',"int() argument must be a string or a number, not '"+tname(x)+"'")},
+   float(a){const x=a[0];if(!x)return mk('float',0);if(x.t==='str'){if(!/^\s*[+-]?(\d+\.?\d*|\.\d+)\s*$/.test(x.v))E('ValueError',"could not convert string to float: '"+x.v+"'");return mk('float',parseFloat(x.v))}if(isNum(x))return mk('float',num(x));E('TypeError',"float() argument must be a string or a number")},
+   str(a){return mk('str',a.length?S(a[0]):'')},
+   bool(a){return mk('bool',a.length?truthy(a[0]):false)},
+   type(a){return mk('type',tname(a[0]))},
+   len(a){if(a[0]&&a[0].t==='str')return mk('int',[...a[0].v].length);E('TypeError',"object of type '"+tname(a[0])+"' has no len()")},
+   round(a){const x=num(a[0]);if(a[1]){const n=a[1].v;return mk('float',Number(x.toFixed(n)))}return mk('int',Math.round(x))},
+   input(a){if(!quiet&&a[0])out+=S(a[0]);if(!inp.length)E('EOFError','입력값이 부족해요. 아래 "입력값" 칸에 줄마다 값을 적어 주세요.');const v=inp.shift();if(!quiet)out+=v+"\n";return mk('str',v)},
+   print(a,kw){const sep=kw.sep?S(kw.sep):' ',end=kw.end?S(kw.end):'\n';out+=a.map(S).join(sep)+end;return NONE}
+  };
+  function fstring(s){
+   return mk('str',s.replace(/\{([^{}]*)\}/g,(m,ex)=>{
+    let spec=null;const mm=ex.match(/^(.*):(\.\d+f)$/);if(mm){ex=mm[1];spec=mm[2]}
+    const v=evalStr(ex);
+    if(spec){if(!isNum(v))E('ValueError','숫자만 .2f 형식을 쓸 수 있어요');return num(v).toFixed(parseInt(spec.slice(1),10))}
+    return S(v)}));
+  }
+  function atom(){
+   const t=toks[i++];if(!t)E('SyntaxError','식이 끝나지 않았어요');
+   if(t.k==='num')return t.v.includes('.')?mk('float',parseFloat(t.v)):mk('int',parseInt(t.v,10));
+   if(t.k==='str')return t.f?fstring(t.v):mk('str',t.v);
+   if(t.k==='op'&&t.v==='('){const v=or();if(!isOp(')'))E('SyntaxError',"')' 닫는 괄호가 빠졌어요");i++;return v}
+   if(t.k==='name'){
+    if(t.v==='True')return mk('bool',true);if(t.v==='False')return mk('bool',false);if(t.v==='None')return NONE;
+    if(isOp('(')){
+     i++;const args=[],kw={};
+     while(!isOp(')')){
+      if(!pk())E('SyntaxError',"')' 닫는 괄호가 빠졌어요");
+      if(pk().k==='name'&&toks[i+1]&&toks[i+1].k==='op'&&toks[i+1].v==='='){const k=pk().v;i+=2;kw[k]=or()}else args.push(or());
+      if(isOp(','))i++;else if(!isOp(')'))E('SyntaxError','쉼표(,)나 닫는 괄호가 필요해요');
+     }
+     i++;
+     if(!B[t.v])E('NameError',"name '"+t.v+"' is not defined");
+     return B[t.v](args,kw);
+    }
+    if(!(t.v in vars))E('NameError',"name '"+t.v+"' is not defined");
+    return vars[t.v];
+   }
+   E('SyntaxError','잘못된 문법이에요: '+t.v);
+  }
+  function pow(){const a=atom();if(isOp('**')){i++;return arith('**',a,unary())}return a}
+  function unary(){if(isOp('-')){i++;const v=unary();if(!isNum(v))E('TypeError','숫자에만 - 를 쓸 수 있어요');return mk(v.t==='float'?'float':'int',-num(v))}return pow()}
+  function mul(){let a=unary();while(isOp('*')||isOp('/')||isOp('//')||isOp('%')){const o=toks[i++].v;a=arith(o,a,unary())}return a}
+  function add(){let a=mul();while(isOp('+')||isOp('-')){const o=toks[i++].v;a=arith(o,a,mul())}return a}
+  function comp(){let a=add();while(['==','!=','<','>','<=','>='].some(isOp)){const o=toks[i++].v;a=cmp(o,a,add())}return a}
+  function not(){if(isKw('not')){i++;return mk('bool',!truthy(not()))}return comp()}
+  function and(){let a=not();while(isKw('and')){i++;const b=not();a=truthy(a)?b:a}return a}
+  function or(){let a=and();while(isKw('or')){i++;const b=and();a=truthy(a)?a:b}return a}
+  let r;
+  const KW=['True','False','None','not','and','or'];
+  function targets(){
+   let j=i;const names=[];
+   while(toks[j]&&toks[j].k==='name'&&!KW.includes(toks[j].v)){
+    names.push(toks[j].v);j++;
+    if(toks[j]&&toks[j].k==='op'&&toks[j].v===','){j++;continue}
+    break;
+   }
+   if(names.length&&toks[j]&&toks[j].k==='op'&&toks[j].v==='='){i=j+1;return names}
+   return null;
+  }
+  if(!whole){
+   const groups=[];let t;
+   while((t=targets()))groups.push(t);
+   if(groups.length){
+    const vals=[or()];
+    while(isOp(',')){i++;vals.push(or())}
+    for(const g of groups){
+     if(g.length!==vals.length)E('ValueError',g.length>vals.length?'값이 부족해요: 변수 '+g.length+'개에 값 '+vals.length+'개':'값이 너무 많아요: 변수 '+g.length+'개에 값 '+vals.length+'개');
+     g.forEach((n,k)=>vars[n]=vals[k]);
+    }
+    r=vals[0];
+   }else r=or();
+  }else r=or();
+  if(i<toks.length)E('SyntaxError','여기서 문법이 끝나야 해요: '+toks[i].v);
+  return r;
+ }
+ let err=null;
+ const lines=code.split('\n');
+ for(let n=0;n<lines.length;n++){
+  const ln=lines[n];if(!ln.trim()||ln.trim().startsWith('#'))continue;
+  try{
+   if(/^\s/.test(ln))E('IndentationError','이 단계에서는 줄 앞에 공백을 넣지 않아요');
+   const toks=tokenize(ln);if(toks.length)evalToks(toks,false);
+  }catch(e){if(e&&e.name){err=(n+1)+'번째 줄 '+e.name+': '+e.msg;break}else{err=(n+1)+'번째 줄 오류: '+e;break}}
+ }
+ return {out,err,vars};
+}
+
+/* ===== 미션 ===== */
+const L=[
+{ic:"💬",t:"1. 채팅창 열기",s:"print() 기본",item:"🪵",
+ story:"마인크래프트 세계에 처음 도착했어요. 채팅창에 첫 인사를 보내 봅시다!",
+ learn:"<code>print(\"내용\")</code> 은 화면에 글자를 출력해요. 글자(문자열)는 <b>따옴표</b> \" \" 또는 ' ' 로 감싸요. 따옴표가 없으면 변수 이름으로 착각해서 오류가 나요.",
+ task:"<code>Hello Minecraft</code> 를 출력하세요.",world:"🌳🌳 🧍💬 🌳",
+ start:'',hint:'print("Hello Minecraft")',tests:[{in:[],out:"Hello Minecraft"}]},
+{ic:"🎨",t:"2. 채팅 꾸미기",s:"print의 sep, end",item:"🖍",
+ story:"한 번에 여러 아이템을 알리고 싶어요. print 는 쉼표로 여러 값을 한꺼번에 출력할 수 있어요.",
+ learn:"<code>print(\"A\",\"B\")</code> → <code>A B</code> (기본은 공백으로 구분)<br><code>sep=\" > \"</code> 로 구분 글자를, <code>end=\"!\"</code> 로 끝 글자를 바꿀 수 있어요. end 의 기본값은 줄바꿈이라 print 를 두 번 쓰면 두 줄이 돼요.",
+ task:"첫 줄에 <code>나무 > 돌 > 철</code> (sep 사용), 둘째 줄에 <code>끝!</code> (end=\"!\" 사용) 를 출력하세요.",world:"🪵 > 🪨 > ⛓",
+ start:'',hint:'print("나무", "돌", "철", sep=" > ")\nprint("끝", end="!")',need:[/sep\s*=/,/end\s*=/],
+ tests:[{in:[],out:"나무 > 돌 > 철\n끝!"}]},
+{ic:"❓",t:"3. 자료형 퀴즈 ①",s:"자료형 4총사",item:"📘",quiz:true,
+ story:"빛나는 표지판에 자료형 설명이 적혀 있어요.",
+ learn:"파이썬의 값에는 <b>종류(자료형)</b>가 있어요.<table><tr><th>이름</th><th>뜻</th><th>예</th><th>마인크래프트</th></tr><tr><td><code>int</code></td><td>정수</td><td>20</td><td>체력, 블록 개수</td></tr><tr><td><code>float</code></td><td>소수</td><td>1.5</td><td>이동 속도</td></tr><tr><td><code>str</code></td><td>문자열</td><td>\"Steve\"</td><td>플레이어 이름</td></tr><tr><td><code>bool</code></td><td>참/거짓</td><td>True</td><td>밤인가요?</td></tr></table><p>따옴표가 있으면 숫자처럼 보여도 <code>str</code> 이에요. \"5\" 와 5 는 달라요!</p>",
+ qs:[
+  {q:"다이아 블록 개수 <code>64</code> 의 자료형은?",c:["int","float","str","bool"],a:0,e:"소수점이 없는 숫자는 int 예요."},
+  {q:"<code>speed = 4.3</code> 의 자료형은?",c:["int","float","str","bool"],a:1,e:"소수점이 있으면 float 예요."},
+  {q:"<code>\"64\"</code> (따옴표 포함) 의 자료형은?",c:["int","float","str","bool"],a:2,e:"따옴표로 감싼 건 숫자처럼 보여도 문자열(str)이에요."},
+  {q:"<code>is_night = True</code> 의 자료형은?",c:["int","float","str","bool"],a:3,e:"True / False 는 bool 이에요. 대문자로 시작해야 해요!"}]},
+{ic:"🔍",t:"4. 스티브 정보 확인",s:"변수와 type()",item:"🔍",
+ story:"스티브의 상태창을 만들어요. 변수에 값을 저장하고, type() 으로 자료형을 확인할 수 있어요.",
+ learn:"<code>hp = 20</code> 처럼 <code>이름 = 값</code> 으로 변수를 만들어요.<br><code>print(type(hp))</code> → <code>&lt;class 'int'&gt;</code>",
+ task:"변수 <code>hp</code>=20, <code>speed</code>=1.5, <code>name</code>=\"Steve\", <code>alive</code>=True 를 만들고, <b>각각 type()</b> 결과를 한 줄씩 출력하세요. (순서: hp, speed, name, alive)",world:"🧍 ❤20 ⚡1.5",
+ start:'hp = 20\n',hint:'hp = 20\nspeed = 1.5\nname = "Steve"\nalive = True\nprint(type(hp))\nprint(type(speed))\nprint(type(name))\nprint(type(alive))',need:[/type\(/],
+ tests:[{in:[],out:"<class 'int'>\n<class 'float'>\n<class 'str'>\n<class 'bool'>"}]},
+{ic:"📝",t:"5. 이름표 만들기",s:"input() 기본",item:"🏷",
+ story:"서버에 접속한 친구의 이름을 물어보고 환영해 줘요. 프로그램이 사람에게 질문할 수 있게 해 주는 게 input() 이에요.",
+ learn:"<code>name = input(\"이름은? \")</code> 은 질문을 보여 주고 사용자가 입력한 값을 <code>name</code> 에 저장해요.<br>문자열 합치기: <code>\"Hello, \" + name</code> 또는 <code>f\"Hello, {name}\"</code><br>💡 아래 <b>입력값</b> 칸에 적은 글자가 input() 에 들어가요. 제출하면 다른 이름으로도 시험해요.",
+ task:"이름을 input() 으로 받아 <code>Hello, 이름</code> 형태로 출력하세요. (예: Steve → <code>Hello, Steve</code>)",world:"🧍❓ → 🏷",
+ start:'name = input("이름은? ")\n',stdin:"Steve",hint:'name = input("이름은? ")\nprint("Hello, " + name)\n# 또는 print(f"Hello, {name}")',
+ tests:[{in:["Steve"],out:"Hello, Steve"},{in:["Alex"],out:"Hello, Alex"}]},
+{ic:"❓",t:"6. 자료형 퀴즈 ②",s:"input은 항상 str",item:"📗",quiz:true,
+ story:"함정 표지판이에요! input() 에는 중요한 비밀이 있어요.",
+ learn:"<b>input() 은 사용자가 숫자를 쳐도 항상 문자열(str)로 돌려줘요.</b><br><code>a = input()</code> 에 5 를 입력 → <code>a</code> 는 <code>\"5\"</code><br>그래서 계산하려면 바꿔야 해요: <code>int(\"5\")</code> → 5, <code>float(\"1.5\")</code> → 1.5, <code>str(5)</code> → \"5\"<br><code>\"3\" + \"4\"</code> 는 <code>\"34\"</code> 로 글자가 이어붙어요!",
+ qs:[
+  {q:"<code>a = input()</code> 에서 사용자가 <code>7</code> 을 입력하면 <code>type(a)</code> 는?",c:["int","float","str","bool"],a:2,e:"input() 의 결과는 항상 str 이에요."},
+  {q:"<code>\"3\" + \"4\"</code> 의 결과는?",c:["7","\"34\"","\"7\"","오류"],a:1,e:"문자열끼리 + 하면 이어붙여요."},
+  {q:"<code>int(\"12\") + 1</code> 의 결과는?",c:["13","\"121\"","\"13\"","오류"],a:0,e:"int(\"12\") 가 12 라서 12 + 1 = 13 이에요."},
+  {q:"<code>int(\"abc\")</code> 를 실행하면?",c:["0","abc","ValueError 오류","None"],a:2,e:"숫자로 바꿀 수 없는 글자는 ValueError 가 나요."}]},
+{ic:"🧮",t:"7. 블록 계산기",s:"input + int()",item:"🧱",
+ story:"집을 짓기 위해 벽돌 개수를 계산해요. 두 상자의 벽돌 개수를 입력받아 합쳐 봅시다.",
+ learn:"입력값은 str 이니까 <code>int()</code> 로 감싸서 숫자로 바꿔야 더할 수 있어요.<br><code>a = int(input(\"개수: \"))</code>",
+ task:"input() 으로 두 수를 차례로 받아 <b>합계</b>를 출력하세요. (3, 4 → <code>7</code>)",world:"🧱🧱🧱 + 🧱🧱🧱🧱",
+ start:'a = input("첫 번째 상자: ")\nb = input("두 번째 상자: ")\n',stdin:"3\n4",hint:'a = int(input("첫 번째 상자: "))\nb = int(input("두 번째 상자: "))\nprint(a + b)',
+ tests:[{in:["3","4"],out:"7"},{in:["10","25"],out:"35"},{in:["0","8"],out:"8"}]},
+{ic:"🐞",t:"8. 버그 사냥",s:"TypeError 고치기",item:"🐞",
+ story:"크리퍼가 코드를 망가뜨렸어요! 아래 코드는 오류가 나요. 고쳐 주세요.",
+ learn:"<code>\"개수: \" + 8</code> 처럼 <b>문자열과 숫자는 + 로 더할 수 없어요</b> (TypeError).<br>해결: <code>str(8)</code> 로 바꾸거나, f-문자열 <code>f\"개수: {coal}\"</code> 를 써요.",
+ task:"먼저 [▶ 실행] 으로 오류를 확인하고, 오류 없이 <code>석탄 개수: 8</code> 이 출력되게 고치세요.",world:"🕳💥 ⚫8",
+ start:'coal = 8\nprint("석탄 개수: " + coal)',hint:'coal = 8\nprint("석탄 개수: " + str(coal))\n# 또는 print(f"석탄 개수: {coal}")',
+ tests:[{in:[],out:"석탄 개수: 8"}]},
+{ic:"💎",t:"9. 다이아 상점",s:"float 계산",item:"💎",
+ story:"상점에서 다이아를 사요. 가격은 소수(2.5)일 수 있어서 float() 를 써야 해요.",
+ learn:"소수는 <code>float(input())</code>, 정수는 <code>int(input())</code> 로 바꿔요. int × float 의 결과는 float 예요. (<code>4 * 2.5</code> → <code>10.0</code>)",
+ task:"1개 가격(소수)과 개수(정수)를 차례로 입력받아 <b>총 가격</b>을 출력하세요. (2.5, 4 → <code>10.0</code>)",world:"💎 2.5 × 4 = ?",
+ start:'price = input("1개 가격: ")\ncount = input("개수: ")\n',stdin:"2.5\n4",hint:'price = float(input("1개 가격: "))\ncount = int(input("개수: "))\nprint(price * count)',
+ tests:[{in:["2.5","4"],out:"10.0"},{in:["1.5","3"],out:"4.5"},{in:["3.0","2"],out:"6.0"}]},
+{ic:"🏆",t:"10. 최종 보스: 상태창",s:"종합",item:"🏆",
+ story:"엔더 드래곤 앞에 섰어요! 배운 print, input, 자료형을 모두 사용해 스티브의 상태창을 만들어요.",
+ learn:"f-문자열: <code>f\"HP: {hp}/20\"</code><br>비교 결과는 bool 이에요: <code>print(hp &gt;= 10)</code> → <code>True</code> 또는 <code>False</code><br>비교 연산자: <code>== != &lt; &gt; &lt;= &gt;=</code>",
+ task:"체력(hp)을 input() 으로 받아 int 로 바꾸고,<br>첫 줄 <code>HP: 15/20</code> 형태로 출력, 둘째 줄에는 <b>hp 가 10 이상인지</b>(<code>True</code>/<code>False</code>) 출력하세요.",world:"🐉 ❤❤❤ ?",
+ start:'hp = input("체력: ")\n',stdin:"15",hint:'hp = int(input("체력: "))\nprint(f"HP: {hp}/20")\nprint(hp >= 10)',
+ tests:[{in:["15"],out:"HP: 15/20\nTrue"},{in:["5"],out:"HP: 5/20\nFalse"},{in:["10"],out:"HP: 10/20\nTrue"}]}
+];
+
+/* ===== 앱 ===== */
+
+/* 페이지 안 대화상자 (prompt/confirm 이 막힌 환경 대응) */
+function modal(html,onOk,withInput){
+ const old=document.getElementById('mdl');if(old)old.remove();
+ const d=document.createElement('div');d.id='mdl';
+ d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99;display:flex;align-items:center;justify-content:center';
+ d.innerHTML='<div class="panel" style="min-width:280px;max-width:90%;margin:0"><p style="font-weight:700">'+html+'</p>'+(withInput?'<input id="mdlIn" type="password" style="width:100%;padding:8px;font-size:16px;border:3px solid #000" autocomplete="off">':'')+'<div id="mdlMsg" class="msg bad"></div><div class="row"><button class="btn go" id="mdlOk">확인</button><button class="btn" id="mdlNo">취소</button></div></div>';
+ document.body.appendChild(d);
+ const close=()=>d.remove();
+ const go=()=>{const v=withInput?document.getElementById('mdlIn').value:true;if(onOk(v,close)!==false)close()};
+ document.getElementById('mdlOk').onclick=go;document.getElementById('mdlNo').onclick=close;
+ if(withInput){const i=document.getElementById('mdlIn');i.focus();i.onkeydown=e=>{if(e.key==='Enter')go();if(e.key==='Escape')close()}}
+}
+function ask(msg,fn){modal(msg,()=>{fn()})}
+const TEACHER_PW="2026"; // ← 여기를 원하는 비밀번호로 바꾸세요
+let S;try{S=JSON.parse(localStorage.getItem('pycraft2')||'null')}catch(e){}
+if(!S||!Array.isArray(S.done))S={done:[],hearts:10};
+const save=()=>{try{localStorage.setItem('pycraft2',JSON.stringify(S))}catch(e){}};
+const $=id=>document.getElementById(id);
+function completeAll(){
+ ask('모든 미션을 완료로 표시할까요?',()=>{S.done=L.map((_,i)=>i);save();home()});
+}
+function clearProgress(){
+ ask('완료 표시를 모두 해제할까요? (교사 모드는 유지)',()=>{S.done=[];S.hearts=10;save();home()});
+}
+function adminMode(){
+ if(S.admin){S.admin=false;save();home();return}
+ modal('교사 비밀번호를 입력하세요',(p)=>{
+  if(p===TEACHER_PW){S.admin=true;save();home();return true}
+  document.getElementById('mdlMsg').textContent='비밀번호가 틀렸어요.';return false;
+ },true);
+}
+function hud(){
+ const ab=$('admBtn');if(ab)ab.textContent=S.admin?'🔓 교사 모드 ON (끄기)':'🔑 교사 모드';
+ $('hearts').textContent="❤".repeat(S.hearts)+"🖤".repeat(10-S.hearts);
+ $('xp').style.width=(S.done.length/L.length*100)+"%";$('xpn').textContent=S.done.length+"/"+L.length;
+ $('inv').textContent=S.done.length?S.done.map(i=>L[i].item).join(" "):"비어있음";
+}
+function home(){
+ hud();
+ let h=`<div class="panel"><h2>⛏ 파이썬 기초 마을</h2><p>주제: <b>print · input · 자료형</b>. 코드는 이 페이지 안에서 실제로 실행돼요. 틀리거나 힌트를 보면 ❤ 가 줄어요.</p></div><h2 style="color:#7bdc4e">🗺 월드 맵</h2><div class="map">`;
+ L.forEach((l,i)=>{const d=S.done.includes(i),lock=i>0&&!S.done.includes(i-1)&&!S.admin;
+  h+=`<div class="lv ${d?'done':''} ${lock?'lock':''}" ${lock?'':`onclick="level(${i})"`}><div class="ic">${lock?'🔒':l.ic}</div><h3>${l.t}</h3><p>${l.s}${d?' ✅':''}<span class="tag">${l.quiz?'퀴즈':'코딩'}</span></p></div>`});
+ h+="</div>";
+ if(S.admin)h+=`<div class="row"><button class="btn go" onclick="completeAll()">✅ 모든 미션 완료 처리</button><button class="btn" onclick="clearProgress()">↺ 완료 표시만 해제</button></div>`;
+ if(S.done.length===L.length)h+=`<div class="panel pop"><h2>🏆 엔더 드래곤 격파!</h2>print, input, 자료형을 모두 익혔어요. 다음 단계는 <b>if 조건문</b>과 <b>for 반복문</b>이에요!</div>`;
+ $('app').innerHTML=h;
+}
+let cur=0,qi=0;
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+function head(l){return `<button class="btn" onclick="home()">← 맵</button><h2 style="margin-top:12px">${l.ic} ${l.t} <small>– ${l.s}</small></h2><div class="world" id="world">${l.world||'📘 퀴즈 타임'}</div><div class="story">📖 ${l.story}</div><div class="learn">💡 ${l.learn}</div>`}
+function level(i){
+ cur=i;qi=0;const l=L[i];
+ if(l.quiz){quiz();return}
+ $('app').innerHTML=`<div class="panel">${head(l)}
+ <p>🎯 <b>미션:</b> ${l.task}</p>
+ <label>코드</label><textarea id="code" spellcheck="false">${esc(l.start)}</textarea>
+ ${l.stdin!==undefined?`<label>⌨ 입력값 (input() 이 읽을 값, 한 줄에 하나)</label><textarea id="stdin" spellcheck="false">${esc(l.stdin)}</textarea>`:''}
+ <div class="row"><button class="btn" onclick="runCode()">▶ 실행</button><button class="btn go" onclick="submit()">✔ 제출</button><span class="hint" onclick="showHint()">힌트 보기 (❤-1)</span></div>
+ <div class="out" id="out">(실행 결과가 여기에 나와요)</div><div class="msg" id="msg"></div></div>`;
+ $('code').addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();const t=e.target,s=t.selectionStart;t.value=t.value.slice(0,s)+"    "+t.value.slice(t.selectionEnd);t.selectionStart=t.selectionEnd=s+4}});
+}
+function quiz(){
+ const l=L[cur],q=l.qs[qi];
+ $('app').innerHTML=`<div class="panel">${head(l)}<h3>문제 ${qi+1} / ${l.qs.length}</h3><p style="font-size:17px">${q.q}</p>`+
+ q.c.map((c,k)=>`<button class="btn ch" onclick="ans(${k})">${'①②③④'[k]} ${esc(c)}</button>`).join('')+`<div class="msg" id="msg"></div></div>`;
+}
+function ans(k){
+ const l=L[cur],q=l.qs[qi];
+ if(k===q.a){
+  $('msg').className="msg ok";
+  if(qi<l.qs.length-1){$('msg').innerHTML=`⭕ 정답! ${q.e} <button class="btn go" onclick="qi++;quiz()">다음 문제 →</button>`}
+  else{if(!S.done.includes(cur))S.done.push(cur);save();hud();
+   $('msg').innerHTML=`⭕ 정답! ${q.e}<br>✅ 퀴즈 클리어! ${l.item} 획득! <button class="btn go" onclick="level(${cur+1})">다음 미션 →</button>`}
+ }else{$('msg').className="msg bad";$('msg').textContent="❌ 아쉬워요. 위의 설명을 다시 읽고 도전해 보세요.";lose()}
+}
+function lose(){if(S.hearts>1)S.hearts--;else{S.hearts=10;if($('msg'))$('msg').innerHTML+=" 💀 리스폰! 체력이 회복됐어요."}save();hud()}
+function stdinVal(){const e=$('stdin');return e?e.value.split('\n'):[]}
+function runCode(){
+ const r=pyRun($('code').value,stdinVal(),false);
+ $('out').textContent=(r.out||"(출력 없음)")+(r.err?"\n\n💥 "+r.err:"");
+}
+function submit(){
+ const l=L[cur],code=$('code').value;
+ $('out').textContent="";
+ let fail=null;
+ for(const t of l.tests){
+  const r=pyRun(code,t.in,true);
+  if(r.err){fail="💥 "+r.err;break}
+  if(r.out.trimEnd()!==t.out){fail="💥 입력 "+(t.in.length?JSON.stringify(t.in):"없음")+" 일 때 결과가 달라요.\n기대: "+t.out+"\n내 결과: "+(r.out.trimEnd()||"(없음)");break}
+ }
+ if(!fail&&l.need&&!l.need.every(re=>re.test(code)))fail="💥 이 미션에서 사용하라고 한 기능을 써 주세요. (힌트 참고)";
+ if(fail){$('out').textContent=fail;$('msg').className="msg bad";$('msg').textContent="아직이에요. 오타·따옴표·괄호를 확인해 보세요.";lose();return}
+ if(!S.done.includes(cur))S.done.push(cur);save();hud();
+ const r=pyRun(code,l.stdin!==undefined?stdinVal():[],false);
+ $('out').textContent=r.out||"";
+ $('msg').className="msg ok";$('msg').innerHTML=`✅ 성공! ${l.item} 획득! `+(cur<L.length-1?`<button class="btn go" onclick="level(${cur+1})">다음 미션 →</button>`:`<button class="btn go" onclick="home()">🏆 맵으로</button>`);
+ $('world').classList.add('pop');$('world').textContent="✨ "+l.item+" 획득! ✨";
+}
+function showHint(){$('out').textContent="힌트:\n"+L[cur].hint;lose()}
+function resetAll(){ask('진행 상황을 모두 지울까요?',()=>{S={done:[],hearts:10};save();home()})}
+home();
+</script></body></html>
